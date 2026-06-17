@@ -1,1 +1,5 @@
 images/
+initial_assessment/
+qwen_test.py
+/.venv_vlm
+navigation_outputs/
