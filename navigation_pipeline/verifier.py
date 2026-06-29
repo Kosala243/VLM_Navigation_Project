@@ -352,6 +352,11 @@ class TargetVerifier:
                 + " Verification rejected: matched_label is not a full target room/entrance label."
             ).strip()
             result.confidence = "low"
+            result.evidence_score = 0.0
+            result.evidence_breakdown = {
+                "invalid_matched_label": 1.0,
+                "final_score": 0.0,
+            }
             return result
 
         # If the goal contains a room-code pattern, reject a building/zone-only label.
@@ -363,6 +368,27 @@ class TargetVerifier:
                 + " Verification rejected: visible label is only a building/tower marker, not the room label."
             ).strip()
             result.confidence = "low"
+            result.evidence_score = 0.0
+            result.evidence_breakdown = {
+                "building_only_match": 1.0,
+                "final_score": 0.0,
+            }
+            return result
+        
+        if not _current_memory_supports_stop(goal, memory_update, result.evidence_type, result.matched_label):
+            result.target_reached = False
+            result.target_visible = bool(result.target_visible)
+            result.evidence_type = "unclear"
+            result.reason = (
+                result.reason
+                + " Verification rejected: current-frame memory does not support the stop evidence."
+            ).strip()
+            result.confidence = "low"
+            result.evidence_score = 0.0
+            result.evidence_breakdown = {
+                "missing_current_memory_support": 1.0,
+                "final_score": 0.0,
+            }
             return result
 
         # If a landmark id is provided, it must belong to the current frame's memory update.
@@ -374,7 +400,12 @@ class TargetVerifier:
                     result.reason + " Verification rejected: landmark_id is not from the current frame."
                 ).strip()
                 result.confidence = "low"
-                return result
+                result.evidence_score = 0.0
+            result.evidence_breakdown = {
+                "landmark_not_current_frame": 1.0,
+                "final_score": 0.0,
+            }
+            return result
 
         score, breakdown = _score_verification(
             evidence_type=result.evidence_type,
@@ -460,40 +491,46 @@ def _stop_labels(goal: "NavigationGoal") -> list[str]:
 
 
 def _find_stop_label(labels: list[str], text: str) -> str:
-    """Find an accepted full stop label in visible text.
-
-    Unlike the old implementation, this function is deliberately not called on
-    the verifier reason/raw JSON because those may contain the goal text from
-    the prompt. Use it on matched_label or current-frame landmark text only.
-    """
     text_norm = _normalise_label(text)
     if not text_norm:
         return ""
+
     for label in labels:
         label_norm = _normalise_label(label)
         if not label_norm:
             continue
-        if label_norm == text_norm or label_norm in text_norm:
+
+        if label_norm == text_norm:
             return label
+
+        label_is_numeric_only = label_norm.isdigit()
+
+        if label_is_numeric_only:
+            # Avoid matching 314 inside 1314.
+            pattern = rf"(?<!\d){re.escape(label_norm)}(?!\d)"
+            if re.search(pattern, text_norm):
+                return label
+        else:
+            # Allow C0.008 / C0-008 / C0008 inside longer visible door text.
+            if label_norm in text_norm:
+                return label
+
     return ""
 
 
 def _normalise_label(text: str) -> str:
     return re.sub(r"[^a-z0-9]+", "", str(text).lower())
 
-
 def _goal_building_or_zone(goal: "NavigationGoal") -> str:
     constraints = getattr(goal, "constraints", {}) or {}
     value = constraints.get("possible_building") or constraints.get("possible_zone") or ""
     return str(value).strip()
-
 
 def _is_building_only_match(goal: "NavigationGoal", label: str) -> bool:
     building = _goal_building_or_zone(goal)
     if not building:
         return False
     return _normalise_label(label) == _normalise_label(building)
-
 
 def _looks_like_zone_marker_for_goal(goal: "NavigationGoal", text: str) -> bool:
     building = _goal_building_or_zone(goal)
@@ -502,7 +539,6 @@ def _looks_like_zone_marker_for_goal(goal: "NavigationGoal", text: str) -> bool:
     t = text.lower()
     b = re.escape(str(building).lower())
     return bool(re.search(rf"\b{b}\b", t)) and any(w in t for w in ["tower", "building", "zone", "entrance", "door"])
-
 
 def _landmark_combined_text(lm: "Landmark") -> str:
     extra = getattr(lm, "extra", {})
@@ -517,13 +553,11 @@ def _landmark_combined_text(lm: "Landmark") -> str:
         extra_text,
     ])
 
-
 def _looks_like_actual_entrance(text: str) -> bool:
     t = text.lower()
     entrance_words = ["entrance", "door", "room plate", "door plate", "office", "suite", "lab", "reception", "gate"]
     non_stop_words = ["arrow", "towards", "direction", "range", "directory", "map", "rooms", "tower", "building", "zone"]
     return any(w in t for w in entrance_words) and not any(w in t for w in non_stop_words)
-
 
 def _non_stop_evidence_type(category: str, text: str) -> str:
     t = text.lower()
@@ -590,6 +624,35 @@ def _confidence_from_score(score: float) -> str:
     if score >= 0.60:
         return "medium"
     return "low"
+    
+def _current_memory_supports_stop(
+    goal: "NavigationGoal",
+    memory_update: "MemoryUpdate | None",
+    evidence_type: str,
+    matched_label: str,
+) -> bool:
+    if memory_update is None:
+        return False
+
+    labels = _stop_labels(goal)
+    matched = _find_stop_label(labels, matched_label)
+    if not matched:
+        return False
+
+    for lm in getattr(memory_update, "landmarks", []) or []:
+        category = str(getattr(lm, "category", "")).lower()
+        combined = _landmark_combined_text(lm)
+
+        if not _find_stop_label(labels, combined):
+            continue
+
+        if evidence_type == "target_door_label" and category == "door":
+            return True
+
+        if evidence_type == "target_entrance" and category in {"sign", "observation"}:
+            return _looks_like_actual_entrance(combined)
+
+    return False
 
 def _score_verification(
         evidence_type: str,

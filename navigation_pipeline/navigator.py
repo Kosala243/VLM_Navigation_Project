@@ -178,8 +178,21 @@ class NavigationSystem:
         else:
             action = self.action_generator.generate(image_path, self.goal, self.memory)
 
+        if not verification.target_reached and action.name == "STOP_AND_VERIFY":
+            action.is_valid = False
+            action.goal_reached = False
+            action.needs_verification = True
+            action.confidence = "low"
+            action.evidence_score = 0.0
+            action.invalid_reason = (
+                "STOP_AND_VERIFY rejected: verifier did not confirm current-frame "
+                "target door/entrance evidence."
+            )
+
         executed = False
-        if execute and self.executor is not None and action.is_valid:
+        if action.name == "STOP_AND_VERIFY" and action.is_valid:
+            executed = True
+        elif execute and self.executor is not None and action.is_valid:
             executed = bool(self.executor.execute(action))
             if not executed:
                 self.memory.add_failed_action(

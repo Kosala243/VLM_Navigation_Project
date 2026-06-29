@@ -95,6 +95,8 @@ Goal: {goal}
         the same schema. Any missing or malformed VLM fields fall back to the rule output.
         """
         goal = goal.strip()
+        if not goal:
+            raise ValueError("Navigation goal cannot be empty.")
         rule_goal = self._parse_with_rules(goal)
 
         if self.model is None:
@@ -133,9 +135,23 @@ Goal: {goal}
                 + rule_goal.aliases
             )
 
+            allowed_target_types = {
+                "room_or_location",
+                "person_office",
+                "department",
+                "facility",
+                "suite_or_unit",
+                "gate_or_zone",
+                "lab",
+                "unknown",
+            }
+            target_type = str(data.get("target_type", rule_goal.target_type)).strip()
+            if target_type not in allowed_target_types:
+                target_type = rule_goal.target_type
+
             return NavigationGoal(
                 raw_goal=goal,
-                target_type=str(data.get("target_type", rule_goal.target_type)).strip() or rule_goal.target_type,
+                target_type=target_type,
                 known_tokens=known_tokens,
                 aliases=aliases,
                 constraints=constraints,
@@ -352,19 +368,28 @@ def _empty_constraints() -> dict[str, Any]:
 def _merge_constraints(base: dict[str, Any], override: dict[str, Any]) -> dict[str, Any]:
     merged = _empty_constraints()
     merged.update(base or {})
+
     for key in merged:
-        value = override.get(key)
-        if value not in (None, "", [], {}):
-            merged[key] = value
+        base_value = merged.get(key)
+        override_value = override.get(key)
+
+        # Keep rule-based constraint if already available.
+        if base_value not in (None, "", [], {}):
+            continue
+
+        if override_value not in (None, "", [], {}):
+            merged[key] = override_value
+
     return merged
 
 
 def _extract_tokens(text: str) -> list[str]:
     # Preserve exact goal first, then useful alphanumeric/location chunks.
     rough = re.findall(
-    r"[A-Za-z]+\d*[A-Za-z]*\+?|\d+[A-Za-z]*|[A-Za-z]*\d+[.\-_]\d+[A-Za-z]*|\d+[.]\d+",
-    text,
+        r"[A-Za-z]*\d+[.\-_]\d+[A-Za-z]*|\d+[.]\d+|[A-Za-z]+\d*[A-Za-z]*\+?|\d+[A-Za-z]*",
+        text,
     )
+    
     # Also keep common multi-word location phrases.
     phrases = []
     for pat in (r"niveau\s*\d+", r"level\s*\d+", r"floor\s*\d+", r"corridor\s*\d+[A-Za-z]*", r"gate\s*[A-Za-z]*\d+", r"suite\s*[A-Za-z]*\d+[A-Za-z]*", r"room\s*[A-Za-z]*\d+[A-Za-z]*"):

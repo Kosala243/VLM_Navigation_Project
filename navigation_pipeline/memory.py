@@ -90,6 +90,7 @@ Return ONLY valid JSON:
       "description": "what it is and where it is in view",
       "text": "exact readable text if any, else empty",
       "confidence": "high | medium | low",
+      "pose": {},
       "extra": {
         "direction": null,
         "room_range": null,
@@ -145,7 +146,7 @@ If no useful navigation evidence is visible, return exactly:
         new_landmarks: list[Landmark] = []
 
         for raw_lm in data.get("landmarks", []) or []:
-            landmark = self._build_landmark(raw_lm, image_path)
+            landmark = self._build_landmark(raw_lm, image_path, goal)
             if landmark is None:
                 continue
             if self._is_duplicate_landmark(landmark):
@@ -211,6 +212,10 @@ If no useful navigation evidence is visible, return exactly:
         self._trim_memory()
 
     def mark_landmark(self, landmark_id: str, status: str) -> None:
+        valid_status = {"unvisited", "visited", "used", "ignored"}
+        if status not in valid_status:
+            return
+
         for lm in self.landmarks:
             if lm.id == landmark_id:
                 lm.status = status
@@ -283,16 +288,21 @@ If no useful navigation evidence is visible, return exactly:
         self._next_id += 1
         return landmark_id
 
-    def _build_landmark(self, raw_lm: dict[str, Any], image_path: str) -> Landmark | None:
+    def _build_landmark(self, raw_lm: dict[str, Any], image_path: str, goal: "NavigationGoal") -> Landmark | None:
         category = str(raw_lm.get("category", "observation")).strip().lower()
         description = str(raw_lm.get("description", "")).strip()
         text = str(raw_lm.get("text", "")).strip()
         confidence = str(raw_lm.get("confidence", "medium")).strip().lower()
         extra = raw_lm.get("extra", {}) if isinstance(raw_lm.get("extra", {}), dict) else {}
+        extra = dict(extra)
+        extra["source_image_index"] = self.image_count
+        pose = raw_lm.get("pose", {}) if isinstance(raw_lm.get("pose", {}), dict) else {}
 
         category = self._normalise_category(category, description, text)
         if category is None:
             return None
+
+        extra = _correct_target_relevance(category, description, text, extra, goal)
 
         if confidence not in {"high", "medium", "low"}:
             confidence = "medium"
@@ -309,6 +319,7 @@ If no useful navigation evidence is visible, return exactly:
             category=category,
             description=description,
             text=text,
+            pose=pose,
             confidence=_confidence_from_score(evidence_score),
             evidence_score=evidence_score,
             evidence_breakdown=evidence_breakdown,
@@ -429,12 +440,17 @@ def _score_landmark(
     target_relevance = str(extra.get("target_relevance", "")).lower() if isinstance(extra, dict) else ""
     target_bonus = 0.10 if target_relevance == "high" else 0.05 if target_relevance == "medium" else 0.0
     direction_bonus = 0.05 if isinstance(extra, dict) and (extra.get("direction") or extra.get("arrow")) else 0.0
+    partial_marker_penalty = 0.35 if isinstance(extra, dict) and extra.get("partial_goal_marker") else 0.0
+    irrelevant_sign_penalty = _irrelevant_sign_penalty(category, text, extra)
+
+    if partial_marker_penalty and target_bonus > 0.05:
+        target_bonus = 0.05
 
     missing_text_penalty = 0.0
     if category in {"door", "sign", "directory"} and not str(text).strip():
-        missing_text_penalty = 0.20
+        missing_text_penalty = 0.35
 
-    score = base + confidence_bonus + text_bonus + target_bonus + direction_bonus - missing_text_penalty
+    score = base + confidence_bonus + text_bonus + target_bonus + direction_bonus - missing_text_penalty - partial_marker_penalty - irrelevant_sign_penalty
     score = max(0.0, min(1.0, score))
 
     breakdown = {
@@ -444,10 +460,63 @@ def _score_landmark(
         "target_relevance_bonus": target_bonus,
         "direction_bonus": direction_bonus,
         "missing_text_penalty": missing_text_penalty,
+        "partial_marker_penalty": partial_marker_penalty,
+        "irrelevant_sign_penalty": irrelevant_sign_penalty,
         "final_score": score,
     }
     return score, breakdown
 
+def _looks_like_room_or_range(text: str) -> bool:
+    t = str(text)
+    return bool(
+        re.search(r"\b[A-Za-z]+\d+[.\-_]?\d+[A-Za-z]*\b", t)
+        or re.search(r"\b\d+[.\-_]\d+[A-Za-z]*\b", t)
+        or re.search(r"\broom\s+[A-Za-z]*\d+[A-Za-z]*\b", t, re.I)
+        or re.search(r"\d+\s*[-–]\s*\d+", t)
+    )
+
+def _irrelevant_sign_penalty(category: str, text: str, extra: dict[str, Any]) -> float:
+    if category != "sign":
+        return 0.0
+
+    t = str(text).lower()
+    target_relevance = str(extra.get("target_relevance", "")).lower() if isinstance(extra, dict) else ""
+    room_range = extra.get("room_range") if isinstance(extra, dict) else None
+    zone = extra.get("zone") if isinstance(extra, dict) else None
+
+    # Hard irrelevant signs: penalize even if the VLM wrongly says target_relevance=medium.
+    hard_irrelevant_words = [
+        "exit",
+        "lost and found",
+        "lecture may be recorded",
+        "recorded for educational purposes",
+        "promotional purposes",
+        "self tour",
+        "keep this door closed",
+        "please use the other door",
+        "thank you",
+    ]
+
+    if any(word in t for word in hard_irrelevant_words):
+        return 0.45
+
+    # Real navigation signs should stay high.
+    if room_range or zone:
+        return 0.0
+
+    if _looks_like_room_or_range(text):
+        return 0.0
+
+    if any(word in t for word in ["directory", "map", "you are here", "reception", "information desk"]):
+        return 0.0
+
+    if target_relevance == "high":
+        return 0.0
+
+    if target_relevance == "medium":
+        return 0.10
+
+    return 0.20
 
 def _confidence_from_score(score: float) -> str:
     if score >= 0.85:
@@ -487,10 +556,19 @@ def _extract_last_number(text: str) -> int | None:
         return None
 
 
-def _landmark_key(landmark: Landmark) -> tuple[str, str, str]:
+def _landmark_key(landmark: Landmark) -> tuple[str, str, str, str]:
     text = re.sub(r"\s+", " ", landmark.text.lower()).strip()
     desc = re.sub(r"\s+", " ", landmark.description.lower()).strip()[:80]
-    return landmark.category, text, desc
+
+    pose = getattr(landmark, "pose", {}) or {}
+    pose_key = ""
+    if isinstance(pose, dict) and "x" in pose and "y" in pose:
+        try:
+            pose_key = f"{round(float(pose['x']), 1)}_{round(float(pose['y']), 1)}"
+        except Exception:
+            pose_key = ""
+
+    return landmark.category, text, desc, pose_key
 
 
 def _extract_json(text: str) -> dict[str, Any] | None:
@@ -503,3 +581,47 @@ def _extract_json(text: str) -> dict[str, Any] | None:
         return json.loads(text[start:end + 1])
     except json.JSONDecodeError:
         return None
+
+def _normalise_label(text: str) -> str:
+    return re.sub(r"[^a-z0-9]+", "", str(text).lower())
+
+
+def _is_partial_goal_marker(text: str, goal: "NavigationGoal") -> bool:
+    constraints = getattr(goal, "constraints", {}) or {}
+    building = str(constraints.get("possible_building") or "").strip()
+    room = str(constraints.get("possible_room") or "").strip()
+    raw_goal = str(getattr(goal, "raw_goal", "")).strip()
+
+    if not building or not room:
+        return False
+
+    text_raw = str(text)
+    text_norm = _normalise_label(text_raw)
+    raw_norm = _normalise_label(raw_goal)
+
+    if raw_norm and raw_norm in text_norm:
+        return False
+
+    has_building = bool(re.search(rf"\b{re.escape(building)}\b", text_raw, re.I))
+    has_room = room and room in text_raw
+
+    return has_building and not has_room
+
+
+def _correct_target_relevance(
+    category: str,
+    description: str,
+    text: str,
+    extra: dict[str, Any],
+    goal: "NavigationGoal",
+) -> dict[str, Any]:
+    combined = f"{description} {text}"
+
+    if _is_partial_goal_marker(combined, goal):
+        extra["partial_goal_marker"] = True
+        extra["full_target_match"] = False
+
+        if str(extra.get("target_relevance", "")).lower() == "high":
+            extra["target_relevance"] = "medium"
+
+    return extra

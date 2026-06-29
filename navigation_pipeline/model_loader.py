@@ -9,7 +9,7 @@ from typing import Optional
 
 import torch
 
-warnings.filterwarnings("ignore")
+warnings.filterwarnings("default")
 
 
 class ModelWrapper:
@@ -21,6 +21,7 @@ class ModelWrapper:
         self.processor = None
         self._process_vision_info = None
         self._loaded = False
+        self.last_response = ""
 
     def load(self) -> "ModelWrapper":
         if self._loaded:
@@ -65,14 +66,35 @@ class ModelWrapper:
                 f"Could not load {self.model_name}. Install/upgrade transformers and qwen-vl-utils. "
                 f"Last error: {last_error}"
             )
+        
+        self.model.eval()
 
+        if hasattr(self.model, "generation_config"):
+            self.model.generation_config.do_sample = False
+            self.model.generation_config.temperature = None
+            self.model.generation_config.top_p = None
+            self.model.generation_config.top_k = None
+        
         self._loaded = True
+    
+
         device = next(self.model.parameters()).device
         n_params = sum(p.numel() for p in self.model.parameters())
         print(f"  Loaded via: {loaded_via}")
         print(f"  Device: {device}")
         print(f"  Parameters: ~{n_params / 1e9:.1f}B")
         return self
+
+    def _input_device(self) -> torch.device:
+        """Return a safe device for input tensors."""
+        if self.model is None:
+            return torch.device("cpu")
+
+        for p in self.model.parameters():
+            if p.device.type != "meta":
+                return p.device
+
+        return torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     def query(self, prompt: str, image_path: str | None = None, max_new_tokens: int = 600) -> str:
         if not self._loaded:
@@ -94,43 +116,46 @@ class ModelWrapper:
         content.append({"type": "text", "text": prompt})
         messages = [{"role": "user", "content": content}]
 
-        text = self.processor.apply_chat_template(
-            messages,
-            tokenize=False,
-            add_generation_prompt=True,
-            enable_thinking=False,
-        )
-
         try:
-            if image_path and self._process_vision_info is not None:
-                image_inputs, video_inputs = self._process_vision_info(messages)
-                inputs = self.processor(
-                    text=[text],
-                    images=image_inputs if image_inputs else None,
-                    videos=video_inputs if video_inputs else None,
-                    padding=True,
-                    return_tensors="pt",
-                )
-            elif image_path:
-                from PIL import Image
-                img = Image.open(image_path).convert("RGB")
-                inputs = self.processor(text=[text], images=[img], padding=True, return_tensors="pt")
-            else:
-                inputs = self.processor(text=[text], padding=True, return_tensors="pt")
+            inputs = self.processor.apply_chat_template(
+                messages,
+                tokenize=True,
+                add_generation_prompt=True,
+                return_dict=True,
+                return_tensors="pt",
+            )
+            inputs.pop("token_type_ids", None)
         except Exception as exc:
             return f"[ERROR] Input processing failed: {exc}"
 
-        inputs = inputs.to(self.model.device)
-        with torch.no_grad():
+        inputs = inputs.to(self._input_device())
+
+        generation_kwargs = {
+            "max_new_tokens": max_new_tokens,
+            "do_sample": False,
+        }
+
+        eos_token_id = getattr(self.processor.tokenizer, "eos_token_id", None)
+        pad_token_id = getattr(self.processor.tokenizer, "pad_token_id", None)
+
+        if pad_token_id is None and eos_token_id is not None:
+            generation_kwargs["pad_token_id"] = eos_token_id
+        elif pad_token_id is not None:
+            generation_kwargs["pad_token_id"] = pad_token_id
+
+        with torch.inference_mode():
             generated_ids = self.model.generate(
                 **inputs,
-                max_new_tokens=max_new_tokens,
-                do_sample=False,
+                **generation_kwargs,
             )
-
+        
         trimmed = [out[len(inp):] for inp, out in zip(inputs.input_ids, generated_ids)]
-        return self.processor.batch_decode(
+        
+        output = self.processor.batch_decode(
             trimmed,
             skip_special_tokens=True,
             clean_up_tokenization_spaces=False,
         )[0].strip()
+
+        self.last_response = output
+        return output
