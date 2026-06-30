@@ -3,4 +3,5 @@ qwen_test.py
 /.venv_vlm
 navigation_outputs/
 live_robot_frames/
-__pycache__/
+*.pyc
+*/*/*.pyc

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import shutil
 from dataclasses import asdict
 from pathlib import Path
@@ -22,8 +23,8 @@ class DummyExecutor:
 
 app = FastAPI(title="VLM Navigation Server")
 
-MODEL_NAME = "Qwen/Qwen3-VL-8B-Instruct"
-FRAME_DIR = Path("live_robot_frames")
+MODEL_NAME = os.getenv("MODEL_NAME", "Qwen/Qwen3-VL-8B-Instruct")
+FRAME_DIR = Path(os.getenv("FRAME_DIR", "live_robot_frames"))
 FRAME_DIR.mkdir(exist_ok=True)
 
 model: Optional[ModelWrapper] = None
