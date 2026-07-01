@@ -1,0 +1,188 @@
+{
+  "image_count": 7,
+  "landmarks": [
+    {
+      "id": "L001",
+      "category": "door",
+      "description": "Glass door with large white letter 'B' on it, located to the right of the seating area.",
+      "text": "B",
+      "pose": {},
+      "status": "visited",
+      "confidence": "medium",
+      "evidence_score": 0.7500000000000001,
+      "evidence_breakdown": {
+        "category_score": 0.8,
+        "confidence_bonus": 0.1,
+        "text_bonus": 0.1,
+        "target_relevance_bonus": 0.05,
+        "direction_bonus": 0.05,
+        "missing_text_penalty": 0.0,
+        "partial_marker_penalty": 0.35,
+        "irrelevant_sign_penalty": 0.0,
+        "final_score": 0.7500000000000001
+      },
+      "image_path": "images/seq2/img2_seq2.jpg",
+      "extra": {
+        "direction": "right",
+        "room_range": null,
+        "arrow": null,
+        "target_relevance": "medium",
+        "floor": "0",
+        "zone": null,
+        "source_image_index": 2,
+        "partial_goal_marker": true,
+        "full_target_match": false
+      }
+    },
+    {
+      "id": "L002",
+      "category": "door",
+      "description": "Glass door with large white letter 'B' on it, located at the junction of the corridor and a glass-walled area.",
+      "text": "B",
+      "pose": {},
+      "status": "unvisited",
+      "confidence": "medium",
+      "evidence_score": 0.7000000000000001,
+      "evidence_breakdown": {
+        "category_score": 0.8,
+        "confidence_bonus": 0.1,
+        "text_bonus": 0.1,
+        "target_relevance_bonus": 0.05,
+        "direction_bonus": 0.0,
+        "missing_text_penalty": 0.0,
+        "partial_marker_penalty": 0.35,
+        "irrelevant_sign_penalty": 0.0,
+        "final_score": 0.7000000000000001
+      },
+      "image_path": "images/seq2/img3_seq2.jpg",
+      "extra": {
+        "direction": null,
+        "room_range": null,
+        "arrow": null,
+        "target_relevance": "medium",
+        "floor": "0",
+        "zone": null,
+        "source_image_index": 3,
+        "partial_goal_marker": true,
+        "full_target_match": false
+      }
+    },
+    {
+      "id": "L003",
+      "category": "door",
+      "description": "Glass door with large white letter 'B' on it, leading into the building.",
+      "text": "B",
+      "pose": {},
+      "status": "unvisited",
+      "confidence": "medium",
+      "evidence_score": 0.7000000000000001,
+      "evidence_breakdown": {
+        "category_score": 0.8,
+        "confidence_bonus": 0.1,
+        "text_bonus": 0.1,
+        "target_relevance_bonus": 0.05,
+        "direction_bonus": 0.0,
+        "missing_text_penalty": 0.0,
+        "partial_marker_penalty": 0.35,
+        "irrelevant_sign_penalty": 0.0,
+        "final_score": 0.7000000000000001
+      },
+      "image_path": "images/seq2/img4_seq2.jpg",
+      "extra": {
+        "direction": null,
+        "room_range": null,
+        "arrow": null,
+        "target_relevance": "medium",
+        "floor": "0",
+        "zone": null,
+        "source_image_index": 4,
+        "partial_goal_marker": true,
+        "full_target_match": false
+      }
+    },
+    {
+      "id": "L004",
+      "category": "sign",
+      "description": "Small black sign with directional arrows and room numbers below the 'MSP Alumni Community' display.",
+      "text": "→ 🚶‍♂️ 🚶‍♀️ B0.001\n→ 🚶‍♂️ 🚶‍♀️ B0.002\n↑ B0.005 - B0.014",
+      "pose": {},
+      "status": "used",
+      "confidence": "high",
+      "evidence_score": 1.0,
+      "evidence_breakdown": {
+        "category_score": 0.7,
+        "confidence_bonus": 0.1,
+        "text_bonus": 0.1,
+        "target_relevance_bonus": 0.1,
+        "direction_bonus": 0.05,
+        "missing_text_penalty": 0.0,
+        "partial_marker_penalty": 0.0,
+        "irrelevant_sign_penalty": 0.0,
+        "final_score": 1.0
+      },
+      "image_path": "images/seq2/img5_seq2.jpg",
+      "extra": {
+        "direction": "up",
+        "room_range": "B0.005 - B0.014",
+        "arrow": "↑",
+        "target_relevance": "high",
+        "floor": "B0",
+        "zone": null,
+        "source_image_index": 5
+      }
+    },
+    {
+      "id": "L005",
+      "category": "door",
+      "description": "White door on the right side of the image with a small label above the handle",
+      "text": "B0.004",
+      "pose": {},
+      "status": "used",
+      "confidence": "high",
+      "evidence_score": 1.0,
+      "evidence_breakdown": {
+        "category_score": 0.8,
+        "confidence_bonus": 0.1,
+        "text_bonus": 0.1,
+        "target_relevance_bonus": 0.1,
+        "direction_bonus": 0.0,
+        "missing_text_penalty": 0.0,
+        "partial_marker_penalty": 0.0,
+        "irrelevant_sign_penalty": 0.0,
+        "final_score": 1.0
+      },
+      "image_path": "images/seq2/img7_seq2.jpg",
+      "extra": {
+        "direction": null,
+        "room_range": null,
+        "arrow": null,
+        "target_relevance": "high",
+        "floor": "0",
+        "zone": null,
+        "source_image_index": 7
+      }
+    }
+  ],
+  "observation_summaries": [
+    "Image 2: Door marked 'B' leads to target room B0.004.",
+    "Image 3: Door marked 'B' leads to target room B0.004.",
+    "Image 4: Door marked 'B' leads to room B0.004.",
+    "Image 5: Directional sign indicates B0.004 is accessible via stairs and elevator.",
+    "Image 7: Door on right has label 'B0.004'"
+  ],
+  "hypotheses": [
+    "The 'B' door is the entrance to room B0.004 as per the goal.",
+    "Room B0.004 is likely located near the directional sign, possibly on the same floor as B0.005-B0.014."
+  ],
+  "failed_actions": [
+    "Unknown landmark_id: sign_above_coffee_corner",
+    "Landmark L001 was already visited; choose a newer cue.",
+    "Landmark L001 was already visited; choose a newer cue."
+  ],
+  "limits": {
+    "max_landmarks": 120,
+    "max_summaries": 80,
+    "max_hypotheses": 40,
+    "max_failed_actions": 20
+  }
+}
