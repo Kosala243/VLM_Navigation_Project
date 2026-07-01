@@ -1,0 +1,26 @@
+FROM ubuntu:24.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        ca-certificates \
+        git \
+        cmake \
+        build-essential \
+        bash \
+        libgomp1 \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /opt
+
+RUN git clone --depth=1 https://github.com/ggerganov/llama.cpp.git llama.cpp
+
+WORKDIR /opt/llama.cpp
+
+RUN cmake -B build -DCMAKE_BUILD_TYPE=Release \
+    && cmake --build build --config Release -j"$(nproc)"
+
+RUN mkdir -p /models /cache
+
+EXPOSE 8080

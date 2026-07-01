@@ -1,0 +1,80 @@
+services:
+  llm:
+    image: qwen3vl-llama-runtime:cpu
+    build:
+      context: .
+      dockerfile: Dockerfile.llama-runtime
+    container_name: qwen3vl-llm
+    restart: unless-stopped
+
+    volumes:
+      - ${MODELS_DIR:-./models}:/models:ro
+      - llama-cache:/cache
+
+    ports:
+      - "${LLM_HOST_PORT:-8081}:8080"
+
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - "bash -lc ': >/dev/tcp/127.0.0.1/8080'"
+      interval: 30s
+      timeout: 5s
+      retries: 30
+      start_period: 10m
+
+    command:
+      - /opt/llama.cpp/build/bin/llama-server
+      - --host
+      - 0.0.0.0
+      - --port
+      - "8080"
+      - -m
+      - /models/${LLAMA_MODEL_FILE}
+      - --mmproj
+      - /models/${LLAMA_MMPROJ_FILE}
+      - --alias
+      - llm
+      - --ctx-size
+      - "${LLAMA_CTX_SIZE:-8192}"
+      - --n-gpu-layers
+      - "${LLAMA_N_GPU_LAYERS:-0}"
+      - --threads
+      - "${LLAMA_THREADS:-8}"
+      - --parallel
+      - "${LLAMA_PARALLEL:-1}"
+      - --cache-type-k
+      - q8_0
+      - --cache-type-v
+      - q8_0
+
+  navigation_pipeline:
+    image: vlm-navigation-pipeline:0.1.0
+    build:
+      context: .
+      dockerfile: Dockerfile.pipeline
+    container_name: vlm-navigation-pipeline
+    restart: "no"
+
+    env_file:
+      - .env
+
+    environment:
+      - MODEL_BACKEND=llama_cpp_server
+      - LLAMA_SERVER_URL=http://llm:8080/v1
+      - LLAMA_MODEL_ID=llm
+
+    volumes:
+      - ./images:/app/images:ro
+      - ./navigation_outputs:/app/navigation_outputs
+
+    depends_on:
+      llm:
+        condition: service_healthy
+
+    command:
+      - python
+      - run_navigation.py
+
+volumes:
+  llama-cache:
