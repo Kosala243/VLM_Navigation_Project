@@ -66,6 +66,7 @@ services:
 
     volumes:
       - ./images:/app/images:ro
+      - ./live_frames:/app/live_frames:ro
       - ./navigation_outputs:/app/navigation_outputs
 
     depends_on:
