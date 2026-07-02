@@ -21,6 +21,7 @@ RUN pip install --no-cache-dir \
 COPY navigation_pipeline/ /app/navigation_pipeline/
 COPY run_navigation.py /app/run_navigation.py
 COPY run_single_step.py /app/run_single_step.py
+COPY pipeline_api.py /app/pipeline_api.py
 COPY mac_vlm_server.py /app/mac_vlm_server.py
 
 CMD ["python", "run_navigation.py"]
