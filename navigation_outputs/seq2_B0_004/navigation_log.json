@@ -1,7 +1,7 @@
 {
   "raw_goal": "B0.004",
-  "started_at": "2026-07-01 19:38:33",
-  "ended_at": "2026-07-01 21:14:17",
+  "started_at": "2026-07-01 23:07:44",
+  "ended_at": "2026-07-02 00:46:17",
   "success": true,
   "final_goal": {
     "raw_goal": "B0.004",
@@ -15,19 +15,16 @@
     "aliases": [
       "B0-004",
       "B0.004",
-      "B0004",
       "B004",
-      "B0.4",
-      "B04",
+      "B 0.004",
+      "B0004",
       "Room B0004"
     ],
     "possible_interpretations": [
       {
-        "interpretation": "Room B0.004 is likely a specific room on floor B0, possibly in a building with decimal or fractional floor notation.",
+        "interpretation": "Room B0.004 is likely a specific room on floor 0 in building B, possibly a lab, office, or meeting space.",
         "evidence_needed": [
-          "Signage or directory showing 'B0.004' or similar label on a door or wall",
-          "Floor indicator showing 'B0' or 'B0.0'",
-          "Room plate matching 'B0.004'"
+          "Signage on door or wall showing 'B0.004', floor indicator showing '0', building identifier 'B'"
         ],
         "confidence": "high"
       }
@@ -39,7 +36,7 @@
       "possible_zone": null,
       "target_name": null
     },
-    "search_strategy": "Look for signs or room plates labeled 'B0.004' or its aliases on doors, walls, or floor indicators; prioritize matching the exact raw token first."
+    "search_strategy": "Look for a door or sign labeled 'B0.004' or similar variant, check floor indicators for '0' and building markers for 'B'."
   },
   "memory_path": "navigation_outputs/seq2_B0_004/memory.json",
   "memory_kept_from_previous_goal": false,
@@ -48,64 +45,132 @@
       "image_num": 1,
       "image_path": "images/seq2/img1_seq2.jpg",
       "memory_update": {
-        "useful": false,
-        "summary": "",
-        "landmarks": [],
-        "hypotheses": []
+        "useful": true,
+        "summary": "Sign indicates Tower B (Noord toren) and Tower C (Zuid toren), suggesting building B is Tower B.",
+        "landmarks": [
+          {
+            "id": "L001",
+            "category": "sign",
+            "description": "Overhead sign indicating directions to Tower B (Noord toren) and Tower C (Zuid toren).",
+            "text": "Tower B Noord toren | Tower C Zuid toren",
+            "pose": {},
+            "status": "used",
+            "confidence": "low",
+            "evidence_score": 0.55,
+            "evidence_breakdown": {
+              "category_score": 0.7,
+              "confidence_bonus": 0.1,
+              "text_bonus": 0.1,
+              "target_relevance_bonus": 0.05,
+              "direction_bonus": 0.05,
+              "missing_text_penalty": 0.0,
+              "partial_marker_penalty": 0.35,
+              "irrelevant_sign_penalty": 0.1,
+              "final_score": 0.55
+            },
+            "image_path": "images/seq2/img1_seq2.jpg",
+            "extra": {
+              "direction": "left for Tower B, right for Tower C",
+              "target_relevance": "medium",
+              "floor": null,
+              "zone": null,
+              "source_image_index": 1,
+              "partial_goal_marker": true,
+              "full_target_match": false
+            }
+          }
+        ],
+        "hypotheses": [
+          "Tower B corresponds to building B, so the target room B0.004 is likely in Tower B."
+        ]
       },
       "verification": {
-        "target_visible": false,
+        "target_visible": true,
         "target_reached": false,
-        "matched_label": "",
-        "evidence_type": "none",
+        "matched_label": "B",
+        "evidence_type": "zone_marker",
         "confidence": "low",
-        "evidence_score": 0.15000000000000002,
+        "evidence_score": 0.09999999999999998,
         "evidence_breakdown": {
-          "evidence_type_score": 0.0,
-          "visual_bonus": 0.1,
+          "evidence_type_score": 0.25,
+          "visual_bonus": 0.0,
           "label_match_bonus": 0.0,
           "current_frame_bonus": 0.05,
-          "ambiguity_penalty": 0.0,
-          "final_score": 0.15000000000000002
+          "ambiguity_penalty": 0.2,
+          "final_score": 0.09999999999999998
         },
-        "reason": "The current image shows a coffee corner with directional signs for Tower B and Tower C, but no visible room label matching B0.004 or any of its aliases.",
-        "landmark_id": null,
+        "reason": "Current image shows only the building/tower/zone marker, not the target room label.",
+        "landmark_id": "L001",
         "raw": {
-          "target_visible": false,
-          "target_reached": false,
-          "matched_label": "",
-          "evidence_type": "none",
-          "confidence": "high",
-          "reason": "The current image shows a coffee corner with directional signs for Tower B and Tower C, but no visible room label matching B0.004 or any of its aliases.",
-          "landmark_id": null
+          "source": "current_memory_zone_marker",
+          "landmark": {
+            "id": "L001",
+            "category": "sign",
+            "description": "Overhead sign indicating directions to Tower B (Noord toren) and Tower C (Zuid toren).",
+            "text": "Tower B Noord toren | Tower C Zuid toren",
+            "pose": {},
+            "status": "unvisited",
+            "confidence": "low",
+            "evidence_score": 0.55,
+            "evidence_breakdown": {
+              "category_score": 0.7,
+              "confidence_bonus": 0.1,
+              "text_bonus": 0.1,
+              "target_relevance_bonus": 0.05,
+              "direction_bonus": 0.05,
+              "missing_text_penalty": 0.0,
+              "partial_marker_penalty": 0.35,
+              "irrelevant_sign_penalty": 0.1,
+              "final_score": 0.55
+            },
+            "image_path": "images/seq2/img1_seq2.jpg",
+            "extra": {
+              "direction": "left for Tower B, right for Tower C",
+              "target_relevance": "medium",
+              "floor": null,
+              "zone": null,
+              "source_image_index": 1,
+              "partial_goal_marker": true,
+              "full_target_match": false
+            }
+          }
         }
       },
       "action": {
-        "name": "READ_SIGN",
+        "name": "FOLLOW_DIRECTION",
         "params": {
-          "landmark_id": "sign_above_coffee_corner"
+          "direction": "left",
+          "landmark_id": "L001"
         },
-        "reason": "The sign above the coffee corner clearly indicates directions to Tower B (Noord toren) and Tower C (Zuid toren), which may help navigate toward the target room B0.004 if it is located in one of these towers.",
+        "reason": "The sign indicates Tower B (Noord toren) is to the left, and since the goal is in building B, following this direction will lead toward the target room.",
         "confidence": "low",
-        "evidence_score": 0.0,
+        "evidence_score": 0.48250000000000004,
         "evidence_breakdown": {
-          "invalid_action": 1.0,
-          "final_score": 0.0
+          "action_base_score": 0.65,
+          "supporting_landmark_score": 0.55,
+          "supporting_landmark_bonus": 0.0825,
+          "no_landmark_penalty": 0.0,
+          "partial_marker_penalty": 0.25,
+          "used_landmark_penalty": 0.0,
+          "invalid_penalty": 0.0,
+          "mismatched_room_code_penalty": 0.0,
+          "final_score": 0.48250000000000004
         },
         "goal_reached": false,
         "needs_verification": true,
         "raw": {
-          "action": "READ_SIGN",
+          "action": "FOLLOW_DIRECTION",
           "params": {
-            "landmark_id": "sign_above_coffee_corner"
+            "direction": "left",
+            "landmark_id": "L001"
           },
-          "reason": "The sign above the coffee corner clearly indicates directions to Tower B (Noord toren) and Tower C (Zuid toren), which may help navigate toward the target room B0.004 if it is located in one of these towers.",
+          "reason": "The sign indicates Tower B (Noord toren) is to the left, and since the goal is in building B, following this direction will lead toward the target room.",
           "confidence": "high",
           "goal_reached": false,
           "needs_verification": true
         },
-        "is_valid": false,
-        "invalid_reason": "Unknown landmark_id: sign_above_coffee_corner"
+        "is_valid": true,
+        "invalid_reason": ""
       },
       "executed": false
     },
@@ -114,15 +179,15 @@
       "image_path": "images/seq2/img2_seq2.jpg",
       "memory_update": {
         "useful": true,
-        "summary": "Door marked 'B' leads to target room B0.004.",
+        "summary": "Door with 'B' label leads to target room.",
         "landmarks": [
           {
-            "id": "L001",
+            "id": "L002",
             "category": "door",
-            "description": "Glass door with large white letter 'B' on it, located to the right of the seating area.",
+            "description": "Glass door with large white 'B' on it, leading to the target room.",
             "text": "B",
             "pose": {},
-            "status": "visited",
+            "status": "used",
             "confidence": "medium",
             "evidence_score": 0.7500000000000001,
             "evidence_breakdown": {
@@ -138,12 +203,12 @@
             },
             "image_path": "images/seq2/img2_seq2.jpg",
             "extra": {
-              "direction": "right",
+              "direction": "straight ahead",
               "room_range": null,
               "arrow": null,
               "target_relevance": "medium",
               "floor": "0",
-              "zone": null,
+              "zone": "B",
               "source_image_index": 2,
               "partial_goal_marker": true,
               "full_target_match": false
@@ -168,13 +233,13 @@
           "final_score": 0.14999999999999997
         },
         "reason": "Current image shows only the building/tower/zone marker, not the target room label.",
-        "landmark_id": "L001",
+        "landmark_id": "L002",
         "raw": {
           "source": "current_memory_zone_marker",
           "landmark": {
-            "id": "L001",
+            "id": "L002",
             "category": "door",
-            "description": "Glass door with large white letter 'B' on it, located to the right of the seating area.",
+            "description": "Glass door with large white 'B' on it, leading to the target room.",
             "text": "B",
             "pose": {},
             "status": "unvisited",
@@ -193,12 +258,12 @@
             },
             "image_path": "images/seq2/img2_seq2.jpg",
             "extra": {
-              "direction": "right",
+              "direction": "straight ahead",
               "room_range": null,
               "arrow": null,
               "target_relevance": "medium",
               "floor": "0",
-              "zone": null,
+              "zone": "B",
               "source_image_index": 2,
               "partial_goal_marker": true,
               "full_target_match": false
@@ -207,15 +272,15 @@
         }
       },
       "action": {
-        "name": "NAVIGATE_TO_LANDMARK",
+        "name": "CHECK_DOOR_LABEL",
         "params": {
-          "landmark_id": "L001"
+          "landmark_id": "L002"
         },
-        "reason": "The glass door marked 'B' is the most relevant landmark for reaching target B0.004, as it directly indicates the building/zone and is unvisited.",
-        "confidence": "low",
-        "evidence_score": 0.4625,
+        "reason": "The glass door with the 'B' label is the most direct visual cue to the target room B0.004, and checking it will confirm if it leads to the correct location.",
+        "confidence": "medium",
+        "evidence_score": 0.6125,
         "evidence_breakdown": {
-          "action_base_score": 0.6,
+          "action_base_score": 0.75,
           "supporting_landmark_score": 0.7500000000000001,
           "supporting_landmark_bonus": 0.11250000000000002,
           "no_landmark_penalty": 0.0,
@@ -223,16 +288,16 @@
           "used_landmark_penalty": 0.0,
           "invalid_penalty": 0.0,
           "mismatched_room_code_penalty": 0.0,
-          "final_score": 0.4625
+          "final_score": 0.6125
         },
         "goal_reached": false,
         "needs_verification": true,
         "raw": {
-          "action": "NAVIGATE_TO_LANDMARK",
+          "action": "CHECK_DOOR_LABEL",
           "params": {
-            "landmark_id": "L001"
+            "landmark_id": "L002"
           },
-          "reason": "The glass door marked 'B' is the most relevant landmark for reaching target B0.004, as it directly indicates the building/zone and is unvisited.",
+          "reason": "The glass door with the 'B' label is the most direct visual cue to the target room B0.004, and checking it will confirm if it leads to the correct location.",
           "confidence": "high",
           "goal_reached": false,
           "needs_verification": true
@@ -247,12 +312,12 @@
       "image_path": "images/seq2/img3_seq2.jpg",
       "memory_update": {
         "useful": true,
-        "summary": "Door marked 'B' leads to target room B0.004.",
+        "summary": "Glass door marked 'B' leads to building B, likely floor 0.",
         "landmarks": [
           {
-            "id": "L002",
+            "id": "L003",
             "category": "door",
-            "description": "Glass door with large white letter 'B' on it, located at the junction of the corridor and a glass-walled area.",
+            "description": "Glass door with large white letter 'B' on it, leading into the building.",
             "text": "B",
             "pose": {},
             "status": "unvisited",
@@ -284,134 +349,8 @@
           }
         ],
         "hypotheses": [
-          "The 'B' door is the entrance to room B0.004 as per the goal."
+          "The 'B' on the door indicates building B, and the target room B0.004 is likely within this building."
         ]
-      },
-      "verification": {
-        "target_visible": true,
-        "target_reached": false,
-        "matched_label": "B",
-        "evidence_type": "zone_marker",
-        "confidence": "low",
-        "evidence_score": 0.14999999999999997,
-        "evidence_breakdown": {
-          "evidence_type_score": 0.25,
-          "visual_bonus": 0.05,
-          "label_match_bonus": 0.0,
-          "current_frame_bonus": 0.05,
-          "ambiguity_penalty": 0.2,
-          "final_score": 0.14999999999999997
-        },
-        "reason": "Current image shows only the building/tower/zone marker, not the target room label.",
-        "landmark_id": "L002",
-        "raw": {
-          "source": "current_memory_zone_marker",
-          "landmark": {
-            "id": "L002",
-            "category": "door",
-            "description": "Glass door with large white letter 'B' on it, located at the junction of the corridor and a glass-walled area.",
-            "text": "B",
-            "pose": {},
-            "status": "unvisited",
-            "confidence": "medium",
-            "evidence_score": 0.7000000000000001,
-            "evidence_breakdown": {
-              "category_score": 0.8,
-              "confidence_bonus": 0.1,
-              "text_bonus": 0.1,
-              "target_relevance_bonus": 0.05,
-              "direction_bonus": 0.0,
-              "missing_text_penalty": 0.0,
-              "partial_marker_penalty": 0.35,
-              "irrelevant_sign_penalty": 0.0,
-              "final_score": 0.7000000000000001
-            },
-            "image_path": "images/seq2/img3_seq2.jpg",
-            "extra": {
-              "direction": null,
-              "room_range": null,
-              "arrow": null,
-              "target_relevance": "medium",
-              "floor": "0",
-              "zone": null,
-              "source_image_index": 3,
-              "partial_goal_marker": true,
-              "full_target_match": false
-            }
-          }
-        }
-      },
-      "action": {
-        "name": "CHECK_DOOR_LABEL",
-        "params": {
-          "landmark_id": "L001"
-        },
-        "reason": "The door marked 'B' is the most direct and relevant cue to the target room B0.004, and its label should be checked for confirmation.",
-        "confidence": "low",
-        "evidence_score": 0.0,
-        "evidence_breakdown": {
-          "invalid_action": 1.0,
-          "final_score": 0.0
-        },
-        "goal_reached": false,
-        "needs_verification": true,
-        "raw": {
-          "action": "CHECK_DOOR_LABEL",
-          "params": {
-            "landmark_id": "L001"
-          },
-          "reason": "The door marked 'B' is the most direct and relevant cue to the target room B0.004, and its label should be checked for confirmation.",
-          "confidence": "high",
-          "goal_reached": false,
-          "needs_verification": true
-        },
-        "is_valid": false,
-        "invalid_reason": "Landmark L001 was already visited; choose a newer cue."
-      },
-      "executed": false
-    },
-    {
-      "image_num": 4,
-      "image_path": "images/seq2/img4_seq2.jpg",
-      "memory_update": {
-        "useful": true,
-        "summary": "Door marked 'B' leads to room B0.004.",
-        "landmarks": [
-          {
-            "id": "L003",
-            "category": "door",
-            "description": "Glass door with large white letter 'B' on it, leading into the building.",
-            "text": "B",
-            "pose": {},
-            "status": "unvisited",
-            "confidence": "medium",
-            "evidence_score": 0.7000000000000001,
-            "evidence_breakdown": {
-              "category_score": 0.8,
-              "confidence_bonus": 0.1,
-              "text_bonus": 0.1,
-              "target_relevance_bonus": 0.05,
-              "direction_bonus": 0.0,
-              "missing_text_penalty": 0.0,
-              "partial_marker_penalty": 0.35,
-              "irrelevant_sign_penalty": 0.0,
-              "final_score": 0.7000000000000001
-            },
-            "image_path": "images/seq2/img4_seq2.jpg",
-            "extra": {
-              "direction": null,
-              "room_range": null,
-              "arrow": null,
-              "target_relevance": "medium",
-              "floor": "0",
-              "zone": null,
-              "source_image_index": 4,
-              "partial_goal_marker": true,
-              "full_target_match": false
-            }
-          }
-        ],
-        "hypotheses": []
       },
       "verification": {
         "target_visible": true,
@@ -452,7 +391,7 @@
               "irrelevant_sign_penalty": 0.0,
               "final_score": 0.7000000000000001
             },
-            "image_path": "images/seq2/img4_seq2.jpg",
+            "image_path": "images/seq2/img3_seq2.jpg",
             "extra": {
               "direction": null,
               "room_range": null,
@@ -460,7 +399,7 @@
               "target_relevance": "medium",
               "floor": "0",
               "zone": null,
-              "source_image_index": 4,
+              "source_image_index": 3,
               "partial_goal_marker": true,
               "full_target_match": false
             }
@@ -468,11 +407,11 @@
         }
       },
       "action": {
-        "name": "CHECK_DOOR_LABEL",
+        "name": "NAVIGATE_TO_LANDMARK",
         "params": {
-          "landmark_id": "L001"
+          "landmark_id": "L002"
         },
-        "reason": "The door marked 'B' is the most direct and relevant cue to the target room B0.004, and it is already known to be located at the junction of the corridor and a glass-walled area.",
+        "reason": "The glass door with 'B' label is the most direct and confirmed cue to the target room B0.004, as it matches the building identifier and is a strong navigation landmark.",
         "confidence": "low",
         "evidence_score": 0.0,
         "evidence_breakdown": {
@@ -482,17 +421,158 @@
         "goal_reached": false,
         "needs_verification": true,
         "raw": {
-          "action": "CHECK_DOOR_LABEL",
+          "action": "NAVIGATE_TO_LANDMARK",
           "params": {
-            "landmark_id": "L001"
+            "landmark_id": "L002"
           },
-          "reason": "The door marked 'B' is the most direct and relevant cue to the target room B0.004, and it is already known to be located at the junction of the corridor and a glass-walled area.",
+          "reason": "The glass door with 'B' label is the most direct and confirmed cue to the target room B0.004, as it matches the building identifier and is a strong navigation landmark.",
           "confidence": "high",
           "goal_reached": false,
           "needs_verification": true
         },
         "is_valid": false,
-        "invalid_reason": "Landmark L001 was already visited; choose a newer cue."
+        "invalid_reason": "Landmark L002 was already used; choose a newer cue."
+      },
+      "executed": false
+    },
+    {
+      "image_num": 4,
+      "image_path": "images/seq2/img4_seq2.jpg",
+      "memory_update": {
+        "useful": true,
+        "summary": "Door marked 'B' leads to building B, likely the target building.",
+        "landmarks": [
+          {
+            "id": "L004",
+            "category": "door",
+            "description": "Glass door with large white letter 'B' on it, indicating building B.",
+            "text": "B",
+            "pose": {},
+            "status": "unvisited",
+            "confidence": "medium",
+            "evidence_score": 0.7000000000000001,
+            "evidence_breakdown": {
+              "category_score": 0.8,
+              "confidence_bonus": 0.1,
+              "text_bonus": 0.1,
+              "target_relevance_bonus": 0.05,
+              "direction_bonus": 0.0,
+              "missing_text_penalty": 0.0,
+              "partial_marker_penalty": 0.35,
+              "irrelevant_sign_penalty": 0.0,
+              "final_score": 0.7000000000000001
+            },
+            "image_path": "images/seq2/img4_seq2.jpg",
+            "extra": {
+              "direction": null,
+              "room_range": null,
+              "arrow": null,
+              "target_relevance": "medium",
+              "floor": null,
+              "zone": null,
+              "source_image_index": 4,
+              "partial_goal_marker": true,
+              "full_target_match": false
+            }
+          }
+        ],
+        "hypotheses": []
+      },
+      "verification": {
+        "target_visible": true,
+        "target_reached": false,
+        "matched_label": "B",
+        "evidence_type": "zone_marker",
+        "confidence": "low",
+        "evidence_score": 0.14999999999999997,
+        "evidence_breakdown": {
+          "evidence_type_score": 0.25,
+          "visual_bonus": 0.05,
+          "label_match_bonus": 0.0,
+          "current_frame_bonus": 0.05,
+          "ambiguity_penalty": 0.2,
+          "final_score": 0.14999999999999997
+        },
+        "reason": "Current image shows only the building/tower/zone marker, not the target room label.",
+        "landmark_id": "L004",
+        "raw": {
+          "source": "current_memory_zone_marker",
+          "landmark": {
+            "id": "L004",
+            "category": "door",
+            "description": "Glass door with large white letter 'B' on it, indicating building B.",
+            "text": "B",
+            "pose": {},
+            "status": "unvisited",
+            "confidence": "medium",
+            "evidence_score": 0.7000000000000001,
+            "evidence_breakdown": {
+              "category_score": 0.8,
+              "confidence_bonus": 0.1,
+              "text_bonus": 0.1,
+              "target_relevance_bonus": 0.05,
+              "direction_bonus": 0.0,
+              "missing_text_penalty": 0.0,
+              "partial_marker_penalty": 0.35,
+              "irrelevant_sign_penalty": 0.0,
+              "final_score": 0.7000000000000001
+            },
+            "image_path": "images/seq2/img4_seq2.jpg",
+            "extra": {
+              "direction": null,
+              "room_range": null,
+              "arrow": null,
+              "target_relevance": "medium",
+              "floor": null,
+              "zone": null,
+              "source_image_index": 4,
+              "partial_goal_marker": true,
+              "full_target_match": false
+            }
+          }
+        }
+      },
+      "action": {
+        "name": "NAVIGATE_TO_FRONTIER",
+        "params": {
+          "landmark_id": null,
+          "direction": null,
+          "target": null,
+          "floor": null,
+          "search_for": "door with 'B' label"
+        },
+        "reason": "The current view shows a glass door marked 'B' which is likely the entrance to building B, and since the goal is Room B0.004, I should move toward this door to enter the building and search for the specific room.",
+        "confidence": "low",
+        "evidence_score": 0.4,
+        "evidence_breakdown": {
+          "action_base_score": 0.4,
+          "supporting_landmark_score": 0.0,
+          "supporting_landmark_bonus": 0.0,
+          "no_landmark_penalty": 0.0,
+          "partial_marker_penalty": 0.0,
+          "used_landmark_penalty": 0.0,
+          "invalid_penalty": 0.0,
+          "mismatched_room_code_penalty": 0.0,
+          "final_score": 0.4
+        },
+        "goal_reached": false,
+        "needs_verification": true,
+        "raw": {
+          "action": "NAVIGATE_TO_FRONTIER",
+          "params": {
+            "landmark_id": null,
+            "direction": null,
+            "target": null,
+            "floor": null,
+            "search_for": "door with 'B' label"
+          },
+          "reason": "The current view shows a glass door marked 'B' which is likely the entrance to building B, and since the goal is Room B0.004, I should move toward this door to enter the building and search for the specific room.",
+          "confidence": "high",
+          "goal_reached": false,
+          "needs_verification": true
+        },
+        "is_valid": true,
+        "invalid_reason": ""
       },
       "executed": false
     },
@@ -501,13 +581,13 @@
       "image_path": "images/seq2/img5_seq2.jpg",
       "memory_update": {
         "useful": true,
-        "summary": "Directional sign indicates B0.004 is accessible via stairs and elevator.",
+        "summary": "Directional sign indicates B0.001, B0.002, and B0.005-B0.014 are nearby.",
         "landmarks": [
           {
-            "id": "L004",
+            "id": "L005",
             "category": "sign",
-            "description": "Small black sign with directional arrows and room numbers below the 'MSP Alumni Community' display.",
-            "text": "→ 🚶‍♂️ 🚶‍♀️ B0.001\n→ 🚶‍♂️ 🚶‍♀️ B0.002\n↑ B0.005 - B0.014",
+            "description": "A small digital sign below the 'MSP Alumni Community' map showing room directions and numbers.",
+            "text": "→ B0.001\n→ B0.002\n↑ B0.005 - B0.014",
             "pose": {},
             "status": "used",
             "confidence": "high",
@@ -525,44 +605,44 @@
             },
             "image_path": "images/seq2/img5_seq2.jpg",
             "extra": {
-              "direction": "up",
+              "direction": "→ (right) for B0.001, → (right) for B0.002, ↑ (up) for B0.005-B0.014",
               "room_range": "B0.005 - B0.014",
-              "arrow": "↑",
+              "arrow": "→, ↑",
               "target_relevance": "high",
-              "floor": "B0",
+              "floor": "0",
               "zone": null,
               "source_image_index": 5
             }
           }
         ],
         "hypotheses": [
-          "Room B0.004 is likely located near the directional sign, possibly on the same floor as B0.005-B0.014."
+          "Room B0.004 is likely in the same range as B0.005-B0.014, possibly nearby or in the same corridor."
         ]
       },
       "verification": {
         "target_visible": true,
         "target_reached": false,
         "matched_label": "",
-        "evidence_type": "room_range",
+        "evidence_type": "directory",
         "confidence": "medium",
-        "evidence_score": 0.65,
+        "evidence_score": 0.7000000000000001,
         "evidence_breakdown": {
-          "evidence_type_score": 0.5,
+          "evidence_type_score": 0.55,
           "visual_bonus": 0.1,
           "label_match_bonus": 0.0,
           "current_frame_bonus": 0.05,
           "ambiguity_penalty": 0.0,
-          "final_score": 0.65
+          "final_score": 0.7000000000000001
         },
         "reason": "Current image contains target-relevant navigation evidence, but not the actual target door/entrance.",
-        "landmark_id": "L004",
+        "landmark_id": "L005",
         "raw": {
           "source": "current_memory_relevant_non_stop",
           "landmark": {
-            "id": "L004",
+            "id": "L005",
             "category": "sign",
-            "description": "Small black sign with directional arrows and room numbers below the 'MSP Alumni Community' display.",
-            "text": "→ 🚶‍♂️ 🚶‍♀️ B0.001\n→ 🚶‍♂️ 🚶‍♀️ B0.002\n↑ B0.005 - B0.014",
+            "description": "A small digital sign below the 'MSP Alumni Community' map showing room directions and numbers.",
+            "text": "→ B0.001\n→ B0.002\n↑ B0.005 - B0.014",
             "pose": {},
             "status": "unvisited",
             "confidence": "high",
@@ -580,11 +660,11 @@
             },
             "image_path": "images/seq2/img5_seq2.jpg",
             "extra": {
-              "direction": "up",
+              "direction": "→ (right) for B0.001, → (right) for B0.002, ↑ (up) for B0.005-B0.014",
               "room_range": "B0.005 - B0.014",
-              "arrow": "↑",
+              "arrow": "→, ↑",
               "target_relevance": "high",
-              "floor": "B0",
+              "floor": "0",
               "zone": null,
               "source_image_index": 5
             }
@@ -592,15 +672,16 @@
         }
       },
       "action": {
-        "name": "READ_SIGN",
+        "name": "FOLLOW_DIRECTION",
         "params": {
-          "landmark_id": "L004"
+          "landmark_id": "L005",
+          "direction": "→ (right) for B0.001, → (right) for B0.002, ↑ (up) for B0.005-B0.014"
         },
-        "reason": "The directional sign (L004) explicitly lists B0.005-B0.014 as accessible via stairs/elevator and indicates B0.004 is likely nearby, making it the most relevant cue for navigation.",
+        "reason": "The digital sign (L005) indicates that B0.001 and B0.002 are to the right, and B0.005-B0.014 are up. Since B0.004 is likely in the same range as B0.005-B0.014, moving right or up is the most logical next step.",
         "confidence": "medium",
-        "evidence_score": 0.7,
+        "evidence_score": 0.65,
         "evidence_breakdown": {
-          "action_base_score": 0.7,
+          "action_base_score": 0.65,
           "supporting_landmark_score": 1.0,
           "supporting_landmark_bonus": 0.15,
           "no_landmark_penalty": 0.0,
@@ -608,16 +689,17 @@
           "used_landmark_penalty": 0.0,
           "invalid_penalty": 0.0,
           "mismatched_room_code_penalty": 0.15,
-          "final_score": 0.7
+          "final_score": 0.65
         },
         "goal_reached": false,
         "needs_verification": true,
         "raw": {
-          "action": "READ_SIGN",
+          "action": "FOLLOW_DIRECTION",
           "params": {
-            "landmark_id": "L004"
+            "landmark_id": "L005",
+            "direction": "→ (right) for B0.001, → (right) for B0.002, ↑ (up) for B0.005-B0.014"
           },
-          "reason": "The directional sign (L004) explicitly lists B0.005-B0.014 as accessible via stairs/elevator and indicates B0.004 is likely nearby, making it the most relevant cue for navigation.",
+          "reason": "The digital sign (L005) indicates that B0.001 and B0.002 are to the right, and B0.005-B0.014 are up. Since B0.004 is likely in the same range as B0.005-B0.014, moving right or up is the most logical next step.",
           "confidence": "high",
           "goal_reached": false,
           "needs_verification": true
@@ -651,7 +733,7 @@
           "ambiguity_penalty": 0.0,
           "final_score": 0.15000000000000002
         },
-        "reason": "No visible door, room plate, or label matching any of the aliases for B0.004 is present in the current image.",
+        "reason": "No visible door, room plate, or label matching 'B0.004' or any of its aliases is present in the current image.",
         "landmark_id": null,
         "raw": {
           "target_visible": false,
@@ -659,38 +741,40 @@
           "matched_label": "",
           "evidence_type": "none",
           "confidence": "high",
-          "reason": "No visible door, room plate, or label matching any of the aliases for B0.004 is present in the current image.",
+          "reason": "No visible door, room plate, or label matching 'B0.004' or any of its aliases is present in the current image.",
           "landmark_id": null
         }
       },
       "action": {
-        "name": "SEARCH_FOR_CUE",
+        "name": "FOLLOW_DIRECTION",
         "params": {
-          "search_for": "door label or sign with room number B0.004"
+          "landmark_id": "L005",
+          "direction": "→ (right) for B0.001, → (right) for B0.002, ↑ (up) for B0.005-B0.014"
         },
-        "reason": "No visible sign or door label confirms room B0.004; need to search for a direct cue.",
+        "reason": "The sign L005 indicates that B0.004 is likely in the same range as B0.005-B0.014, which are marked as being in the direction of '↑ (up)', suggesting the target room is likely ahead or in an upper area.",
         "confidence": "low",
         "evidence_score": 0.35,
         "evidence_breakdown": {
-          "action_base_score": 0.35,
-          "supporting_landmark_score": 0.0,
-          "supporting_landmark_bonus": 0.0,
+          "action_base_score": 0.65,
+          "supporting_landmark_score": 1.0,
+          "supporting_landmark_bonus": 0.15,
           "no_landmark_penalty": 0.0,
           "partial_marker_penalty": 0.0,
-          "used_landmark_penalty": 0.0,
+          "used_landmark_penalty": 0.3,
           "invalid_penalty": 0.0,
-          "mismatched_room_code_penalty": 0.0,
+          "mismatched_room_code_penalty": 0.15,
           "final_score": 0.35
         },
         "goal_reached": false,
         "needs_verification": true,
         "raw": {
-          "action": "SEARCH_FOR_CUE",
+          "action": "FOLLOW_DIRECTION",
           "params": {
-            "search_for": "door label or sign with room number B0.004"
+            "landmark_id": "L005",
+            "direction": "→ (right) for B0.001, → (right) for B0.002, ↑ (up) for B0.005-B0.014"
           },
-          "reason": "No visible sign or door label confirms room B0.004; need to search for a direct cue.",
-          "confidence": "medium",
+          "reason": "The sign L005 indicates that B0.004 is likely in the same range as B0.005-B0.014, which are marked as being in the direction of '↑ (up)', suggesting the target room is likely ahead or in an upper area.",
+          "confidence": "high",
           "goal_reached": false,
           "needs_verification": true
         },
@@ -704,12 +788,12 @@
       "image_path": "images/seq2/img7_seq2.jpg",
       "memory_update": {
         "useful": true,
-        "summary": "Door on right has label 'B0.004'",
+        "summary": "White double doors with room label B0.004 visible.",
         "landmarks": [
           {
-            "id": "L005",
+            "id": "L006",
             "category": "door",
-            "description": "White door on the right side of the image with a small label above the handle",
+            "description": "White double doors on the right side of the image, with a small sign above the right door showing 'B0.004'.",
             "text": "B0.004",
             "pose": {},
             "status": "used",
@@ -756,13 +840,13 @@
           "final_score": 1.0
         },
         "reason": "Target verified in current image: door label 'B0.004' matches the goal.",
-        "landmark_id": "L005",
+        "landmark_id": "L006",
         "raw": {
           "source": "current_memory",
           "landmark": {
-            "id": "L005",
+            "id": "L006",
             "category": "door",
-            "description": "White door on the right side of the image with a small label above the handle",
+            "description": "White double doors on the right side of the image, with a small sign above the right door showing 'B0.004'.",
             "text": "B0.004",
             "pose": {},
             "status": "unvisited",
@@ -795,7 +879,7 @@
       "action": {
         "name": "STOP_AND_VERIFY",
         "params": {
-          "landmark_id": "L005",
+          "landmark_id": "L006",
           "target": "B0.004",
           "evidence_type": "target_door_label"
         },
@@ -829,13 +913,13 @@
               "final_score": 1.0
             },
             "reason": "Target verified in current image: door label 'B0.004' matches the goal.",
-            "landmark_id": "L005",
+            "landmark_id": "L006",
             "raw": {
               "source": "current_memory",
               "landmark": {
-                "id": "L005",
+                "id": "L006",
                 "category": "door",
-                "description": "White door on the right side of the image with a small label above the handle",
+                "description": "White double doors on the right side of the image, with a small sign above the right door showing 'B0.004'.",
                 "text": "B0.004",
                 "pose": {},
                 "status": "unvisited",
