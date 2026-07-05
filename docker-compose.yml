@@ -1,18 +1,30 @@
 services:
   llm:
-    image: qwen3vl-llama-runtime:cpu
+    image: qwen3vl-llama-runtime:rocm
     build:
       context: .
       dockerfile: Dockerfile.llama-runtime
     container_name: qwen3vl-llm
     restart: unless-stopped
 
+    devices:
+      - /dev/kfd:/dev/kfd
+      - /dev/dri:/dev/dri
+
+    group_add:
+      - video
+      - render
+
+    environment:
+      - HSA_OVERRIDE_GFX_VERSION=11.5.1
+
     volumes:
+      - ${LLAMA_ROCM_DIR:?set LLAMA_ROCM_DIR in .env}:/opt/llama:ro
       - ${MODELS_DIR:-./models}:/models:ro
       - llama-cache:/cache
 
     ports:
-      - "${LLM_HOST_PORT:-8081}:8080"
+      - "${LLM_HOST_PORT:-8082}:8080"
 
     healthcheck:
       test:
@@ -21,10 +33,10 @@ services:
       interval: 30s
       timeout: 5s
       retries: 30
-      start_period: 10m
+      start_period: 5m
 
     command:
-      - /opt/llama.cpp/build/bin/llama-server
+      - /opt/llama/llama-server
       - --host
       - 0.0.0.0
       - --port
@@ -38,15 +50,19 @@ services:
       - --ctx-size
       - "${LLAMA_CTX_SIZE:-8192}"
       - --n-gpu-layers
-      - "${LLAMA_N_GPU_LAYERS:-0}"
+      - "${LLAMA_N_GPU_LAYERS:-99}"
       - --threads
       - "${LLAMA_THREADS:-8}"
       - --parallel
       - "${LLAMA_PARALLEL:-1}"
+      - --flash-attn
+      - "on"
       - --cache-type-k
       - q8_0
       - --cache-type-v
       - q8_0
+      - --image-min-tokens
+      - "1024"
 
   navigation_pipeline:
     image: vlm-navigation-pipeline:0.1.0
