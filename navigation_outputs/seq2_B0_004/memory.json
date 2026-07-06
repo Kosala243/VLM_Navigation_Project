@@ -4,7 +4,7 @@
     {
       "id": "L001",
       "category": "sign",
-      "description": "Overhead sign indicating directions to Tower B (Noord toren) and Tower C (Zuid toren).",
+      "description": "Overhead directional sign indicating Tower B (Noord toren) to the left and Tower C (Zuid toren) to the right.",
       "text": "Tower B Noord toren | Tower C Zuid toren",
       "pose": {},
       "status": "used",
@@ -24,6 +24,8 @@
       "image_path": "images/seq2/img1_seq2.jpg",
       "extra": {
         "direction": "left for Tower B, right for Tower C",
+        "room_range": null,
+        "arrow": "left arrow for Tower B, right arrow for Tower C",
         "target_relevance": "medium",
         "floor": null,
         "zone": null,
@@ -35,31 +37,31 @@
     {
       "id": "L002",
       "category": "door",
-      "description": "Glass door with large white 'B' on it, leading to the target room.",
+      "description": "Glass door with large white 'B' on it, leading to building B.",
       "text": "B",
       "pose": {},
-      "status": "used",
+      "status": "unvisited",
       "confidence": "medium",
-      "evidence_score": 0.7500000000000001,
+      "evidence_score": 0.7000000000000001,
       "evidence_breakdown": {
         "category_score": 0.8,
         "confidence_bonus": 0.1,
         "text_bonus": 0.1,
         "target_relevance_bonus": 0.05,
-        "direction_bonus": 0.05,
+        "direction_bonus": 0.0,
         "missing_text_penalty": 0.0,
         "partial_marker_penalty": 0.35,
         "irrelevant_sign_penalty": 0.0,
-        "final_score": 0.7500000000000001
+        "final_score": 0.7000000000000001
       },
       "image_path": "images/seq2/img2_seq2.jpg",
       "extra": {
-        "direction": "straight ahead",
+        "direction": null,
         "room_range": null,
         "arrow": null,
         "target_relevance": "medium",
-        "floor": "0",
-        "zone": "B",
+        "floor": null,
+        "zone": null,
         "source_image_index": 2,
         "partial_goal_marker": true,
         "full_target_match": false
@@ -68,7 +70,7 @@
     {
       "id": "L003",
       "category": "door",
-      "description": "Glass door with large white letter 'B' on it, leading into the building.",
+      "description": "Glass door with large white letter 'B' on it, leading into building B.",
       "text": "B",
       "pose": {},
       "status": "unvisited",
@@ -92,7 +94,7 @@
         "arrow": null,
         "target_relevance": "medium",
         "floor": "0",
-        "zone": null,
+        "zone": "B",
         "source_image_index": 3,
         "partial_goal_marker": true,
         "full_target_match": false
@@ -101,7 +103,7 @@
     {
       "id": "L004",
       "category": "door",
-      "description": "Glass door with large white letter 'B' on it, indicating building B.",
+      "description": "Glass door with large white letter 'B' on it, indicating entrance to building B.",
       "text": "B",
       "pose": {},
       "status": "unvisited",
@@ -134,7 +136,7 @@
     {
       "id": "L005",
       "category": "sign",
-      "description": "A small digital sign below the 'MSP Alumni Community' map showing room directions and numbers.",
+      "description": "Digital sign with directional arrows and room numbers below the display cases.",
       "text": "→ B0.001\n→ B0.002\n↑ B0.005 - B0.014",
       "pose": {},
       "status": "used",
@@ -153,9 +155,9 @@
       },
       "image_path": "images/seq2/img5_seq2.jpg",
       "extra": {
-        "direction": "→ (right) for B0.001, → (right) for B0.002, ↑ (up) for B0.005-B0.014",
+        "direction": "→ (right)",
         "room_range": "B0.005 - B0.014",
-        "arrow": "→, ↑",
+        "arrow": "→",
         "target_relevance": "high",
         "floor": "0",
         "zone": null,
@@ -165,7 +167,7 @@
     {
       "id": "L006",
       "category": "door",
-      "description": "White double doors on the right side of the image, with a small sign above the right door showing 'B0.004'.",
+      "description": "White door with a small white label showing 'B0.004' and a fire safety symbol.",
       "text": "B0.004",
       "pose": {},
       "status": "used",
@@ -195,21 +197,19 @@
     }
   ],
   "observation_summaries": [
-    "Image 1: Sign indicates Tower B (Noord toren) and Tower C (Zuid toren), suggesting building B is Tower B.",
-    "Image 2: Door with 'B' label leads to target room.",
+    "Image 1: Sign indicates Tower B (Noord toren) and Tower C (Zuid toren) directions.",
+    "Image 2: Glass door with 'B' label confirms building B access.",
     "Image 3: Glass door marked 'B' leads to building B, likely floor 0.",
-    "Image 4: Door marked 'B' leads to building B, likely the target building.",
-    "Image 5: Directional sign indicates B0.001, B0.002, and B0.005-B0.014 are nearby.",
-    "Image 7: White double doors with room label B0.004 visible."
+    "Image 4: Door marked 'B' confirms building B entrance.",
+    "Image 5: Directional sign indicates B0.004 is in the direction of the stairs and accessible via B0.001, B0.002, and B0.005-B0.014.",
+    "Image 7: White door with room label B0.004 visible."
   ],
   "hypotheses": [
-    "Tower B corresponds to building B, so the target room B0.004 is likely in Tower B.",
-    "The 'B' on the door indicates building B, and the target room B0.004 is likely within this building.",
-    "Room B0.004 is likely in the same range as B0.005-B0.014, possibly nearby or in the same corridor."
+    "The 'B' on the door confirms the robot is in building B, aligning with the goal's building constraint.",
+    "The 'B' door is the entrance to building B, likely floor 0, and B0.004 is within this building.",
+    "B0.004 is likely in the same corridor as B0.001, B0.002, and B0.005-B0.014, possibly near the stairs."
   ],
-  "failed_actions": [
-    "Landmark L002 was already used; choose a newer cue."
-  ],
+  "failed_actions": [],
   "limits": {
     "max_landmarks": 120,
     "max_summaries": 80,
