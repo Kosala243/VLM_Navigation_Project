@@ -8,6 +8,7 @@ import sys
 import tarfile
 import time
 from pathlib import Path
+from robot_executor import SafeCmdVelExecutor
 
 
 def run(cmd, check=True):
@@ -126,19 +127,19 @@ def capture_three_cameras(args, local_step_dir):
     )
 
     remote_cmd = """
-set -e
-rm -f /tmp/vlm_front.jpg /tmp/vlm_left.jpg /tmp/vlm_right.jpg /tmp/vlm_three_cameras.tar
-{cmd_front}
-{cmd_left}
-{cmd_right}
-tar -cf {remote_tar} -C /tmp vlm_front.jpg vlm_left.jpg vlm_right.jpg
-ls -lh /tmp/vlm_front.jpg /tmp/vlm_left.jpg /tmp/vlm_right.jpg /tmp/vlm_three_cameras.tar
-""".format(
-        cmd_front=cmd_front,
-        cmd_left=cmd_left,
-        cmd_right=cmd_right,
-        remote_tar=shlex.quote(remote_tar),
-    )
+    set -e
+    rm -f /tmp/vlm_front.jpg /tmp/vlm_left.jpg /tmp/vlm_right.jpg /tmp/vlm_three_cameras.tar
+    {cmd_front}
+    {cmd_left}
+    {cmd_right}
+    tar -cf {remote_tar} -C /tmp vlm_front.jpg vlm_left.jpg vlm_right.jpg
+    ls -lh /tmp/vlm_front.jpg /tmp/vlm_left.jpg /tmp/vlm_right.jpg /tmp/vlm_three_cameras.tar
+    """.format(
+            cmd_front=cmd_front,
+            cmd_left=cmd_left,
+            cmd_right=cmd_right,
+            remote_tar=shlex.quote(remote_tar),
+        )
 
     ssh_run(args.robot_user, args.robot_ip, remote_cmd)
 
@@ -332,6 +333,28 @@ def print_action_result(response):
     print("Saved:", response.get("saved_result"))
     print("===================================\n")
 
+def maybe_execute_robot_action(args, response):
+    """
+    Optionally execute the VLM action using /cmd_vel.
+
+    --execute false   = no movement
+    --execute confirm = ask before movement
+    --execute true    = move directly
+    """
+    if args.execute == "false":
+        print("[EXECUTE] Dry run only. Robot will not move.")
+        return False
+
+    executor = SafeCmdVelExecutor(
+        topic=args.cmd_vel_topic,
+        forward_speed=args.forward_speed,
+        turn_speed=args.turn_speed,
+        duration=args.move_duration,
+        invert_turn=args.invert_turn,
+        execute_mode=args.execute,
+    )
+
+    return executor.execute_action_response(response)
 
 def run_single_step(args):
     image_path = get_observation_image(args, step_index=None)
@@ -344,6 +367,7 @@ def run_single_step(args):
     )
 
     print_action_result(response)
+    maybe_execute_robot_action(args, response)
 
 
 def run_auto_mode(args):
@@ -362,6 +386,7 @@ def run_auto_mode(args):
         )
 
         print_action_result(response)
+        maybe_execute_robot_action(args, response)
 
         if response.get("done") is True:
             print("[DONE] Goal reached according to pipeline.")
@@ -449,6 +474,46 @@ def parse_args():
 
     parser.add_argument("--interval", type=float, default=5.0)
     parser.add_argument("--max-steps", type=int, default=10)
+
+    parser.add_argument(
+        "--execute",
+        choices=["false", "confirm", "true"],
+        default="false",
+        help="false=no movement, confirm=ask before movement, true=execute movement directly",
+    )
+
+    parser.add_argument(
+        "--cmd-vel-topic",
+        default="/cmd_vel",
+        help="ROS cmd_vel topic used for robot movement",
+    )
+
+    parser.add_argument(
+        "--forward-speed",
+        type=float,
+        default=0.05,
+        help="Safe forward speed for tiny movement step",
+    )
+
+    parser.add_argument(
+        "--turn-speed",
+        type=float,
+        default=0.20,
+        help="Safe angular speed for tiny turn step",
+    )
+
+    parser.add_argument(
+        "--move-duration",
+        type=float,
+        default=1.0,
+        help="Duration in seconds for each tiny movement",
+    )
+
+    parser.add_argument(
+        "--invert-turn",
+        action="store_true",
+        help="Use this if left/right turning direction is reversed",
+    )
 
     return parser.parse_args()
 
