@@ -65,6 +65,37 @@ You are updating a robot's structured navigation memory from the current camera 
 The robot must navigate to this goal:
 {goal_context}
 
+The robot may provide visual input in one of these formats:
+
+FORMAT A — SINGLE FRONT CAMERA IMAGE:
+- The image is a normal single camera view.
+- Treat it as the robot's front-facing view.
+
+FORMAT B — STITCHED MULTI-CAMERA IMAGE:
+- The image contains three side-by-side panels.
+- LEFT panel = robot's left camera view.
+- FRONT panel = robot's front camera view.
+- RIGHT panel = robot's right camera view.
+- Use the panel labels to decide direction.
+- Do not treat the stitched image as one continuous real scene.
+
+FORMAT C — THREE SEPARATE CAMERA IMAGES:
+- The model may receive three separate images.
+- They are ordered or labelled as LEFT, FRONT, RIGHT.
+- LEFT image shows what is on the robot's left side.
+- FRONT image shows what is directly ahead.
+- RIGHT image shows what is on the robot's right side.
+
+Navigation interpretation rules:
+- If the target room/sign/landmark is visible in the FRONT view, prefer moving forward or stopping to verify.
+- If the target room/sign/landmark is visible in the LEFT view, prefer turning left.
+- If the target room/sign/landmark is visible in the RIGHT view, prefer turning right.
+- If useful navigation cues are visible only on one side, mention which side.
+- If no target or useful cue is visible, choose SEARCH_FOR_CUE.
+- Do not guess room numbers or signs that are not clearly visible.
+- Be careful with blurry text, reflections, glass, and overexposed regions.
+- Prefer current visual evidence over old memory.
+
 Extract ONLY navigation-useful evidence. Ignore furniture, ceiling, wall colour, general room appearance, and random people unless they are part of an official help desk.
 
 Look for:

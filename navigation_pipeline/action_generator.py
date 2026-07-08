@@ -73,6 +73,12 @@ Structured memory:
 
 Current image: provided separately.
 
+Visual input note:
+- The current image may be a normal single front-camera image, a stitched LEFT/FRONT/RIGHT image, or three separate LEFT/FRONT/RIGHT images.
+- If stitched, treat the panels as separate camera views, not one continuous scene.
+- Use LEFT evidence for left-side actions, FRONT evidence for forward/stop/check actions, and RIGHT evidence for right-side actions.
+- If choosing a direction, include the evidence view in params as "evidence_view": "LEFT | FRONT | RIGHT | NONE".
+
 Available actions:
 {action_list}
 
@@ -89,6 +95,14 @@ Decision rules:
 - Do not repeatedly read/check a landmark whose status is already "used" or "visited"; choose a newer cue, frontier, or search action instead.
 - Treat building/zone-only markers such as "B" for goal "B0.004" as navigation cues, not strong target evidence.
 - FOLLOW_DIRECTION must include landmark_id of the sign/directory/reception/stairs/elevator evidence that supports the direction.
+- For debugging and evaluation, every action must report where the strongest current visual evidence came from.
+- Include "evidence_view" inside params.
+- evidence_view must be one of: "LEFT", "FRONT", "RIGHT", "STITCHED_UNKNOWN", or "NONE".
+- Use "LEFT" if the strongest cue is in the left camera/panel.
+- Use "FRONT" if the strongest cue is in the front camera/panel.
+- Use "RIGHT" if the strongest cue is in the right camera/panel.
+- Use "STITCHED_UNKNOWN" if the image is stitched but the panel/source is unclear.
+- Use "NONE" if no useful visual cue is visible.
 
 Return ONLY valid JSON:
 {
@@ -99,6 +113,7 @@ Return ONLY valid JSON:
     "target": null,
     "floor": null,
     "search_for": null
+    "evidence_view": "LEFT | FRONT | RIGHT | STITCHED_UNKNOWN | NONE"
   },
   "reason": "one sentence",
   "confidence": "high | medium | low",

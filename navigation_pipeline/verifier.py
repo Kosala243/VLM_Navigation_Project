@@ -82,6 +82,12 @@ class TargetVerifier:
 
     Current image: provided separately.
 
+    Visual input note:
+    - The current image may be a normal single front-camera image, a stitched LEFT/FRONT/RIGHT image, or three separate LEFT/FRONT/RIGHT images.
+    - If stitched, treat the panels as separate camera views, not one continuous scene.
+    - Verify target_reached=true only when the actual target door/entrance/room label is clearly visible in the current visual input.
+    - If the target appears only in LEFT or RIGHT view, target_visible may be true, but target_reached should be false unless the robot is actually facing/reached the target entrance.
+
     Strict verification rules:
     - target_reached=true ONLY if the actual target door, room plate, entrance, office label, suite label, gate label, or target facility entrance is visible/readable in the CURRENT image.
     - For room-code goals such as B0.004 or C0.008, a single large building/tower/zone letter such as "B" or "C" is NOT the target room. It is only a navigation cue.
