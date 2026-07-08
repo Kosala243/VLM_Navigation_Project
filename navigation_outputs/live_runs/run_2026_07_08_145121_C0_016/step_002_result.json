@@ -1,0 +1,126 @@
+{
+  "run_settings": {
+    "started_at": "2026-07-08T14:51:21",
+    "goal": "C0.016",
+    "mode": "auto",
+    "camera_mode": "stitched",
+    "api": "http://ernis-amd395:8001",
+    "robot_user": "unitree",
+    "robot_ip": "192.168.123.14",
+    "camera_device": "/dev/video3",
+    "front_device": "/dev/video2",
+    "left_device": "/dev/video4",
+    "right_device": "/dev/video3",
+    "capture_size": "960x720",
+    "execute": "confirm",
+    "cmd_vel_topic": "/cmd_vel",
+    "forward_speed": 0.05,
+    "turn_speed": 0.2,
+    "move_duration": 1.0,
+    "invert_turn": false,
+    "memory": "true",
+    "interval": 5.0,
+    "max_steps": 10,
+    "stitch_width": 640,
+    "stitch_height": 480,
+    "min_evidence_score": 0.3,
+    "allow_low_confidence": false
+  },
+  "step": 2,
+  "timestamp": "2026-07-08T14:52:54",
+  "camera_mode": "stitched",
+  "primary_path": "robot_live_frames/step_0002/stitched_left_front_right.jpg",
+  "saved_files": {
+    "left": "robot_live_frames/step_0002/left.jpg",
+    "front": "robot_live_frames/step_0002/front.jpg",
+    "right": "robot_live_frames/step_0002/right.jpg",
+    "stitched": "robot_live_frames/step_0002/stitched_left_front_right.jpg"
+  },
+  "executed": false,
+  "response": {
+    "mode": "autonomous_step",
+    "goal": "C0.016",
+    "image_path": "live_frames/current_frame.jpg",
+    "done": true,
+    "action": {
+      "name": "STOP_AND_VERIFY",
+      "params": {
+        "landmark_id": "L003",
+        "target": "C0.016",
+        "evidence_type": "target_door_label"
+      },
+      "reason": "Target verified in current image: door label 'C0.016' matches the goal.",
+      "confidence": "high",
+      "evidence_score": 1.0,
+      "evidence_breakdown": {
+        "evidence_type_score": 0.95,
+        "visual_bonus": 0.05,
+        "label_match_bonus": 0.1,
+        "current_frame_bonus": 0.05,
+        "ambiguity_penalty": 0.0,
+        "final_score": 1.0
+      },
+      "goal_reached": true,
+      "needs_verification": false,
+      "raw": {
+        "verification": {
+          "target_visible": true,
+          "target_reached": true,
+          "matched_label": "C0.016",
+          "evidence_type": "target_door_label",
+          "confidence": "high",
+          "evidence_score": 1.0,
+          "evidence_breakdown": {
+            "evidence_type_score": 0.95,
+            "visual_bonus": 0.05,
+            "label_match_bonus": 0.1,
+            "current_frame_bonus": 0.05,
+            "ambiguity_penalty": 0.0,
+            "final_score": 1.0
+          },
+          "reason": "Target verified in current image: door label 'C0.016' matches the goal.",
+          "landmark_id": "L003",
+          "raw": {
+            "source": "current_memory",
+            "landmark": {
+              "id": "L003",
+              "category": "door",
+              "description": "White door in front view, likely target C0.016",
+              "text": "",
+              "pose": {},
+              "status": "unvisited",
+              "confidence": "medium",
+              "evidence_score": 0.7000000000000001,
+              "evidence_breakdown": {
+                "category_score": 0.8,
+                "confidence_bonus": 0.1,
+                "text_bonus": 0.0,
+                "target_relevance_bonus": 0.1,
+                "direction_bonus": 0.05,
+                "missing_text_penalty": 0.35,
+                "partial_marker_penalty": 0.0,
+                "irrelevant_sign_penalty": 0.0,
+                "final_score": 0.7000000000000001
+              },
+              "image_path": "live_frames/current_frame.jpg",
+              "extra": {
+                "direction": "front",
+                "room_range": "C0.016-C0.018",
+                "arrow": null,
+                "target_relevance": "high",
+                "floor": "0",
+                "zone": null,
+                "source_image_index": 2
+              }
+            }
+          }
+        }
+      },
+      "is_valid": true,
+      "invalid_reason": ""
+    },
+    "action_display": "STOP_AND_VERIFY({'landmark_id': 'L003', 'target': 'C0.016', 'evidence_type': 'target_door_label'}) [high, score=1.00] valid - Target verified in current image: door label 'C0.016' matches the goal.",
+    "status": "Goal=C0.016 | records=2 | memory_landmarks=4 | keep_memory=False",
+    "saved_result": "navigation_outputs/http_api/autonomous_step_latest_result.json"
+  }
+}

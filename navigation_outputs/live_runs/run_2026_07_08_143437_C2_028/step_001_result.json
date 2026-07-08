@@ -1,0 +1,79 @@
+{
+  "run_settings": {
+    "started_at": "2026-07-08T14:34:37",
+    "goal": "C2.028",
+    "mode": "auto",
+    "camera_mode": "stitched",
+    "api": "http://ernis-amd395:8001",
+    "robot_user": "unitree",
+    "robot_ip": "192.168.123.14",
+    "camera_device": "/dev/video3",
+    "front_device": "/dev/video2",
+    "left_device": "/dev/video4",
+    "right_device": "/dev/video3",
+    "capture_size": "960x720",
+    "execute": "false",
+    "cmd_vel_topic": "/cmd_vel",
+    "forward_speed": 0.05,
+    "turn_speed": 0.2,
+    "move_duration": 1.0,
+    "invert_turn": false,
+    "memory": "true",
+    "interval": 5.0,
+    "max_steps": 5,
+    "stitch_width": 640,
+    "stitch_height": 480,
+    "min_evidence_score": 0.3,
+    "allow_low_confidence": false
+  },
+  "step": 1,
+  "timestamp": "2026-07-08T14:35:06",
+  "camera_mode": "stitched",
+  "primary_path": "robot_live_frames/step_0001/stitched_left_front_right.jpg",
+  "saved_files": {
+    "left": "robot_live_frames/step_0001/left.jpg",
+    "front": "robot_live_frames/step_0001/front.jpg",
+    "right": "robot_live_frames/step_0001/right.jpg",
+    "stitched": "robot_live_frames/step_0001/stitched_left_front_right.jpg"
+  },
+  "executed": false,
+  "response": {
+    "mode": "autonomous_step",
+    "goal": "C2.028",
+    "image_path": "live_frames/current_frame.jpg",
+    "done": false,
+    "action": {
+      "name": "ASK_RECEPTION_OR_STAFF",
+      "params": {},
+      "reason": "The reception desk is clearly visible on the right side and is an official help point for navigation, making it the best option to ask for directions to room C2.028.",
+      "confidence": "low",
+      "evidence_score": 0.55,
+      "evidence_breakdown": {
+        "action_base_score": 0.55,
+        "supporting_landmark_score": 0.0,
+        "supporting_landmark_bonus": 0.0,
+        "no_landmark_penalty": 0.0,
+        "partial_marker_penalty": 0.0,
+        "used_landmark_penalty": 0.0,
+        "invalid_penalty": 0.0,
+        "mismatched_room_code_penalty": 0.0,
+        "final_score": 0.55
+      },
+      "goal_reached": false,
+      "needs_verification": true,
+      "raw": {
+        "action": "ASK_RECEPTION_OR_STAFF",
+        "params": {},
+        "reason": "The reception desk is clearly visible on the right side and is an official help point for navigation, making it the best option to ask for directions to room C2.028.",
+        "confidence": "high",
+        "goal_reached": false,
+        "needs_verification": true
+      },
+      "is_valid": true,
+      "invalid_reason": ""
+    },
+    "action_display": "ASK_RECEPTION_OR_STAFF({}) [low, score=0.55] valid - The reception desk is clearly visible on the right side and is an official help point for navigation, making it the best option to ask for directions to room C2.028.",
+    "status": "Goal=C2.028 | records=1 | memory_landmarks=2 | keep_memory=False",
+    "saved_result": "navigation_outputs/http_api/autonomous_step_latest_result.json"
+  }
+}

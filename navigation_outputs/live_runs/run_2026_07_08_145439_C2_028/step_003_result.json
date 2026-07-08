@@ -1,0 +1,85 @@
+{
+  "run_settings": {
+    "started_at": "2026-07-08T14:54:39",
+    "goal": "C2.028",
+    "mode": "auto",
+    "camera_mode": "stitched",
+    "api": "http://ernis-amd395:8001",
+    "robot_user": "unitree",
+    "robot_ip": "192.168.123.14",
+    "camera_device": "/dev/video3",
+    "front_device": "/dev/video2",
+    "left_device": "/dev/video4",
+    "right_device": "/dev/video3",
+    "capture_size": "960x720",
+    "execute": "confirm",
+    "cmd_vel_topic": "/cmd_vel",
+    "forward_speed": 0.05,
+    "turn_speed": 0.2,
+    "move_duration": 1.0,
+    "invert_turn": false,
+    "memory": "true",
+    "interval": 5.0,
+    "max_steps": 10,
+    "stitch_width": 640,
+    "stitch_height": 480,
+    "min_evidence_score": 0.3,
+    "allow_low_confidence": false
+  },
+  "step": 3,
+  "timestamp": "2026-07-08T14:58:15",
+  "camera_mode": "stitched",
+  "primary_path": "robot_live_frames/step_0003/stitched_left_front_right.jpg",
+  "saved_files": {
+    "left": "robot_live_frames/step_0003/left.jpg",
+    "front": "robot_live_frames/step_0003/front.jpg",
+    "right": "robot_live_frames/step_0003/right.jpg",
+    "stitched": "robot_live_frames/step_0003/stitched_left_front_right.jpg"
+  },
+  "executed": true,
+  "response": {
+    "mode": "autonomous_step",
+    "goal": "C2.028",
+    "image_path": "live_frames/current_frame.jpg",
+    "done": false,
+    "action": {
+      "name": "FOLLOW_DIRECTION",
+      "params": {
+        "landmark_id": "L002",
+        "direction": "forward"
+      },
+      "reason": "The digital sign above indicates room range C-001 to C-028, and the target room C2.028 is within this range, so moving forward is the correct direction.",
+      "confidence": "medium",
+      "evidence_score": 0.8,
+      "evidence_breakdown": {
+        "action_base_score": 0.65,
+        "supporting_landmark_score": 0.9999999999999999,
+        "supporting_landmark_bonus": 0.14999999999999997,
+        "no_landmark_penalty": 0.0,
+        "partial_marker_penalty": 0.0,
+        "used_landmark_penalty": 0.0,
+        "invalid_penalty": 0.0,
+        "mismatched_room_code_penalty": 0.0,
+        "final_score": 0.8
+      },
+      "goal_reached": false,
+      "needs_verification": true,
+      "raw": {
+        "action": "FOLLOW_DIRECTION",
+        "params": {
+          "landmark_id": "L002",
+          "direction": "forward"
+        },
+        "reason": "The digital sign above indicates room range C-001 to C-028, and the target room C2.028 is within this range, so moving forward is the correct direction.",
+        "confidence": "high",
+        "goal_reached": false,
+        "needs_verification": true
+      },
+      "is_valid": true,
+      "invalid_reason": ""
+    },
+    "action_display": "FOLLOW_DIRECTION({'landmark_id': 'L002', 'direction': 'forward'}) [medium, score=0.80] valid - The digital sign above indicates room range C-001 to C-028, and the target room C2.028 is within this range, so moving forward is the correct direction.",
+    "status": "Goal=C2.028 | records=3 | memory_landmarks=2 | keep_memory=False",
+    "saved_result": "navigation_outputs/http_api/autonomous_step_latest_result.json"
+  }
+}

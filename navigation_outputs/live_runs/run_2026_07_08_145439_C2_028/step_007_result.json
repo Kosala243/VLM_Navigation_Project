@@ -1,0 +1,126 @@
+{
+  "run_settings": {
+    "started_at": "2026-07-08T14:54:39",
+    "goal": "C2.028",
+    "mode": "auto",
+    "camera_mode": "stitched",
+    "api": "http://ernis-amd395:8001",
+    "robot_user": "unitree",
+    "robot_ip": "192.168.123.14",
+    "camera_device": "/dev/video3",
+    "front_device": "/dev/video2",
+    "left_device": "/dev/video4",
+    "right_device": "/dev/video3",
+    "capture_size": "960x720",
+    "execute": "confirm",
+    "cmd_vel_topic": "/cmd_vel",
+    "forward_speed": 0.05,
+    "turn_speed": 0.2,
+    "move_duration": 1.0,
+    "invert_turn": false,
+    "memory": "true",
+    "interval": 5.0,
+    "max_steps": 10,
+    "stitch_width": 640,
+    "stitch_height": 480,
+    "min_evidence_score": 0.3,
+    "allow_low_confidence": false
+  },
+  "step": 7,
+  "timestamp": "2026-07-08T15:02:29",
+  "camera_mode": "stitched",
+  "primary_path": "robot_live_frames/step_0007/stitched_left_front_right.jpg",
+  "saved_files": {
+    "left": "robot_live_frames/step_0007/left.jpg",
+    "front": "robot_live_frames/step_0007/front.jpg",
+    "right": "robot_live_frames/step_0007/right.jpg",
+    "stitched": "robot_live_frames/step_0007/stitched_left_front_right.jpg"
+  },
+  "executed": false,
+  "response": {
+    "mode": "autonomous_step",
+    "goal": "C2.028",
+    "image_path": "live_frames/current_frame.jpg",
+    "done": true,
+    "action": {
+      "name": "STOP_AND_VERIFY",
+      "params": {
+        "landmark_id": "L006",
+        "target": "C2.028",
+        "evidence_type": "target_door_label"
+      },
+      "reason": "Target verified in current image: door label 'C2.028' matches the goal.",
+      "confidence": "high",
+      "evidence_score": 1.0,
+      "evidence_breakdown": {
+        "evidence_type_score": 0.95,
+        "visual_bonus": 0.1,
+        "label_match_bonus": 0.1,
+        "current_frame_bonus": 0.05,
+        "ambiguity_penalty": 0.0,
+        "final_score": 1.0
+      },
+      "goal_reached": true,
+      "needs_verification": false,
+      "raw": {
+        "verification": {
+          "target_visible": true,
+          "target_reached": true,
+          "matched_label": "C2.028",
+          "evidence_type": "target_door_label",
+          "confidence": "high",
+          "evidence_score": 1.0,
+          "evidence_breakdown": {
+            "evidence_type_score": 0.95,
+            "visual_bonus": 0.1,
+            "label_match_bonus": 0.1,
+            "current_frame_bonus": 0.05,
+            "ambiguity_penalty": 0.0,
+            "final_score": 1.0
+          },
+          "reason": "Target verified in current image: door label 'C2.028' matches the goal.",
+          "landmark_id": "L006",
+          "raw": {
+            "source": "current_memory",
+            "landmark": {
+              "id": "L006",
+              "category": "door",
+              "description": "Door with room label 'C2.028' on the right wall",
+              "text": "C2.028",
+              "pose": {},
+              "status": "unvisited",
+              "confidence": "high",
+              "evidence_score": 1.0,
+              "evidence_breakdown": {
+                "category_score": 0.8,
+                "confidence_bonus": 0.1,
+                "text_bonus": 0.1,
+                "target_relevance_bonus": 0.1,
+                "direction_bonus": 0.0,
+                "missing_text_penalty": 0.0,
+                "partial_marker_penalty": 0.0,
+                "irrelevant_sign_penalty": 0.0,
+                "final_score": 1.0
+              },
+              "image_path": "live_frames/current_frame.jpg",
+              "extra": {
+                "direction": null,
+                "room_range": null,
+                "arrow": null,
+                "target_relevance": "high",
+                "floor": "2",
+                "zone": "C",
+                "source_image_index": 7
+              }
+            }
+          }
+        }
+      },
+      "is_valid": true,
+      "invalid_reason": ""
+    },
+    "action_display": "STOP_AND_VERIFY({'landmark_id': 'L006', 'target': 'C2.028', 'evidence_type': 'target_door_label'}) [high, score=1.00] valid - Target verified in current image: door label 'C2.028' matches the goal.",
+    "status": "Goal=C2.028 | records=7 | memory_landmarks=6 | keep_memory=False",
+    "saved_result": "navigation_outputs/http_api/autonomous_step_latest_result.json"
+  }
+}

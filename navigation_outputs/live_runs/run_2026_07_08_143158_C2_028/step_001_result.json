@@ -1,0 +1,72 @@
+{
+  "run_settings": {
+    "started_at": "2026-07-08T14:31:58",
+    "goal": "C2.028",
+    "mode": "single",
+    "camera_mode": "stitched",
+    "api": "http://ernis-amd395:8001",
+    "robot_user": "unitree",
+    "robot_ip": "192.168.123.14",
+    "camera_device": "/dev/video3",
+    "front_device": "/dev/video2",
+    "left_device": "/dev/video4",
+    "right_device": "/dev/video3",
+    "capture_size": "960x720",
+    "execute": "false",
+    "cmd_vel_topic": "/cmd_vel",
+    "forward_speed": 0.05,
+    "turn_speed": 0.2,
+    "move_duration": 1.0,
+    "invert_turn": false,
+    "memory": "true",
+    "interval": 5.0,
+    "max_steps": 10,
+    "stitch_width": 640,
+    "stitch_height": 480,
+    "min_evidence_score": 0.3,
+    "allow_low_confidence": false
+  },
+  "step": 1,
+  "timestamp": "2026-07-08T14:32:19",
+  "camera_mode": "stitched",
+  "primary_path": "robot_live_frames/step_0001/stitched_left_front_right.jpg",
+  "saved_files": {
+    "left": "robot_live_frames/step_0001/left.jpg",
+    "front": "robot_live_frames/step_0001/front.jpg",
+    "right": "robot_live_frames/step_0001/right.jpg",
+    "stitched": "robot_live_frames/step_0001/stitched_left_front_right.jpg"
+  },
+  "executed": false,
+  "response": {
+    "mode": "single_step",
+    "goal": "C2.028",
+    "image_path": "live_frames/current_frame.jpg",
+    "done": false,
+    "action": {
+      "name": "ASK_RECEPTION_OR_STAFF",
+      "params": {},
+      "reason": "The reception desk is clearly visible on the right side of the image, and asking staff is the appropriate action when the target room is unknown and no direct signage is visible.",
+      "confidence": "low",
+      "evidence_score": 0.0,
+      "evidence_breakdown": {
+        "invalid_action": 1.0,
+        "final_score": 0.0
+      },
+      "goal_reached": false,
+      "needs_verification": true,
+      "raw": {
+        "action": "ASK_RECEPTION_OR_STAFF",
+        "params": {},
+        "reason": "The reception desk is clearly visible on the right side of the image, and asking staff is the appropriate action when the target room is unknown and no direct signage is visible.",
+        "confidence": "high",
+        "goal_reached": false,
+        "needs_verification": true
+      },
+      "is_valid": false,
+      "invalid_reason": "ASK_RECEPTION_OR_STAFF requires recent visible evidence of reception, front desk, information desk, security desk, help desk, or staff counter."
+    },
+    "action_display": "ASK_RECEPTION_OR_STAFF({}) [low, score=0.00] INVALID: ASK_RECEPTION_OR_STAFF requires recent visible evidence of reception, front desk, information desk, security desk, help desk, or staff counter. - The reception desk is clearly visible on the right side of the image, and asking staff is the appropriate action when the target room is unknown and no direct signage is visible.",
+    "status": "Goal=C2.028 | records=1 | memory_landmarks=0 | keep_memory=False",
+    "saved_result": "navigation_outputs/http_api/single_step_latest_result.json"
+  }
+}
