@@ -82,7 +82,7 @@ def capture_single_camera(args, local_step_dir):
     local_step_dir.mkdir(parents=True, exist_ok=True)
 
     remote_image = args.remote_image_path
-    local_image = local_step_dir / "current_frame.jpg"
+    local_image = local_step_dir / "current_frame.png"
 
     cmd = ffmpeg_capture_command(
         device=args.camera_device,
@@ -100,9 +100,9 @@ def capture_single_camera(args, local_step_dir):
 def capture_three_camera_files(args, local_step_dir):
     local_step_dir.mkdir(parents=True, exist_ok=True)
 
-    remote_front = "/tmp/vlm_front.jpg"
-    remote_left = "/tmp/vlm_left.jpg"
-    remote_right = "/tmp/vlm_right.jpg"
+    remote_front = "/tmp/vlm_front.png"
+    remote_left = "/tmp/vlm_left.png"
+    remote_right = "/tmp/vlm_right.png"
     remote_tar = "/tmp/vlm_three_cameras.tar"
 
     cmd_front = ffmpeg_capture_command(
@@ -128,12 +128,12 @@ def capture_three_camera_files(args, local_step_dir):
 
     remote_cmd = """
     set -e
-    rm -f /tmp/vlm_front.jpg /tmp/vlm_left.jpg /tmp/vlm_right.jpg /tmp/vlm_three_cameras.tar
+    rm -f /tmp/vlm_front.png /tmp/vlm_left.png /tmp/vlm_right.png /tmp/vlm_three_cameras.tar
     {cmd_front}
     {cmd_left}
     {cmd_right}
-    tar -cf {remote_tar} -C /tmp vlm_front.jpg vlm_left.jpg vlm_right.jpg
-    ls -lh /tmp/vlm_front.jpg /tmp/vlm_left.jpg /tmp/vlm_right.jpg /tmp/vlm_three_cameras.tar
+    tar -cf {remote_tar} -C /tmp vlm_front.png vlm_left.png vlm_right.png
+    ls -lh /tmp/vlm_front.png /tmp/vlm_left.png /tmp/vlm_right.png /tmp/vlm_three_cameras.tar
     """.format(
         cmd_front=cmd_front,
         cmd_left=cmd_left,
@@ -150,9 +150,9 @@ def capture_three_camera_files(args, local_step_dir):
         tar.extractall(str(local_step_dir))
 
     rename_map = {
-        "vlm_left.jpg": "left.jpg",
-        "vlm_front.jpg": "front.jpg",
-        "vlm_right.jpg": "right.jpg",
+        "vlm_left.png": "left.png",
+        "vlm_front.png": "front.png",
+        "vlm_right.png": "right.png",
     }
 
     for old_name, new_name in rename_map.items():
@@ -165,9 +165,9 @@ def capture_three_camera_files(args, local_step_dir):
         old_path.rename(new_path)
 
     image_paths = {
-        "LEFT": local_step_dir / "left.jpg",
-        "FRONT": local_step_dir / "front.jpg",
-        "RIGHT": local_step_dir / "right.jpg",
+        "LEFT": local_step_dir / "left.png",
+        "FRONT": local_step_dir / "front.png",
+        "RIGHT": local_step_dir / "right.png",
     }
 
     print("[OK] Left image:", image_paths["LEFT"])
@@ -184,7 +184,7 @@ def capture_three_cameras_stitched(args, local_step_dir):
         left_path=image_paths["LEFT"],
         front_path=image_paths["FRONT"],
         right_path=image_paths["RIGHT"],
-        output_path=local_step_dir / "stitched_left_front_right.jpg",
+        output_path=local_step_dir / "stitched_left_front_right.png",
         width=args.stitch_width,
         height=args.stitch_height,
     )
@@ -778,7 +778,7 @@ def parse_args():
 
     parser.add_argument(
         "--remote-image-path",
-        default="/tmp/vlm_current_frame.jpg",
+        default="/tmp/vlm_current_frame.png",
         help="Robot-side image path for single camera mode",
     )
 

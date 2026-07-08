@@ -56,7 +56,7 @@ def new_navigation_system(goal: str, keep_memory: bool = False) -> NavigationSys
 
 async def save_upload(upload: UploadFile, label: str) -> Path:
     timestamp = int(time.time() * 1000)
-    suffix = Path(upload.filename or f"{label}.jpg").suffix or ".jpg"
+    suffix = Path(upload.filename or f"{label}.png").suffix or ".png"
 
     saved_path = LIVE_DIR / f"frame_{timestamp}_{label}{suffix}"
 
@@ -95,7 +95,7 @@ async def prepare_observation(
         front_path = await save_upload(front_image, "front")
         right_path = await save_upload(right_image, "right")
 
-        current_path = LIVE_DIR / "current_frame.jpg"
+        current_path = LIVE_DIR / "current_frame.png"
         shutil.copyfile(front_path, current_path)
 
         return (
@@ -110,7 +110,7 @@ async def prepare_observation(
 
     if has_single:
         saved_path = await save_upload(image, "image")
-        current_path = LIVE_DIR / "current_frame.jpg"
+        current_path = LIVE_DIR / "current_frame.png"
         shutil.copyfile(saved_path, current_path)
         return current_path, None, "single_or_stitched"
 
