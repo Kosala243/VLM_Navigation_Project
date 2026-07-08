@@ -430,6 +430,8 @@ def maybe_execute_robot_action(args, response):
         duration=args.move_duration,
         invert_turn=args.invert_turn,
         execute_mode=args.execute,
+        min_evidence_score=args.min_evidence_score,
+        allow_low_confidence=args.allow_low_confidence,
     )
 
     return executor.execute_action_response(response)
@@ -475,8 +477,16 @@ def create_run_dir(args):
         "turn_speed": args.turn_speed,
         "move_duration": args.move_duration,
         "invert_turn": args.invert_turn,
+        "memory": args.memory,
+        "interval": args.interval,
+        "max_steps": args.max_steps,
+        "stitch_width": args.stitch_width,
+        "stitch_height": args.stitch_height,
+        "min_evidence_score": args.min_evidence_score,
+        "allow_low_confidence": args.allow_low_confidence,
     }
 
+    args.run_config = config
     (run_dir / "run_config.json").write_text(
         json.dumps(config, indent=2, ensure_ascii=False)
     )
@@ -485,8 +495,9 @@ def create_run_dir(args):
     return run_dir
 
 
-def save_step_log(run_dir, step_index, observation, response, executed):
+def save_step_log(run_dir, step_index, observation, response, executed, run_config=None):
     step_result = {
+        "run_settings": run_config or {},
         "step": step_index,
         "timestamp": datetime.now().isoformat(timespec="seconds"),
         "camera_mode": observation.get("camera_mode"),
@@ -503,12 +514,14 @@ def save_step_log(run_dir, step_index, observation, response, executed):
     return result_path
 
 
-def save_final_summary(run_dir, goal, steps, success):
+def save_final_summary(run_dir, goal, steps, success, run_config=None, metrics=None):
     summary = {
+        "run_settings": run_config or {},
         "ended_at": datetime.now().isoformat(timespec="seconds"),
         "goal": goal,
         "steps": steps,
         "success": success,
+        "metrics": metrics or {},
     }
 
     summary_path = run_dir / "final_run_summary.json"
@@ -516,6 +529,84 @@ def save_final_summary(run_dir, goal, steps, success):
 
     print("[LOG] Final summary saved:", summary_path)
     return summary_path
+
+def extract_step_metric(response, executed):
+    action = response.get("action", {})
+    if not isinstance(action, dict):
+        action = {}
+
+    params = action.get("params", {})
+    if not isinstance(params, dict):
+        params = {}
+
+    try:
+        evidence_score = float(action.get("evidence_score", 0.0) or 0.0)
+    except Exception:
+        evidence_score = 0.0
+
+    return {
+        "done": bool(response.get("done")),
+        "executed": bool(executed),
+        "mode": response.get("mode"),
+        "observation_mode": response.get("observation_mode"),
+        "action_name": action.get("name"),
+        "confidence": action.get("confidence"),
+        "evidence_score": evidence_score,
+        "is_valid": bool(action.get("is_valid", True)),
+        "evidence_view": params.get("evidence_view"),
+    }
+
+
+def compute_run_metrics(step_metrics, success):
+    total_steps = len(step_metrics)
+
+    action_counts = {}
+    evidence_view_counts = {}
+
+    evidence_scores = []
+    low_confidence_count = 0
+    invalid_action_count = 0
+    executed_steps = 0
+
+    for step in step_metrics:
+        action_name = step.get("action_name") or "UNKNOWN"
+        action_counts[action_name] = action_counts.get(action_name, 0) + 1
+
+        evidence_view = step.get("evidence_view") or "UNKNOWN"
+        evidence_view_counts[evidence_view] = evidence_view_counts.get(evidence_view, 0) + 1
+
+        evidence_scores.append(float(step.get("evidence_score", 0.0) or 0.0))
+
+        if step.get("confidence") == "low":
+            low_confidence_count += 1
+
+        if not step.get("is_valid", True):
+            invalid_action_count += 1
+
+        if step.get("executed"):
+            executed_steps += 1
+
+    avg_evidence_score = (
+        sum(evidence_scores) / len(evidence_scores)
+        if evidence_scores else 0.0
+    )
+
+    return {
+        "success": bool(success),
+        "success_rate_single_run": 1.0 if success else 0.0,
+        "failure_rate_single_run": 0.0 if success else 1.0,
+        "total_steps": total_steps,
+        "steps_to_success": total_steps if success else None,
+        "executed_steps": executed_steps,
+        "non_executed_steps": total_steps - executed_steps,
+        "low_confidence_actions": low_confidence_count,
+        "invalid_actions": invalid_action_count,
+        "average_action_evidence_score": avg_evidence_score,
+        "action_counts": action_counts,
+        "evidence_view_counts": evidence_view_counts,
+        "obstacle_avoided": None,
+        "obstacle_note": "Obstacle avoidance is not measured automatically yet. Add manual annotations or sensor-based obstacle logging later.",
+    }
 
 def run_single_step(args):
     run_dir = create_run_dir(args)
@@ -532,28 +623,44 @@ def run_single_step(args):
     print_action_result(response)
     executed = maybe_execute_robot_action(args, response)
 
+    run_config = getattr(args, "run_config", {})
+    step_metrics = [extract_step_metric(response, executed)]
+    success = bool(response.get("done"))
+    metrics = compute_run_metrics(step_metrics, success)
+
     save_step_log(
         run_dir=run_dir,
         step_index=1,
         observation=observation,
         response=response,
         executed=executed,
+        run_config=run_config,
     )
 
     save_final_summary(
         run_dir=run_dir,
         goal=args.goal,
         steps=1,
-        success=bool(response.get("done")),
+        success=success,
+        run_config=run_config,
+        metrics=metrics,
     )
 
 def run_auto_mode(args):
     run_dir = create_run_dir(args)
+    run_config = getattr(args, "run_config", {})
 
-    start_autonomous_session(args.api, args.goal)
+    use_memory = args.memory == "true"
+
+    if use_memory:
+        print("[INFO] Memory enabled: using /autonomous/start and /autonomous/step")
+        start_autonomous_session(args.api, args.goal)
+    else:
+        print("[INFO] Memory disabled: using fresh /single_step for every auto step")
 
     success = False
     completed_steps = 0
+    step_metrics = []
 
     for step in range(1, args.max_steps + 1):
         completed_steps = step
@@ -561,15 +668,24 @@ def run_auto_mode(args):
 
         observation = get_observation(args, step_index=step)
 
+        if use_memory:
+            endpoint = "/autonomous/step"
+            goal_for_request = None
+        else:
+            endpoint = "/single_step"
+            goal_for_request = args.goal
+
         response = post_observation_to_amd(
             api=args.api,
-            endpoint="/autonomous/step",
+            endpoint=endpoint,
             observation=observation,
-            goal=None,
+            goal=goal_for_request,
         )
 
         print_action_result(response)
         executed = maybe_execute_robot_action(args, response)
+
+        step_metrics.append(extract_step_metric(response, executed))
 
         save_step_log(
             run_dir=run_dir,
@@ -577,6 +693,7 @@ def run_auto_mode(args):
             observation=observation,
             response=response,
             executed=executed,
+            run_config=run_config,
         )
 
         if response.get("done") is True:
@@ -586,11 +703,15 @@ def run_auto_mode(args):
 
         time.sleep(args.interval)
 
+    metrics = compute_run_metrics(step_metrics, success)
+
     save_final_summary(
         run_dir=run_dir,
         goal=args.goal,
         steps=completed_steps,
         success=success,
+        run_config=run_config,
+        metrics=metrics,
     )
 
 def parse_args():
@@ -714,9 +835,29 @@ def parse_args():
     )
 
     parser.add_argument(
-    "--run-dir",
-    default=None,
-    help="Optional output folder for this live run. Default creates navigation_outputs/live_runs/run_<timestamp>_<goal>",
+        "--run-dir",
+        default=None,
+        help="Optional output folder for this live run. Default creates navigation_outputs/live_runs/run_<timestamp>_<goal>",
+    )
+
+    parser.add_argument(
+        "--memory",
+        choices=["true", "false"],
+        default="true",
+        help="true = keep memory across auto steps, false = fresh memory every step",
+    )
+
+    parser.add_argument(
+        "--min-evidence-score",
+        type=float,
+        default=0.30,
+        help="Minimum action evidence score required for robot movement",
+    )
+
+    parser.add_argument(
+        "--allow-low-confidence",
+        action="store_true",
+        help="Allow low-confidence VLM actions to move the robot",
     )
 
     return parser.parse_args()
@@ -727,6 +868,7 @@ def main():
 
     print("[INFO] Mode:", args.mode)
     print("[INFO] Camera mode:", args.camera_mode)
+    print("[INFO] Memory:", args.memory)
     print("[INFO] Goal:", args.goal)
     print("[INFO] AMD API:", args.api)
     print("[INFO] Robot:", "{}@{}".format(args.robot_user, args.robot_ip))

@@ -112,7 +112,7 @@ Return ONLY valid JSON:
     "direction": null,
     "target": null,
     "floor": null,
-    "search_for": null
+    "search_for": null,
     "evidence_view": "LEFT | FRONT | RIGHT | STITCHED_UNKNOWN | NONE"
   },
   "reason": "one sentence",

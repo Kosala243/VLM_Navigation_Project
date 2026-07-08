@@ -311,6 +311,19 @@ def parse_args():
         help="Send tiny right turn command, then stop.",
     )
 
+    parser.add_argument(
+        "--min-evidence-score",
+        type=float,
+        default=0.30,
+        help="Minimum evidence score required for movement",
+    )
+
+    parser.add_argument(
+        "--allow-low-confidence",
+        action="store_true",
+        help="Allow low-confidence actions to move the robot",
+    )
+
     return parser.parse_args()
 
 
@@ -324,6 +337,8 @@ def main():
         duration=args.duration,
         invert_turn=args.invert_turn,
         execute_mode=args.execute,
+        min_evidence_score=args.min_evidence_score,
+        allow_low_confidence=args.allow_low_confidence,
     )
 
     if args.stop:
@@ -335,6 +350,9 @@ def main():
             "name": "NAVIGATE_TO_FRONTIER",
             "params": {"direction": "forward"},
             "reason": "Manual tiny forward test.",
+            "confidence": "high", #manual safe tests not be blocked by VLM confidence/evidence checks.
+            "evidence_score": 1.0,
+            "is_valid": True,
         })
         return
 
@@ -343,6 +361,9 @@ def main():
             "name": "FOLLOW_DIRECTION",
             "params": {"direction": "left"},
             "reason": "Manual tiny left turn test.",
+            "confidence": "high", #manual safe tests not be blocked by VLM confidence/evidence checks.
+            "evidence_score": 1.0,
+            "is_valid": True,
         })
         return
 
@@ -351,6 +372,9 @@ def main():
             "name": "FOLLOW_DIRECTION",
             "params": {"direction": "right"},
             "reason": "Manual tiny right turn test.",
+            "confidence": "high", #manual safe tests not be blocked by VLM confidence/evidence checks.
+            "evidence_score": 1.0,
+            "is_valid": True,
         })
         return
 
