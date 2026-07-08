@@ -1,7 +1,6 @@
 initial_assessment/
 qwen_test.py
 /.venv_vlm
-robot_live_frames/
 *.pyc
 */*/*.pyc
 models/
