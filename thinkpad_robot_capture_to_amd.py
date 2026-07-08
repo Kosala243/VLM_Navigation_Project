@@ -7,6 +7,7 @@ import subprocess
 import sys
 import tarfile
 import time
+from datetime import datetime
 from pathlib import Path
 from robot_executor import SafeCmdVelExecutor
 
@@ -96,8 +97,7 @@ def capture_single_camera(args, local_step_dir):
     print("[OK] Single camera image:", local_image)
     return local_image
 
-
-def capture_three_cameras(args, local_step_dir):
+def capture_three_camera_files(args, local_step_dir):
     local_step_dir.mkdir(parents=True, exist_ok=True)
 
     remote_front = "/tmp/vlm_front.jpg"
@@ -135,11 +135,11 @@ def capture_three_cameras(args, local_step_dir):
     tar -cf {remote_tar} -C /tmp vlm_front.jpg vlm_left.jpg vlm_right.jpg
     ls -lh /tmp/vlm_front.jpg /tmp/vlm_left.jpg /tmp/vlm_right.jpg /tmp/vlm_three_cameras.tar
     """.format(
-            cmd_front=cmd_front,
-            cmd_left=cmd_left,
-            cmd_right=cmd_right,
-            remote_tar=shlex.quote(remote_tar),
-        )
+        cmd_front=cmd_front,
+        cmd_left=cmd_left,
+        cmd_right=cmd_right,
+        remote_tar=shlex.quote(remote_tar),
+    )
 
     ssh_run(args.robot_user, args.robot_ip, remote_cmd)
 
@@ -164,25 +164,32 @@ def capture_three_cameras(args, local_step_dir):
 
         old_path.rename(new_path)
 
-    left = local_step_dir / "left.jpg"
-    front = local_step_dir / "front.jpg"
-    right = local_step_dir / "right.jpg"
+    image_paths = {
+        "LEFT": local_step_dir / "left.jpg",
+        "FRONT": local_step_dir / "front.jpg",
+        "RIGHT": local_step_dir / "right.jpg",
+    }
 
-    print("[OK] Left image:", left)
-    print("[OK] Front image:", front)
-    print("[OK] Right image:", right)
+    print("[OK] Left image:", image_paths["LEFT"])
+    print("[OK] Front image:", image_paths["FRONT"])
+    print("[OK] Right image:", image_paths["RIGHT"])
+
+    return image_paths
+
+
+def capture_three_cameras_stitched(args, local_step_dir):
+    image_paths = capture_three_camera_files(args, local_step_dir)
 
     stitched = stitch_three_images(
-        left_path=left,
-        front_path=front,
-        right_path=right,
+        left_path=image_paths["LEFT"],
+        front_path=image_paths["FRONT"],
+        right_path=image_paths["RIGHT"],
         output_path=local_step_dir / "stitched_left_front_right.jpg",
         width=args.stitch_width,
         height=args.stitch_height,
     )
 
-    return stitched
-
+    return stitched, image_paths
 
 def load_font(size):
     try:
@@ -244,7 +251,7 @@ def stitch_three_images(left_path, front_path, right_path, output_path, width, h
     return output_path
 
 
-def get_observation_image(args, step_index=None):
+def get_observation(args, step_index=None):
     local_dir = Path(args.local_dir)
 
     if step_index is None:
@@ -253,13 +260,44 @@ def get_observation_image(args, step_index=None):
         local_step_dir = local_dir / "step_{:04d}".format(step_index)
 
     if args.camera_mode == "single":
-        return capture_single_camera(args, local_step_dir)
+        primary = capture_single_camera(args, local_step_dir)
+        return {
+            "camera_mode": "single",
+            "primary_path": primary,
+            "image_paths": None,
+            "saved_files": {
+                "image": str(primary),
+            },
+        }
 
     if args.camera_mode == "stitched":
-        return capture_three_cameras(args, local_step_dir)
+        stitched, raw_paths = capture_three_cameras_stitched(args, local_step_dir)
+        return {
+            "camera_mode": "stitched",
+            "primary_path": stitched,
+            "image_paths": None,
+            "saved_files": {
+                "left": str(raw_paths["LEFT"]),
+                "front": str(raw_paths["FRONT"]),
+                "right": str(raw_paths["RIGHT"]),
+                "stitched": str(stitched),
+            },
+        }
+
+    if args.camera_mode == "separate":
+        raw_paths = capture_three_camera_files(args, local_step_dir)
+        return {
+            "camera_mode": "separate",
+            "primary_path": raw_paths["FRONT"],
+            "image_paths": raw_paths,
+            "saved_files": {
+                "left": str(raw_paths["LEFT"]),
+                "front": str(raw_paths["FRONT"]),
+                "right": str(raw_paths["RIGHT"]),
+            },
+        }
 
     raise ValueError("Unknown camera mode: {}".format(args.camera_mode))
-
 
 def post_to_amd(api, endpoint, image_path, goal=None):
     url = api.rstrip("/") + "/" + endpoint.lstrip("/")
@@ -286,6 +324,46 @@ def post_to_amd(api, endpoint, image_path, goal=None):
         print(result.stdout)
         raise
 
+def post_observation_to_amd(api, endpoint, observation, goal=None):
+    """
+    Send either:
+    - one image field for single/stitched mode
+    - left_image/front_image/right_image fields for separate mode
+    """
+    url = api.rstrip("/") + "/" + endpoint.lstrip("/")
+
+    cmd = [
+        "curl",
+        "-sS",
+        "-X",
+        "POST",
+        url,
+    ]
+
+    if goal is not None:
+        cmd.extend(["-F", "goal={}".format(goal)])
+
+    camera_mode = observation.get("camera_mode")
+
+    if camera_mode == "separate":
+        image_paths = observation.get("image_paths") or {}
+
+        cmd.extend([
+            "-F", "left_image=@{}".format(image_paths["LEFT"]),
+            "-F", "front_image=@{}".format(image_paths["FRONT"]),
+            "-F", "right_image=@{}".format(image_paths["RIGHT"]),
+        ])
+    else:
+        cmd.extend(["-F", "image=@{}".format(observation["primary_path"])])
+
+    result = run(cmd)
+
+    try:
+        return json.loads(result.stdout)
+    except Exception:
+        print("[ERROR] AMD response was not valid JSON:")
+        print(result.stdout)
+        raise
 
 def start_autonomous_session(api, goal):
     url = api.rstrip("/") + "/autonomous/start"
@@ -356,44 +434,164 @@ def maybe_execute_robot_action(args, response):
 
     return executor.execute_action_response(response)
 
-def run_single_step(args):
-    image_path = get_observation_image(args, step_index=None)
+def safe_goal_name(goal):
+    return (
+        str(goal)
+        .replace("/", "_")
+        .replace("\\", "_")
+        .replace(" ", "_")
+        .replace(".", "_")
+        .replace(":", "_")
+    )
 
-    response = post_to_amd(
+
+def create_run_dir(args):
+    if args.run_dir:
+        run_dir = Path(args.run_dir)
+    else:
+        timestamp = datetime.now().strftime("%Y_%m_%d_%H%M%S")
+        run_dir = Path("navigation_outputs/live_runs") / (
+            "run_{}_{}".format(timestamp, safe_goal_name(args.goal))
+        )
+
+    run_dir.mkdir(parents=True, exist_ok=True)
+
+    config = {
+        "started_at": datetime.now().isoformat(timespec="seconds"),
+        "goal": args.goal,
+        "mode": args.mode,
+        "camera_mode": args.camera_mode,
+        "api": args.api,
+        "robot_user": args.robot_user,
+        "robot_ip": args.robot_ip,
+        "camera_device": args.camera_device,
+        "front_device": args.front_device,
+        "left_device": args.left_device,
+        "right_device": args.right_device,
+        "capture_size": args.capture_size,
+        "execute": args.execute,
+        "cmd_vel_topic": args.cmd_vel_topic,
+        "forward_speed": args.forward_speed,
+        "turn_speed": args.turn_speed,
+        "move_duration": args.move_duration,
+        "invert_turn": args.invert_turn,
+    }
+
+    (run_dir / "run_config.json").write_text(
+        json.dumps(config, indent=2, ensure_ascii=False)
+    )
+
+    print("[LOG] Run directory:", run_dir)
+    return run_dir
+
+
+def save_step_log(run_dir, step_index, observation, response, executed):
+    step_result = {
+        "step": step_index,
+        "timestamp": datetime.now().isoformat(timespec="seconds"),
+        "camera_mode": observation.get("camera_mode"),
+        "primary_path": str(observation.get("primary_path")),
+        "saved_files": observation.get("saved_files", {}),
+        "executed": executed,
+        "response": response,
+    }
+
+    result_path = run_dir / "step_{:03d}_result.json".format(step_index)
+    result_path.write_text(json.dumps(step_result, indent=2, ensure_ascii=False))
+
+    print("[LOG] Step result saved:", result_path)
+    return result_path
+
+
+def save_final_summary(run_dir, goal, steps, success):
+    summary = {
+        "ended_at": datetime.now().isoformat(timespec="seconds"),
+        "goal": goal,
+        "steps": steps,
+        "success": success,
+    }
+
+    summary_path = run_dir / "final_run_summary.json"
+    summary_path.write_text(json.dumps(summary, indent=2, ensure_ascii=False))
+
+    print("[LOG] Final summary saved:", summary_path)
+    return summary_path
+
+def run_single_step(args):
+    run_dir = create_run_dir(args)
+
+    observation = get_observation(args, step_index=1)
+
+    response = post_observation_to_amd(
         api=args.api,
         endpoint="/single_step",
-        image_path=image_path,
+        observation=observation,
         goal=args.goal,
     )
 
     print_action_result(response)
-    maybe_execute_robot_action(args, response)
+    executed = maybe_execute_robot_action(args, response)
 
+    save_step_log(
+        run_dir=run_dir,
+        step_index=1,
+        observation=observation,
+        response=response,
+        executed=executed,
+    )
+
+    save_final_summary(
+        run_dir=run_dir,
+        goal=args.goal,
+        steps=1,
+        success=bool(response.get("done")),
+    )
 
 def run_auto_mode(args):
+    run_dir = create_run_dir(args)
+
     start_autonomous_session(args.api, args.goal)
 
+    success = False
+    completed_steps = 0
+
     for step in range(1, args.max_steps + 1):
+        completed_steps = step
         print("\n========== AUTO STEP {} ==========".format(step))
 
-        image_path = get_observation_image(args, step_index=step)
+        observation = get_observation(args, step_index=step)
 
-        response = post_to_amd(
+        response = post_observation_to_amd(
             api=args.api,
             endpoint="/autonomous/step",
-            image_path=image_path,
+            observation=observation,
             goal=None,
         )
 
         print_action_result(response)
-        maybe_execute_robot_action(args, response)
+        executed = maybe_execute_robot_action(args, response)
+
+        save_step_log(
+            run_dir=run_dir,
+            step_index=step,
+            observation=observation,
+            response=response,
+            executed=executed,
+        )
 
         if response.get("done") is True:
             print("[DONE] Goal reached according to pipeline.")
+            success = True
             break
 
         time.sleep(args.interval)
 
+    save_final_summary(
+        run_dir=run_dir,
+        goal=args.goal,
+        steps=completed_steps,
+        success=success,
+    )
 
 def parse_args():
     parser = argparse.ArgumentParser(
@@ -409,9 +607,9 @@ def parse_args():
 
     parser.add_argument(
         "--camera-mode",
-        choices=["single", "stitched"],
+        choices=["single", "stitched", "separate"],
         default="single",
-        help="single = one camera image, stitched = left/front/right stitched image",
+        help="single = one camera image, stitched = left/front/right stitched image, separate = send left/front/right as separate model images",
     )
 
     parser.add_argument("--goal", default="B0.004")
@@ -513,6 +711,12 @@ def parse_args():
         "--invert-turn",
         action="store_true",
         help="Use this if left/right turning direction is reversed",
+    )
+
+    parser.add_argument(
+    "--run-dir",
+    default=None,
+    help="Optional output folder for this live run. Default creates navigation_outputs/live_runs/run_<timestamp>_<goal>",
     )
 
     return parser.parse_args()

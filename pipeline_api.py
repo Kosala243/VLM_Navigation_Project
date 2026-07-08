@@ -6,9 +6,9 @@ import shutil
 import time
 from dataclasses import asdict
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional
 
-from fastapi import FastAPI, File, Form, UploadFile
+from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.responses import JSONResponse
 
 from navigation_pipeline import ModelWrapper, NavigationSystem, GoalParser
@@ -54,24 +54,78 @@ def new_navigation_system(goal: str, keep_memory: bool = False) -> NavigationSys
     return nav
 
 
-async def save_uploaded_image(image: UploadFile) -> Path:
+async def save_upload(upload: UploadFile, label: str) -> Path:
     timestamp = int(time.time() * 1000)
-    suffix = Path(image.filename or "frame.jpg").suffix or ".jpg"
+    suffix = Path(upload.filename or f"{label}.jpg").suffix or ".jpg"
 
-    saved_path = LIVE_DIR / f"frame_{timestamp}{suffix}"
-    current_path = LIVE_DIR / "current_frame.jpg"
+    saved_path = LIVE_DIR / f"frame_{timestamp}_{label}{suffix}"
 
     with saved_path.open("wb") as f:
-        shutil.copyfileobj(image.file, f)
+        shutil.copyfileobj(upload.file, f)
 
-    shutil.copyfile(saved_path, current_path)
-    return current_path
+    return saved_path
+
+
+async def prepare_observation(
+    *,
+    image: Optional[UploadFile],
+    left_image: Optional[UploadFile],
+    front_image: Optional[UploadFile],
+    right_image: Optional[UploadFile],
+) -> tuple[Path, dict[str, str] | None, str]:
+    """
+    Returns:
+        primary_image_path, image_paths_or_None, observation_mode
+
+    observation_mode:
+        single_or_stitched = one uploaded image
+        separate = LEFT/FRONT/RIGHT uploaded separately
+    """
+    has_single = image is not None
+    has_separate = left_image is not None or front_image is not None or right_image is not None
+
+    if has_separate:
+        if left_image is None or front_image is None or right_image is None:
+            raise HTTPException(
+                status_code=400,
+                detail="For separate mode, provide left_image, front_image, and right_image.",
+            )
+
+        left_path = await save_upload(left_image, "left")
+        front_path = await save_upload(front_image, "front")
+        right_path = await save_upload(right_image, "right")
+
+        current_path = LIVE_DIR / "current_frame.jpg"
+        shutil.copyfile(front_path, current_path)
+
+        return (
+            front_path,
+            {
+                "LEFT": str(left_path),
+                "FRONT": str(front_path),
+                "RIGHT": str(right_path),
+            },
+            "separate",
+        )
+
+    if has_single:
+        saved_path = await save_upload(image, "image")
+        current_path = LIVE_DIR / "current_frame.jpg"
+        shutil.copyfile(saved_path, current_path)
+        return current_path, None, "single_or_stitched"
+
+    raise HTTPException(
+        status_code=400,
+        detail="Provide either image OR left_image + front_image + right_image.",
+    )
 
 
 def action_response(
     *,
     goal: str,
     image_path: Path,
+    image_paths: dict[str, str] | None,
+    observation_mode: str,
     action,
     done: bool,
     nav: NavigationSystem,
@@ -80,7 +134,9 @@ def action_response(
     result = {
         "mode": mode,
         "goal": goal,
+        "observation_mode": observation_mode,
         "image_path": str(image_path),
+        "image_paths": image_paths,
         "done": done,
         "action": asdict(action),
         "action_display": action.display(),
@@ -106,26 +162,41 @@ def health():
 
 @app.post("/single_step")
 async def single_step(
-    image: UploadFile = File(...),
+    image: Optional[UploadFile] = File(default=None),
+    left_image: Optional[UploadFile] = File(default=None),
+    front_image: Optional[UploadFile] = File(default=None),
+    right_image: Optional[UploadFile] = File(default=None),
     goal: str = Form(default=None),
 ):
     """
     Single-frame test:
-    - receives one image
+    - accepts either one image OR three separate images
     - starts fresh memory
     - runs one pipeline step
     - does NOT move robot
     """
     use_goal = goal or CURRENT_GOAL
-    image_path = await save_uploaded_image(image)
+
+    primary_path, image_paths, observation_mode = await prepare_observation(
+        image=image,
+        left_image=left_image,
+        front_image=front_image,
+        right_image=right_image,
+    )
 
     nav = new_navigation_system(use_goal, keep_memory=False)
-    action, done = nav.step(str(image_path), execute=False)
+    action, done = nav.step(
+        str(primary_path),
+        image_paths=image_paths,
+        execute=False,
+    )
 
     return JSONResponse(
         action_response(
             goal=use_goal,
-            image_path=image_path,
+            image_path=primary_path,
+            image_paths=image_paths,
+            observation_mode=observation_mode,
             action=action,
             done=done,
             nav=nav,
@@ -138,7 +209,7 @@ async def single_step(
 def autonomous_start(goal: str = Form(default=None)):
     """
     Starts/reset a memory-preserving autonomous session.
-    Movement is still disabled; this only keeps memory across frames.
+    Movement is still disabled on AMD; ThinkPad handles movement separately.
     """
     global NAV, CURRENT_GOAL
 
@@ -154,27 +225,42 @@ def autonomous_start(goal: str = Form(default=None)):
 
 @app.post("/autonomous/step")
 async def autonomous_step(
-    image: UploadFile = File(...),
+    image: Optional[UploadFile] = File(default=None),
+    left_image: Optional[UploadFile] = File(default=None),
+    front_image: Optional[UploadFile] = File(default=None),
+    right_image: Optional[UploadFile] = File(default=None),
 ):
     """
     Autonomous loop step:
-    - receives one image
+    - accepts either one image OR three separate images
     - keeps memory from previous autonomous steps
     - returns next high-level action
-    - does NOT move robot
+    - does NOT move robot on AMD
     """
     global NAV
 
     if NAV is None:
         NAV = new_navigation_system(CURRENT_GOAL, keep_memory=False)
 
-    image_path = await save_uploaded_image(image)
-    action, done = NAV.step(str(image_path), execute=False)
+    primary_path, image_paths, observation_mode = await prepare_observation(
+        image=image,
+        left_image=left_image,
+        front_image=front_image,
+        right_image=right_image,
+    )
+
+    action, done = NAV.step(
+        str(primary_path),
+        image_paths=image_paths,
+        execute=False,
+    )
 
     return JSONResponse(
         action_response(
             goal=CURRENT_GOAL,
-            image_path=image_path,
+            image_path=primary_path,
+            image_paths=image_paths,
+            observation_mode=observation_mode,
             action=action,
             done=done,
             nav=NAV,

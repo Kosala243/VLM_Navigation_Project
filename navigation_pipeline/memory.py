@@ -61,83 +61,83 @@ class NavigationMemory:
     }
 
     _PROMPT = """\
-You are updating a robot's structured navigation memory from the current camera image.
-The robot must navigate to this goal:
-{goal_context}
+        You are updating a robot's structured navigation memory from the current camera image.
+        The robot must navigate to this goal:
+        {goal_context}
 
-The robot may provide visual input in one of these formats:
+        The robot may provide visual input in one of these formats:
 
-FORMAT A — SINGLE FRONT CAMERA IMAGE:
-- The image is a normal single camera view.
-- Treat it as the robot's front-facing view.
+        FORMAT A — SINGLE FRONT CAMERA IMAGE:
+        - The image is a normal single camera view.
+        - Treat it as the robot's front-facing view.
 
-FORMAT B — STITCHED MULTI-CAMERA IMAGE:
-- The image contains three side-by-side panels.
-- LEFT panel = robot's left camera view.
-- FRONT panel = robot's front camera view.
-- RIGHT panel = robot's right camera view.
-- Use the panel labels to decide direction.
-- Do not treat the stitched image as one continuous real scene.
+        FORMAT B — STITCHED MULTI-CAMERA IMAGE:
+        - The image contains three side-by-side panels.
+        - LEFT panel = robot's left camera view.
+        - FRONT panel = robot's front camera view.
+        - RIGHT panel = robot's right camera view.
+        - Use the panel labels to decide direction.
+        - Do not treat the stitched image as one continuous real scene.
 
-FORMAT C — THREE SEPARATE CAMERA IMAGES:
-- The model may receive three separate images.
-- They are ordered or labelled as LEFT, FRONT, RIGHT.
-- LEFT image shows what is on the robot's left side.
-- FRONT image shows what is directly ahead.
-- RIGHT image shows what is on the robot's right side.
+        FORMAT C — THREE SEPARATE CAMERA IMAGES:
+        - The model may receive three separate images.
+        - They are ordered or labelled as LEFT, FRONT, RIGHT.
+        - LEFT image shows what is on the robot's left side.
+        - FRONT image shows what is directly ahead.
+        - RIGHT image shows what is on the robot's right side.
 
-Navigation interpretation rules:
-- If the target room/sign/landmark is visible in the FRONT view, prefer moving forward or stopping to verify.
-- If the target room/sign/landmark is visible in the LEFT view, prefer turning left.
-- If the target room/sign/landmark is visible in the RIGHT view, prefer turning right.
-- If useful navigation cues are visible only on one side, mention which side.
-- If no target or useful cue is visible, choose SEARCH_FOR_CUE.
-- Do not guess room numbers or signs that are not clearly visible.
-- Be careful with blurry text, reflections, glass, and overexposed regions.
-- Prefer current visual evidence over old memory.
+        Navigation interpretation rules:
+        - If the target room/sign/landmark is visible in the FRONT view, prefer moving forward or stopping to verify.
+        - If the target room/sign/landmark is visible in the LEFT view, prefer turning left.
+        - If the target room/sign/landmark is visible in the RIGHT view, prefer turning right.
+        - If useful navigation cues are visible only on one side, mention which side.
+        - If no target or useful cue is visible, choose SEARCH_FOR_CUE.
+        - Do not guess room numbers or signs that are not clearly visible.
+        - Be careful with blurry text, reflections, glass, and overexposed regions.
+        - Prefer current visual evidence over old memory.
 
-Extract ONLY navigation-useful evidence. Ignore furniture, ceiling, wall colour, general room appearance, and random people unless they are part of an official help desk.
+        Extract ONLY navigation-useful evidence. Ignore furniture, ceiling, wall colour, general room appearance, and random people unless they are part of an official help desk.
 
-Look for:
-- directional signs, arrows, room ranges, building/zone/floor signs
-- door labels and room plates
-- directories, maps, "you are here" boards
-- elevators, stairs, floor indicators
-- corridor junctions and reachable unexplored paths/frontiers
-- reception desks, information desks, front desks, security desks, or official help counters
-- visible evidence that confirms/rejects the target goal
+        Look for:
+        - directional signs, arrows, room ranges, building/zone/floor signs
+        - door labels and room plates
+        - directories, maps, "you are here" boards
+        - elevators, stairs, floor indicators
+        - corridor junctions and reachable unexplored paths/frontiers
+        - reception desks, information desks, front desks, security desks, or official help counters
+        - visible evidence that confirms/rejects the target goal
 
-Important rule about people:
-- Do NOT create a landmark for students, visitors, pedestrians, or random people in corridors/classrooms/labs.
-- Only create category "reception" when there is clearly an official reception/front-desk/information/security/help-desk context.
+        Important rule about people:
+        - Do NOT create a landmark for students, visitors, pedestrians, or random people in corridors/classrooms/labs.
+        - Only create category "reception" when there is clearly an official reception/front-desk/information/security/help-desk context.
 
-Return ONLY valid JSON:
-{
-  "useful": true/false,
-  "summary": "one short note, or empty string",
-  "landmarks": [
-    {
-      "category": "sign | door | frontier | reception | directory | stairs | elevator | observation | junction",
-      "description": "what it is and where it is in view",
-      "text": "exact readable text if any, else empty",
-      "confidence": "high | medium | low",
-      "pose": {},
-      "extra": {
-        "direction": null,
-        "room_range": null,
-        "arrow": null,
-        "target_relevance": "high | medium | low | none",
-        "floor": null,
-        "zone": null
-      }
-    }
-  ],
-  "hypotheses": ["short useful inference, e.g. room numbers increase forward"]
-}
+        Return ONLY valid JSON:
+        {
+        "useful": true/false,
+        "summary": "one short note, or empty string",
+        "landmarks": [
+            {
+            "category": "sign | door | frontier | reception | directory | stairs | elevator | observation | junction",
+            "description": "what it is and where it is in view",
+            "text": "exact readable text if any, else empty",
+            "confidence": "high | medium | low",
+            "pose": {},
+            "extra": {
+                "direction": null,
+                "room_range": null,
+                "arrow": null,
+                "target_relevance": "high | medium | low | none",
+                "floor": null,
+                "zone": null
+            }
+            }
+        ],
+        "hypotheses": ["short useful inference, e.g. room numbers increase forward"]
+        }
 
-If no useful navigation evidence is visible, return exactly:
-{"useful": false, "summary": "", "landmarks": [], "hypotheses": []}
-"""
+        If no useful navigation evidence is visible, return exactly:
+        {"useful": false, "summary": "", "landmarks": [], "hypotheses": []}
+        """
 
     def __init__(
         self,
@@ -160,14 +160,18 @@ If no useful navigation evidence is visible, return exactly:
         self.image_count = 0
         self._next_id = 1
 
-    def update_from_image(self, image_path: str, goal: "NavigationGoal") -> MemoryUpdate:
-        """Update memory from one camera image."""
+    def update_from_image(
+        self,
+        image_path: str,
+        goal: "NavigationGoal",
+        image_paths: dict[str, str] | None = None,
+    ) -> MemoryUpdate:
         self.image_count += 1
         if not Path(image_path).exists():
             return MemoryUpdate(False, f"Image not found: {image_path}")
 
         prompt = self._PROMPT.replace("{goal_context}", goal.compact())
-        response = self.model.query(prompt, image_path=image_path, max_new_tokens=800)
+        response = self.model.query(prompt, image_path=image_path, image_paths=image_paths, max_new_tokens=800)
         data = _extract_json(response)
         if not data:
             return MemoryUpdate(False, "Could not parse memory JSON from model.")

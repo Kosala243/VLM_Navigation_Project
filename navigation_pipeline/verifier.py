@@ -119,6 +119,7 @@ class TargetVerifier:
         image_path: str,
         goal: "NavigationGoal",
         memory_update: "MemoryUpdate | None" = None,
+        image_paths: dict[str, str] | None = None,
     ) -> VerificationResult:
         """Verify whether the current image reaches the target.
 
@@ -135,7 +136,7 @@ class TargetVerifier:
             .replace("{goal_context}", goal.compact())
             .replace("{current_memory_context}", self._current_memory_context(memory_update))
         )
-        response = self.model.query(prompt, image_path=image_path, max_new_tokens=350)
+        response = self.model.query(prompt, image_path=image_path, image_paths=image_paths, max_new_tokens=350)
         data = _extract_json(response)
         if not data:
             if deterministic.target_visible:

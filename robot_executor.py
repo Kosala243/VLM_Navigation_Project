@@ -21,7 +21,6 @@ import subprocess
 import sys
 import time
 
-
 VALID_EXECUTE_MODES = {"false", "confirm", "true"}
 
 
@@ -34,6 +33,8 @@ class SafeCmdVelExecutor(object):
         duration=1.0,
         invert_turn=False,
         execute_mode="confirm",
+        min_evidence_score=0.30,
+        allow_low_confidence=False,
     ):
         self.topic = topic
         self.forward_speed = float(forward_speed)
@@ -41,6 +42,8 @@ class SafeCmdVelExecutor(object):
         self.duration = float(duration)
         self.invert_turn = bool(invert_turn)
         self.execute_mode = execute_mode
+        self.min_evidence_score = float(min_evidence_score)
+        self.allow_low_confidence = bool(allow_low_confidence)
 
         if self.execute_mode not in VALID_EXECUTE_MODES:
             raise ValueError("execute_mode must be one of: false, confirm, true")
@@ -76,6 +79,29 @@ class SafeCmdVelExecutor(object):
         name = str(action.get("name", "")).strip().upper()
         params = action.get("params", {})
         reason = str(action.get("reason", "")).strip()
+        confidence = str(action.get("confidence", "low")).strip().lower()
+        evidence_score = float(action.get("evidence_score", 0.0) or 0.0)
+        is_valid = bool(action.get("is_valid", True))
+
+        if not is_valid:
+            print("[EXECUTOR] Action is invalid. Sending stop.")
+            self.stop()
+            return False
+
+        if confidence == "low" and not self.allow_low_confidence:
+            print("[EXECUTOR] Low-confidence action blocked. Sending stop.")
+            self.stop()
+            return False
+
+        if evidence_score < self.min_evidence_score:
+            print(
+                "[EXECUTOR] Evidence score too low: {:.2f} < {:.2f}. Sending stop.".format(
+                    evidence_score,
+                    self.min_evidence_score,
+                )
+            )
+            self.stop()
+            return False
 
         if not isinstance(params, dict):
             params = {}

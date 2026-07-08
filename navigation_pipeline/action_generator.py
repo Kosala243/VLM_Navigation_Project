@@ -125,7 +125,13 @@ Return ONLY valid JSON:
     def __init__(self, model: "ModelWrapper"):
         self.model = model
 
-    def generate(self, image_path: str, goal: "NavigationGoal", memory: "NavigationMemory") -> Action:
+    def generate(
+        self,
+        image_path: str,
+        goal: "NavigationGoal",
+        memory: "NavigationMemory",
+        image_paths: dict[str, str] | None = None,
+    ) -> Action:
         prompt = (
             self._PROMPT
             .replace("{goal_context}", goal.compact())
@@ -135,7 +141,7 @@ Return ONLY valid JSON:
                 "\n".join(f"- {k}: {v}" for k, v in self.VALID_ACTIONS.items()),
             )
         )
-        response = self.model.query(prompt, image_path=image_path, max_new_tokens=500)
+        response = self.model.query(prompt, image_path=image_path, image_paths=image_paths, max_new_tokens=500)
         data = _extract_json(response) or {}
 
         raw_action_name = str(data.get("action", "WAIT_OR_RECOVER")).strip().upper()

@@ -154,29 +154,25 @@ class NavigationSystem:
     def step(
         self,
         image_path: str,
+        image_paths: dict[str, str] | None = None,
         frontiers: list[dict[str, Any]] | None = None,
         execute: bool = False,
     ) -> tuple[Action, bool]:
-        """Process one camera frame.
 
-        Returns:
-            (action, navigation_complete). navigation_complete is True only when
-            current-frame verification/action produces valid STOP_AND_VERIFY.
-        """
         if self.goal is None:
             raise RuntimeError("Call start(raw_goal) before step().")
 
         if frontiers:
             self.memory.add_frontiers(frontiers)
 
-        update = self.memory.update_from_image(image_path, self.goal)
+        update = self.memory.update_from_image(image_path, self.goal, image_paths=image_paths)
 
         # Proper target verification happens before planning the next action.
-        verification = self.verifier.verify(image_path, self.goal, update)
+        verification = self.verifier.verify(image_path, self.goal, update, image_paths=image_paths)
         if verification.target_reached:
             action = verification.to_action()
         else:
-            action = self.action_generator.generate(image_path, self.goal, self.memory)
+            action = self.action_generator.generate(image_path, self.goal, self.memory, image_paths=image_paths)
 
         if not verification.target_reached and action.name == "STOP_AND_VERIFY":
             action.is_valid = False

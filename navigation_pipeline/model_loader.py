@@ -104,22 +104,68 @@ class ModelWrapper:
         self._loaded = True
         return self
 
+    def _collect_image_inputs(
+        self,
+        image_path: str | None = None,
+        image_paths: dict[str, str] | None = None,
+    ) -> tuple[list[tuple[str, Path]], str | None]:
+        images: list[tuple[str, Path]] = []
+
+        if image_paths:
+            ordered_keys = [
+                ("LEFT", ["LEFT", "left"]),
+                ("FRONT", ["FRONT", "front"]),
+                ("RIGHT", ["RIGHT", "right"]),
+            ]
+
+            for label, keys in ordered_keys:
+                raw_path = None
+                for key in keys:
+                    if key in image_paths:
+                        raw_path = image_paths[key]
+                        break
+
+                if raw_path:
+                    images.append((label, Path(raw_path)))
+
+        elif image_path is not None:
+            images.append(("IMAGE", Path(image_path)))
+
+        if not images:
+            return [], None
+
+        for label, path in images:
+            if not path.exists():
+                return [], f"[ERROR] Image not found for {label}: {path}"
+
+        return images, None
+
     def _query_llama_cpp_server(
         self,
         prompt: str,
         image_path: str | None = None,
+        image_paths: dict[str, str] | None = None,
         max_new_tokens: int = 600,
     ) -> str:
         content: list[dict[str, Any]] = []
 
-        # Keep image first, matching your previous Transformers message order.
-        if image_path is not None:
-            p = Path(image_path)
-            if not p.exists():
-                return f"[ERROR] Image not found: {image_path}"
+        images, error = self._collect_image_inputs(
+            image_path=image_path,
+            image_paths=image_paths,
+        )
+        if error:
+            return error
+
+        for label, path in images:
+            if label != "IMAGE":
+                content.append({
+                    "type": "text",
+                    "text": f"{label} camera image:",
+                })
+
             content.append({
                 "type": "image_url",
-                "image_url": {"url": self._image_to_data_url(p)},
+                "image_url": {"url": self._image_to_data_url(path)},
             })
 
         content.append({"type": "text", "text": prompt})
@@ -245,22 +291,36 @@ class ModelWrapper:
 
         return torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    def _query_transformers(self, prompt: str, image_path: str | None = None, max_new_tokens: int = 600) -> str:
+    def _query_transformers(
+        self,
+        prompt: str,
+        image_path: str | None = None,
+        image_paths: dict[str, str] | None = None,
+        max_new_tokens: int = 600,
+    ) -> str:
         import torch
 
-        if image_path is not None:
-            p = Path(image_path)
-            if not p.exists():
-                return f"[ERROR] Image not found: {image_path}"
+        images, error = self._collect_image_inputs(
+            image_path=image_path,
+            image_paths=image_paths,
+        )
+        if error:
+            return error
+
+        for _, path in images:
             try:
                 from PIL import Image
-                Image.open(p).verify()
+                Image.open(path).verify()
             except Exception as exc:
-                return f"[ERROR] Cannot open image: {exc}"
+                return f"[ERROR] Cannot open image {path}: {exc}"
 
         content = []
-        if image_path is not None:
-            content.append({"type": "image", "image": str(image_path)})
+
+        for label, path in images:
+            if label != "IMAGE":
+                content.append({"type": "text", "text": f"{label} camera image:"})
+            content.append({"type": "image", "image": str(path)})
+
         content.append({"type": "text", "text": prompt})
         messages = [{"role": "user", "content": content}]
 
@@ -312,11 +372,27 @@ class ModelWrapper:
     # Public query API used by the rest of the pipeline
     # ------------------------------------------------------------------
 
-    def query(self, prompt: str, image_path: str | None = None, max_new_tokens: int = 600) -> str:
+    def query(
+        self,
+        prompt: str,
+        image_path: str | None = None,
+        image_paths: dict[str, str] | None = None,
+        max_new_tokens: int = 600,
+    ) -> str:
         if not self._loaded:
             raise RuntimeError("Call ModelWrapper.load() before query().")
 
         if self.backend in self.LLAMA_SERVER_BACKENDS:
-            return self._query_llama_cpp_server(prompt, image_path=image_path, max_new_tokens=max_new_tokens)
+            return self._query_llama_cpp_server(
+                prompt,
+                image_path=image_path,
+                image_paths=image_paths,
+                max_new_tokens=max_new_tokens,
+            )
 
-        return self._query_transformers(prompt, image_path=image_path, max_new_tokens=max_new_tokens)
+        return self._query_transformers(
+            prompt,
+            image_path=image_path,
+            image_paths=image_paths,
+            max_new_tokens=max_new_tokens,
+        )
