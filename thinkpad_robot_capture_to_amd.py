@@ -788,8 +788,8 @@ def parse_args():
         help="ThinkPad folder where copied/stiched images are saved",
     )
 
-    parser.add_argument("--stitch-width", type=int, default=640)
-    parser.add_argument("--stitch-height", type=int, default=480)
+    parser.add_argument("--stitch-width", type=int, default=960)
+    parser.add_argument("--stitch-height", type=int, default=720)
 
     parser.add_argument("--interval", type=float, default=5.0)
     parser.add_argument("--max-steps", type=int, default=10)
@@ -810,7 +810,7 @@ def parse_args():
     parser.add_argument(
         "--forward-speed",
         type=float,
-        default=0.05,
+        default=0.12,
         help="Safe forward speed for tiny movement step",
     )
 
@@ -824,7 +824,7 @@ def parse_args():
     parser.add_argument(
         "--move-duration",
         type=float,
-        default=1.0,
+        default=5.0,
         help="Duration in seconds for each tiny movement",
     )
 

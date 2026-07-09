@@ -90,6 +90,13 @@ Decision rules:
 - Do not ask random people, students, visitors, or people in corridors/classrooms/labs.
 - Use ASK_RECEPTION_OR_STAFF only when a reception/front desk/information desk/security desk/help counter is clearly visible.
 - If no useful cue is visible, use NAVIGATE_TO_FRONTIER or SEARCH_FOR_CUE.
+- If a signboard, room-range sign, directory, or door label is visible but the text is too small, blurry, overexposed, or unreadable, do NOT guess the text or direction signs(arrow marks).
+- In that case, choose an action that moves closer to the visible cue.
+- If the unclear cue is in the FRONT view, choose READ_SIGN, CHECK_DOOR_LABEL, or FOLLOW_DIRECTION with direction="forward".
+- If the unclear cue is in the LEFT view, choose FOLLOW_DIRECTION with direction="left" to face/approach it.
+- If the unclear cue is in the RIGHT view, choose FOLLOW_DIRECTION with direction="right" to face/approach it.
+- In the reason, explicitly say that the text is not clearly readable and moving closer may help decide the direction.
+- Always include "direction" and "evidence_view" in params when approaching an unclear sign or label.
 - Use USE_ELEVATOR_OR_STAIRS only when recent evidence shows a lift/stairs and the goal/floor evidence suggests a floor transition.
 - Never assume a room-code structure is true until signs/labels/directories confirm it.
 - Do not repeatedly read/check a landmark whose status is already "used" or "visited"; choose a newer cue, frontier, or search action instead.

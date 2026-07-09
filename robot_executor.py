@@ -28,9 +28,9 @@ class SafeCmdVelExecutor(object):
     def __init__(
         self,
         topic="/cmd_vel",
-        forward_speed=0.05,
+        forward_speed=0.12,
         turn_speed=0.20,
-        duration=1.0,
+        duration=5.0,
         invert_turn=False,
         execute_mode="confirm",
         min_evidence_score=0.30,
@@ -88,11 +88,6 @@ class SafeCmdVelExecutor(object):
             self.stop()
             return False
 
-        if confidence == "low" and not self.allow_low_confidence:
-            print("[EXECUTOR] Low-confidence action blocked. Sending stop.")
-            self.stop()
-            return False
-
         if evidence_score < self.min_evidence_score:
             print(
                 "[EXECUTOR] Evidence score too low: {:.2f} < {:.2f}. Sending stop.".format(
@@ -144,8 +139,9 @@ class SafeCmdVelExecutor(object):
         direction = str(params.get("direction", "") or "").strip().lower()
         target = str(params.get("target", "") or "").strip().lower()
         search_for = str(params.get("search_for", "") or "").strip().lower()
+        evidence_view = str(params.get("evidence_view", "") or "").strip().lower()
 
-        combined = " ".join([direction, target, search_for]).lower()
+        combined = " ".join([direction, target, search_for, evidence_view]).lower()
 
         # Always stop for final verification / unsafe / unclear actions.
         if name in {"STOP_AND_VERIFY", "WAIT_OR_RECOVER"}:
@@ -153,8 +149,16 @@ class SafeCmdVelExecutor(object):
 
         # If target is reached or action says check/read, do not move automatically.
         # Reading/checking should happen by capturing another frame after manual/assisted positioning.
-        if name in {"READ_SIGN", "CHECK_DOOR_LABEL", "ASK_RECEPTION_OR_STAFF"}:
+        if name == "ASK_RECEPTION_OR_STAFF":
             return None
+
+        # Approach/read signs and door labels when the model says they are useful.
+        if name in {"READ_SIGN", "CHECK_DOOR_LABEL"}:
+            if "left" in combined:
+                return self._turn_cmd("left")
+            if "right" in combined:
+                return self._turn_cmd("right")
+            return self._forward_cmd()
 
         # Move forward only for frontier/landmark when no turn direction is specified.
         if name in {"NAVIGATE_TO_FRONTIER", "NAVIGATE_TO_LANDMARK"}:
@@ -277,9 +281,9 @@ def parse_args():
     )
 
     parser.add_argument("--topic", default="/cmd_vel")
-    parser.add_argument("--forward-speed", type=float, default=0.05)
+    parser.add_argument("--forward-speed", type=float, default=0.12)
     parser.add_argument("--turn-speed", type=float, default=0.20)
-    parser.add_argument("--duration", type=float, default=1.0)
+    parser.add_argument("--duration", type=float, default=5.0)
 
     parser.add_argument(
         "--invert-turn",

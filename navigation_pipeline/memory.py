@@ -94,6 +94,10 @@ class NavigationMemory:
         - If no target or useful cue is visible, choose SEARCH_FOR_CUE.
         - Do not guess room numbers or signs that are not clearly visible.
         - Be careful with blurry text, reflections, glass, and overexposed regions.
+        - If a signboard, room-range sign, directory, or door label is visible but the text is too small/blurry/unclear to read, still create a landmark for it.
+        - Set "text" to an empty string if the exact text is unreadable.
+        - Mention in the description that the cue is visible but unreadable, and include whether it is in LEFT, FRONT, or RIGHT view.
+        - Such landmarks are useful because the robot can move closer to read them.
         - Prefer current visual evidence over old memory.
 
         Extract ONLY navigation-useful evidence. Ignore furniture, ceiling, wall colour, general room appearance, and random people unless they are part of an official help desk.
