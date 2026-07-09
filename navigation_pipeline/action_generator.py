@@ -168,8 +168,36 @@ Return ONLY valid JSON:
         )
         validated = self._validate(action, memory, goal)
         self._attach_action_evidence_score(validated, memory, goal)
+        self._ensure_evidence_view(validated, memory)
         return validated
 
+    def _ensure_evidence_view(self, action: Action, memory: "NavigationMemory") -> None:
+        """
+        Ensure every action has params["evidence_view"] for debugging/evaluation.
+
+        Allowed:
+        LEFT, FRONT, RIGHT, STITCHED_UNKNOWN, NONE
+        """
+        if not isinstance(action.params, dict):
+            action.params = {}
+
+        current = _normalise_evidence_view(action.params.get("evidence_view"))
+        if current:
+            action.params["evidence_view"] = current
+            return
+
+        inferred = ""
+
+        lm_id = _clean_param(action.params.get("landmark_id"))
+        if lm_id:
+            lm = _get_landmark(memory, lm_id)
+            inferred = _infer_evidence_view_from_landmark(lm)
+
+        if not inferred:
+            inferred = _infer_evidence_view_from_action(action)
+
+        action.params["evidence_view"] = inferred or "NONE"
+    
     def _validate(self, action: Action, memory: "NavigationMemory", goal: "NavigationGoal") -> Action:
         """Block unsafe or hallucinated high-level actions before execution."""
         if action.confidence not in {"high", "medium", "low"}:
@@ -398,6 +426,97 @@ def _clean_param(value: Any) -> str:
         return ""
     text = str(value).strip()
     return "" if text.lower() in {"none", "null", ""} else text
+
+_ALLOWED_EVIDENCE_VIEWS = {
+    "LEFT",
+    "FRONT",
+    "RIGHT",
+    "STITCHED_UNKNOWN",
+    "NONE",
+}
+
+
+def _normalise_evidence_view(value: Any) -> str:
+    text = _clean_param(value).upper()
+
+    if text in _ALLOWED_EVIDENCE_VIEWS:
+        return text
+
+    if "LEFT" in text:
+        return "LEFT"
+    if "RIGHT" in text:
+        return "RIGHT"
+    if "FRONT" in text or "FORWARD" in text or "AHEAD" in text:
+        return "FRONT"
+    if "STITCH" in text or "UNKNOWN" in text:
+        return "STITCHED_UNKNOWN"
+    if "NONE" in text or "NO" == text:
+        return "NONE"
+
+    return ""
+
+
+def _infer_evidence_view_from_landmark(lm: "Landmark | None") -> str:
+    if lm is None:
+        return ""
+
+    extra = getattr(lm, "extra", {})
+    if isinstance(extra, dict):
+        for key in (
+            "evidence_view",
+            "source_view",
+            "view",
+            "camera",
+            "panel",
+            "source_camera",
+        ):
+            view = _normalise_evidence_view(extra.get(key))
+            if view:
+                return view
+
+    text = _landmark_text(lm)
+
+    if "left view" in text or "left panel" in text or "left camera" in text or " on the left" in text:
+        return "LEFT"
+
+    if "right view" in text or "right panel" in text or "right camera" in text or " on the right" in text:
+        return "RIGHT"
+
+    if "front view" in text or "front panel" in text or "front camera" in text or "directly ahead" in text or "ahead" in text:
+        return "FRONT"
+
+    return ""
+
+
+def _infer_evidence_view_from_action(action: Action) -> str:
+    params = action.params if isinstance(action.params, dict) else {}
+
+    direction = _clean_param(params.get("direction")).lower()
+    target = _clean_param(params.get("target")).lower()
+    search_for = _clean_param(params.get("search_for")).lower()
+    reason = str(getattr(action, "reason", "") or "").lower()
+
+    combined = " ".join([direction, target, search_for, reason])
+
+    if action.name in {"SEARCH_FOR_CUE", "WAIT_OR_RECOVER"}:
+        return "NONE"
+
+    if "left" in combined:
+        return "LEFT"
+
+    if "right" in combined:
+        return "RIGHT"
+
+    if (
+        "front" in combined
+        or "forward" in combined
+        or "ahead" in combined
+        or "straight" in combined
+        or direction in {"forward", "front", "ahead", "straight"}
+    ):
+        return "FRONT"
+
+    return "STITCHED_UNKNOWN"
 
 
 def _landmark_text(lm: "Landmark") -> str:

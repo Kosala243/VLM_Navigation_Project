@@ -99,6 +99,12 @@ class NavigationMemory:
         - Mention in the description that the cue is visible but unreadable, and include whether it is in LEFT, FRONT, or RIGHT view.
         - Such landmarks are useful because the robot can move closer to read them.
         - Prefer current visual evidence over old memory.
+        - For every landmark, set extra.source_view to LEFT, FRONT, RIGHT, STITCHED_UNKNOWN, or NONE.
+        - Use LEFT when the landmark/cue is visible in the left image/panel.
+        - Use FRONT when the landmark/cue is visible in the front image/panel.
+        - Use RIGHT when the landmark/cue is visible in the right image/panel.
+        - Use STITCHED_UNKNOWN when the stitched panel/source is unclear.
+        - Use NONE only when no current visual cue supports the landmark.
 
         Extract ONLY navigation-useful evidence. Ignore furniture, ceiling, wall colour, general room appearance, and random people unless they are part of an official help desk.
 
@@ -132,7 +138,8 @@ class NavigationMemory:
                 "arrow": null,
                 "target_relevance": "high | medium | low | none",
                 "floor": null,
-                "zone": null
+                "zone": null,
+                "source_view": "LEFT | FRONT | RIGHT | STITCHED_UNKNOWN | NONE"
             }
             }
         ],

@@ -403,7 +403,12 @@ def print_action_result(response):
 
     if isinstance(action, dict):
         print("Action name:", action.get("name"))
-        print("Params:", action.get("params"))
+        params = action.get("params", {})
+        if not isinstance(params, dict):
+            params = {}
+
+        print("Params:", params)
+        print("Evidence view:", params.get("evidence_view", "UNKNOWN"))
         print("Reason:", action.get("reason"))
         print("Confidence:", action.get("confidence"))
         print("Evidence score:", action.get("evidence_score"))
@@ -495,7 +500,15 @@ def create_run_dir(args):
     return run_dir
 
 
-def save_step_log(run_dir, step_index, observation, response, executed, run_config=None):
+def save_step_log(
+    run_dir,
+    step_index,
+    observation,
+    response,
+    executed,
+    run_config=None,
+    step_metric=None,
+):
     step_result = {
         "run_settings": run_config or {},
         "step": step_index,
@@ -504,6 +517,8 @@ def save_step_log(run_dir, step_index, observation, response, executed, run_conf
         "primary_path": str(observation.get("primary_path")),
         "saved_files": observation.get("saved_files", {}),
         "executed": executed,
+        "step_metric": step_metric or {},
+        "evidence_view": (step_metric or {}).get("evidence_view", "UNKNOWN"),
         "response": response,
     }
 
@@ -624,7 +639,8 @@ def run_single_step(args):
     executed = maybe_execute_robot_action(args, response)
 
     run_config = getattr(args, "run_config", {})
-    step_metrics = [extract_step_metric(response, executed)]
+    step_metric = extract_step_metric(response, executed)
+    step_metrics = [step_metric]
     success = bool(response.get("done"))
     metrics = compute_run_metrics(step_metrics, success)
 
@@ -635,6 +651,7 @@ def run_single_step(args):
         response=response,
         executed=executed,
         run_config=run_config,
+        step_metric=step_metric,
     )
 
     save_final_summary(
@@ -685,7 +702,8 @@ def run_auto_mode(args):
         print_action_result(response)
         executed = maybe_execute_robot_action(args, response)
 
-        step_metrics.append(extract_step_metric(response, executed))
+        step_metric = extract_step_metric(response, executed)
+        step_metrics.append(step_metric)
 
         save_step_log(
             run_dir=run_dir,
@@ -694,6 +712,7 @@ def run_auto_mode(args):
             response=response,
             executed=executed,
             run_config=run_config,
+            step_metric=step_metric,
         )
 
         if response.get("done") is True:

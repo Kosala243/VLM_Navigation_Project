@@ -28,9 +28,9 @@ class SafeCmdVelExecutor(object):
     def __init__(
         self,
         topic="/cmd_vel",
-        forward_speed=0.12,
+        forward_speed=0.12, #0.10, 0.12, 0.15, 0.18
         turn_speed=0.20,
-        duration=5.0,
+        duration=5.0, #3.0, 5.0
         invert_turn=False,
         execute_mode="confirm",
         min_evidence_score=0.30,
