@@ -1,0 +1,110 @@
+{
+  "run_settings": {
+    "started_at": "2026-07-09T15:48:21",
+    "goal": "C2.028",
+    "mode": "auto",
+    "camera_mode": "separate",
+    "api": "http://ernis-amd395:8001",
+    "robot_user": "unitree",
+    "robot_ip": "192.168.123.14",
+    "camera_device": "/dev/video3",
+    "front_device": "/dev/video2",
+    "left_device": "/dev/video4",
+    "right_device": "/dev/video3",
+    "capture_size": "960x720",
+    "execute": "confirm",
+    "cmd_vel_topic": "/cmd_vel",
+    "forward_speed": 0.12,
+    "turn_speed": 0.2,
+    "move_duration": 5.0,
+    "invert_turn": false,
+    "memory": "true",
+    "interval": 5.0,
+    "max_steps": 15,
+    "stitch_width": 960,
+    "stitch_height": 720,
+    "min_evidence_score": 0.3,
+    "allow_low_confidence": false
+  },
+  "step": 3,
+  "timestamp": "2026-07-09T15:51:00",
+  "camera_mode": "separate",
+  "primary_path": "robot_live_frames/step_0003/front.png",
+  "saved_files": {
+    "left": "robot_live_frames/step_0003/left.png",
+    "front": "robot_live_frames/step_0003/front.png",
+    "right": "robot_live_frames/step_0003/right.png"
+  },
+  "executed": false,
+  "step_metric": {
+    "done": false,
+    "executed": false,
+    "mode": "autonomous_step",
+    "observation_mode": "separate",
+    "action_name": "FOLLOW_DIRECTION",
+    "confidence": "low",
+    "evidence_score": 0.18250000000000005,
+    "is_valid": true,
+    "evidence_view": "FRONT"
+  },
+  "evidence_view": "FRONT",
+  "response": {
+    "mode": "autonomous_step",
+    "goal": "C2.028",
+    "observation_mode": "separate",
+    "image_path": "live_frames/frame_1783605038206_front.png",
+    "image_paths": {
+      "LEFT": "live_frames/frame_1783605038206_left.png",
+      "FRONT": "live_frames/frame_1783605038206_front.png",
+      "RIGHT": "live_frames/frame_1783605038207_right.png"
+    },
+    "done": false,
+    "action": {
+      "name": "FOLLOW_DIRECTION",
+      "params": {
+        "landmark_id": "L002",
+        "direction": "right",
+        "target": "C2.028",
+        "floor": "2",
+        "search_for": null,
+        "evidence_view": "FRONT"
+      },
+      "reason": "The directional sign 'Tower B Noord toren | Tower C Zuid toren' indicates that Tower C is to the right, which is the direction needed to reach the target room C2.028.",
+      "confidence": "low",
+      "evidence_score": 0.18250000000000005,
+      "evidence_breakdown": {
+        "action_base_score": 0.65,
+        "supporting_landmark_score": 0.55,
+        "supporting_landmark_bonus": 0.0825,
+        "no_landmark_penalty": 0.0,
+        "partial_marker_penalty": 0.25,
+        "used_landmark_penalty": 0.3,
+        "invalid_penalty": 0.0,
+        "mismatched_room_code_penalty": 0.0,
+        "final_score": 0.18250000000000005
+      },
+      "goal_reached": false,
+      "needs_verification": false,
+      "raw": {
+        "action": "FOLLOW_DIRECTION",
+        "params": {
+          "landmark_id": "L002",
+          "direction": "right",
+          "target": "C2.028",
+          "floor": "2",
+          "search_for": null,
+          "evidence_view": "FRONT"
+        },
+        "reason": "The directional sign 'Tower B Noord toren | Tower C Zuid toren' indicates that Tower C is to the right, which is the direction needed to reach the target room C2.028.",
+        "confidence": "high",
+        "goal_reached": false,
+        "needs_verification": false
+      },
+      "is_valid": true,
+      "invalid_reason": ""
+    },
+    "action_display": "FOLLOW_DIRECTION({'landmark_id': 'L002', 'direction': 'right', 'target': 'C2.028', 'floor': '2', 'search_for': None, 'evidence_view': 'FRONT'}) [low, score=0.18] valid - The directional sign 'Tower B Noord toren | Tower C Zuid toren' indicates that Tower C is to the right, which is the direction needed to reach the target room C2.028.",
+    "status": "Goal=C2.028 | records=3 | memory_landmarks=3 | keep_memory=False",
+    "saved_result": "navigation_outputs/http_api/autonomous_step_latest_result.json"
+  }
+}

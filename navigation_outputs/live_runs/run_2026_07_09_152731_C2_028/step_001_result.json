@@ -1,0 +1,64 @@
+{
+  "run_settings": {
+    "started_at": "2026-07-09T15:27:31",
+    "goal": "C2.028",
+    "mode": "auto",
+    "camera_mode": "separate",
+    "api": "http://ernis-amd395:8001",
+    "robot_user": "unitree",
+    "robot_ip": "192.168.123.14",
+    "camera_device": "/dev/video3",
+    "front_device": "/dev/video2",
+    "left_device": "/dev/video4",
+    "right_device": "/dev/video3",
+    "capture_size": "960x720",
+    "execute": "confirm",
+    "cmd_vel_topic": "/cmd_vel",
+    "forward_speed": 0.12,
+    "turn_speed": 0.2,
+    "move_duration": 5.0,
+    "invert_turn": false,
+    "memory": "true",
+    "interval": 5.0,
+    "max_steps": 15,
+    "stitch_width": 960,
+    "stitch_height": 720,
+    "min_evidence_score": 0.3,
+    "allow_low_confidence": false
+  },
+  "step": 1,
+  "timestamp": "2026-07-09T15:27:49",
+  "camera_mode": "separate",
+  "primary_path": "robot_live_frames/step_0001/front.png",
+  "saved_files": {
+    "left": "robot_live_frames/step_0001/left.png",
+    "front": "robot_live_frames/step_0001/front.png",
+    "right": "robot_live_frames/step_0001/right.png"
+  },
+  "executed": false,
+  "step_metric": {
+    "done": false,
+    "executed": false,
+    "mode": null,
+    "observation_mode": null,
+    "action_name": null,
+    "confidence": null,
+    "evidence_score": 0.0,
+    "is_valid": true,
+    "evidence_view": null
+  },
+  "evidence_view": null,
+  "response": {
+    "detail": [
+      {
+        "type": "missing",
+        "loc": [
+          "body",
+          "image"
+        ],
+        "msg": "Field required",
+        "input": null
+      }
+    ]
+  }
+}

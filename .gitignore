@@ -4,3 +4,5 @@ qwen_test.py
 *.pyc
 */*/*.pyc
 models/
+robot_live_frames/
+*.tar
