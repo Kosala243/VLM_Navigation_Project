@@ -388,6 +388,53 @@ def start_autonomous_session(api, goal):
     print(json.dumps(response, indent=2))
     return response
 
+def export_autonomous_session(api, run_dir):
+    url = api.rstrip("/") + "/autonomous/export"
+
+    result = run([
+        "curl",
+        "-sS",
+        "-X",
+        "GET",
+        url,
+    ])
+
+    try:
+        data = json.loads(result.stdout)
+    except Exception:
+        print("[ERROR] Could not parse autonomous export JSON.")
+        print(result.stdout)
+        return None
+
+    if "detail" in data:
+        print("[ERROR] Autonomous export failed:", data["detail"])
+        return None
+
+    memory_path = run_dir / "memory.json"
+    navigation_log_path = run_dir / "navigation_log.json"
+    parsed_goal_path = run_dir / "parsed_goal.json"
+
+    memory_path.write_text(
+        json.dumps(data.get("memory", {}), indent=2, ensure_ascii=False)
+    )
+
+    navigation_log_path.write_text(
+        json.dumps(
+            data.get("navigation_log", {}),
+            indent=2,
+            ensure_ascii=False,
+        )
+    )
+
+    parsed_goal_path.write_text(
+        json.dumps(data.get("goal", {}), indent=2, ensure_ascii=False)
+    )
+
+    print("[LOG] Memory saved:", memory_path)
+    print("[LOG] Navigation log saved:", navigation_log_path)
+    print("[LOG] Parsed goal saved:", parsed_goal_path)
+
+    return data
 
 def print_action_result(response):
     print("\n========== ACTION RESULT ==========")
@@ -732,6 +779,9 @@ def run_auto_mode(args):
         run_config=run_config,
         metrics=metrics,
     )
+
+    if use_memory:
+        export_autonomous_session(args.api, run_dir)
 
 def parse_args():
     parser = argparse.ArgumentParser(

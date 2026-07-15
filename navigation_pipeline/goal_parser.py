@@ -49,41 +49,41 @@ class NavigationGoal:
 
 class GoalParser:
     _PROMPT = """\
-You are parsing a robot indoor navigation goal for an unknown office/university/hospital/airport/public building.
-Do NOT assume all buildings use the same room-code format.
-Your job is NOT to decide one final meaning. Your job is to preserve searchable labels and produce possible interpretations.
+        You are parsing a robot indoor navigation goal for an unknown office/university/hospital/airport/public building.
+        Do NOT assume all buildings use the same room-code format.
+        Your job is NOT to decide one final meaning. Your job is to preserve searchable labels and produce possible interpretations.
 
-Important principles:
-- Keep the exact raw target as the strongest search label.
-- Generate aliases for likely label variants, e.g. "3.14" <-> "314", "F-204" <-> "F204", "C2.005" <-> "C2-005".
-- Treat building/floor/room fields as possible constraints only, not facts.
-- For named places such as departments, labs, corridors, gates, suites, pharmacies, or reception, preserve the name as target_name or possible_zone.
-- Evidence should mention signs, directories, room plates, floor indicators, corridor/zone signs, or official front-desk/staff help.
+        Important principles:
+        - Keep the exact raw target as the strongest search label.
+        - Generate aliases for likely label variants, e.g. "3.14" <-> "314", "F-204" <-> "F204", "C2.005" <-> "C2-005".
+        - Treat building/floor/room fields as possible constraints only, not facts.
+        - For named places such as departments, labs, corridors, gates, suites, pharmacies, or reception, preserve the name as target_name or possible_zone.
+        - Evidence should mention signs, directories, room plates, floor indicators, corridor/zone signs, or official front-desk/staff help.
 
-Return ONLY valid JSON with this exact schema:
-{
-  "target_type": "room_or_location | person_office | department | facility | suite_or_unit | gate_or_zone | lab | unknown",
-  "known_tokens": ["important raw tokens to search for on signs/doors"],
-  "aliases": ["alternative labels that may appear on signs/doors"],
-  "constraints": {
-    "possible_building": null,
-    "possible_floor": null,
-    "possible_room": null,
-    "possible_zone": null,
-    "target_name": null
-  },
-  "possible_interpretations": [
-    {
-      "interpretation": "short explanation",
-      "evidence_needed": ["what evidence confirms or rejects this"],
-      "confidence": "high | medium | low"
-    }
-  ],
-  "search_strategy": "one sentence strategy for navigation"
-}
+        Return ONLY valid JSON with this exact schema:
+        {
+        "target_type": "room_or_location | person_office | department | facility | suite_or_unit | gate_or_zone | lab | unknown",
+        "known_tokens": ["important raw tokens to search for on signs/doors"],
+        "aliases": ["alternative labels that may appear on signs/doors"],
+        "constraints": {
+            "possible_building": null,
+            "possible_floor": null,
+            "possible_room": null,
+            "possible_zone": null,
+            "target_name": null
+        },
+        "possible_interpretations": [
+            {
+            "interpretation": "short explanation",
+            "evidence_needed": ["what evidence confirms or rejects this"],
+            "confidence": "high | medium | low"
+            }
+        ],
+        "search_strategy": "one sentence strategy for navigation"
+        }
 
-Goal: {goal}
-"""
+        Goal: {goal}
+        """
 
     def __init__(self, model: "ModelWrapper | None" = None):
         self.model = model

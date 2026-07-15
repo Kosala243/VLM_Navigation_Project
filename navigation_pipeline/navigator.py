@@ -280,9 +280,12 @@ class NavigationSystem:
             "READ_SIGN",
             "CHECK_DOOR_LABEL",
             "FOLLOW_DIRECTION",
+            "ALIGN_WITH_LANDMARK",
+            "APPROACH_LANDMARK",
+            "PASS_THROUGH_DOORWAY",
             "ASK_RECEPTION_OR_STAFF",
             "USE_ELEVATOR_OR_STAIRS",
-            "STOP_AND_VERIFY",
+            "STOP_AND_VERIFY",     
         }:
             self.memory.mark_landmark(str(lm_id), "used")
 

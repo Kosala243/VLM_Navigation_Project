@@ -48,15 +48,12 @@ class ActionGenerator:
         "CHECK_DOOR_LABEL": "Approach/read a visible door plate or room label.",
         "NAVIGATE_TO_LANDMARK": "Navigate to a known landmark id from memory.",
         "NAVIGATE_TO_FRONTIER": "Move to an unexplored reachable path/frontier.",
-        "FOLLOW_DIRECTION": (
-            "Follow a direction from current/local evidence such as a sign, directory, "
-            "room-range sign, or official staff/reception instruction."
-        ),
-        "ASK_RECEPTION_OR_STAFF": (
-            "Ask only a clearly visible official help source: reception, front desk, "
-            "information desk, security desk, or staff/help counter."
-        ),
+        "FOLLOW_DIRECTION": "Follow a direction from current/local evidence such as a sign, directory, room-range sign, or official staff/reception instruction.",
+        "ASK_RECEPTION_OR_STAFF": "Ask only a clearly visible official help source: reception, front desk, information desk, security desk, or staff/help counter.",
         "USE_ELEVATOR_OR_STAIRS": "Use lift/stairs when recent evidence says a floor transition is needed.",
+        "ALIGN_WITH_LANDMARK": "Rotate toward a currently visible landmark until it is approximately centred in the front camera.",
+        "APPROACH_LANDMARK": "Move toward a currently visible target landmark while keeping it visible and stopping when the stated stop condition is reached.",
+        "PASS_THROUGH_DOORWAY": "Approach and safely pass through a clearly visible open doorway that is relevant to the navigation goal.",
         "SEARCH_FOR_CUE": "Search for a useful cue: sign, directory, room label, elevator, stairs, target, reception/help desk.",
         "WAIT_OR_RECOVER": "Use when input is unclear, blocked, unsafe, or the previous action failed.",
     }
@@ -107,6 +104,13 @@ class ActionGenerator:
         - Treat building/zone-only markers such as "B" for goal "B0.004" as navigation cues, not strong target evidence.
         - Prefer navigating toward intermediate landmarks that lead closer to the goal (e.g., the correct tower entrance, corridor, doorway, or junction) before considering assistance from reception or staff.
         - FOLLOW_DIRECTION must include landmark_id of the sign/directory/reception/stairs/elevator evidence that supports the direction.
+        - Prefer target-oriented actions over vague standalone direction commands when a useful visible landmark can serve as the next subgoal.
+        - Use ALIGN_WITH_LANDMARK when the selected landmark is visible in LEFT or RIGHT and the robot must first turn until it is centred in the FRONT view.
+        - Use APPROACH_LANDMARK when the selected landmark is visible ahead and the robot should move toward it while keeping it visible.
+        - Use PASS_THROUGH_DOORWAY only when a clearly open doorway is the intended route toward the goal.
+        - Every target-oriented action must include landmark_id, target_description, stop_condition, evidence_view, and capture_after=true.
+        - Stop conditions must be visually or sensor verifiable, such as "landmark centred in FRONT", "robot near doorway", or "doorway threshold reached".
+        - Do not specify exact movement duration, wheel velocity, or number of robot steps.
         - For debugging and evaluation, every action must report where the strongest current visual evidence came from.
         - Include "evidence_view" inside params.
         - evidence_view must be one of: "LEFT", "FRONT", "RIGHT", "STITCHED_UNKNOWN", or "NONE".
@@ -118,13 +122,16 @@ class ActionGenerator:
 
         Return ONLY valid JSON:
         {
-        "action": "READ_SIGN | CHECK_DOOR_LABEL | NAVIGATE_TO_LANDMARK | NAVIGATE_TO_FRONTIER | FOLLOW_DIRECTION | ASK_RECEPTION_OR_STAFF | USE_ELEVATOR_OR_STAIRS | SEARCH_FOR_CUE | WAIT_OR_RECOVER",
+        "action": "READ_SIGN | CHECK_DOOR_LABEL | NAVIGATE_TO_LANDMARK | NAVIGATE_TO_FRONTIER | FOLLOW_DIRECTION | ASK_RECEPTION_OR_STAFF | USE_ELEVATOR_OR_STAIRS | SEARCH_FOR_CUE | WAIT_OR_RECOVER | ALIGN_WITH_LANDMARK | APPROACH_LANDMARK | PASS_THROUGH_DOORWAY",
         "params": {
             "landmark_id": null,
             "direction": null,
             "target": null,
+            "target_description": null,
             "floor": null,
             "search_for": null,
+            "stop_condition": null,
+            "capture_after": true,
             "evidence_view": "LEFT | FRONT | RIGHT | STITCHED_UNKNOWN | NONE"
         },
         "reason": "one sentence",
@@ -268,6 +275,69 @@ class ActionGenerator:
                     "in the current observation."
                 )
                 return action
+        if action.name in {
+            "ALIGN_WITH_LANDMARK",
+            "APPROACH_LANDMARK",
+            "PASS_THROUGH_DOORWAY",
+        }:
+            lm_id = _clean_param(action.params.get("landmark_id"))
+            target_description = _clean_param(
+                action.params.get("target_description")
+            )
+            stop_condition = _clean_param(
+                action.params.get("stop_condition")
+            )
+
+            if not lm_id:
+                action.is_valid = False
+                action.invalid_reason = (
+                    f"{action.name} requires landmark_id."
+                )
+                return action
+
+            lm = _get_landmark(memory, lm_id)
+            if lm is None:
+                action.is_valid = False
+                action.invalid_reason = (
+                    f"Unknown landmark_id: {lm_id}"
+                )
+                return action
+
+            if not _landmark_is_current(memory, lm):
+                action.is_valid = False
+                action.invalid_reason = (
+                    f"{action.name} requires landmark {lm_id} "
+                    "to be visible in the current observation."
+                )
+                return action
+
+            if not target_description:
+                action.is_valid = False
+                action.invalid_reason = (
+                    f"{action.name} requires target_description."
+                )
+                return action
+
+            if not stop_condition:
+                action.is_valid = False
+                action.invalid_reason = (
+                    f"{action.name} requires stop_condition."
+                )
+                return action
+
+            action.params["capture_after"] = True
+
+            if action.name == "PASS_THROUGH_DOORWAY":
+                if str(getattr(lm, "category", "")).lower() not in {
+                    "door",
+                    "frontier",
+                }:
+                    action.is_valid = False
+                    action.invalid_reason = (
+                        "PASS_THROUGH_DOORWAY requires a door "
+                        "or doorway/frontier landmark."
+                    )
+                    return action
 
         if action.name == "NAVIGATE_TO_FRONTIER":
             lm_id = _clean_param(action.params.get("landmark_id"))
@@ -346,6 +416,9 @@ class ActionGenerator:
             "NAVIGATE_TO_LANDMARK": 0.60,
             "USE_ELEVATOR_OR_STAIRS": 0.60,
             "ASK_RECEPTION_OR_STAFF": 0.55,
+            "ALIGN_WITH_LANDMARK": 0.65,
+            "APPROACH_LANDMARK": 0.65,
+            "PASS_THROUGH_DOORWAY": 0.60,
             "NAVIGATE_TO_FRONTIER": 0.40,
             "SEARCH_FOR_CUE": 0.35,
             "WAIT_OR_RECOVER": 0.20,
@@ -397,7 +470,7 @@ class ActionGenerator:
                 )
 
         no_landmark_penalty = 0.0
-        if action.name in {"FOLLOW_DIRECTION", "CHECK_DOOR_LABEL", "READ_SIGN", "NAVIGATE_TO_LANDMARK"} and not lm_id:
+        if action.name in {"FOLLOW_DIRECTION", "CHECK_DOOR_LABEL", "READ_SIGN", "NAVIGATE_TO_LANDMARK", "ALIGN_WITH_LANDMARK", "APPROACH_LANDMARK", "PASS_THROUGH_DOORWAY",} and not lm_id:
             no_landmark_penalty = 0.15
 
         invalid_penalty = 0.40 if not action.is_valid else 0.0

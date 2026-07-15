@@ -267,3 +267,62 @@ async def autonomous_step(
             mode="autonomous_step",
         )
     )
+
+@app.get("/autonomous/export")
+def autonomous_export():
+    """
+    Export the current live autonomous session:
+    - parsed goal
+    - full navigation memory
+    - complete step records
+    """
+    global NAV
+
+    if NAV is None or NAV.goal is None:
+        raise HTTPException(
+            status_code=400,
+            detail="No active autonomous session.",
+        )
+
+    memory_data = {
+        "image_count": NAV.memory.image_count,
+        "landmarks": [asdict(lm) for lm in NAV.memory.landmarks],
+        "observation_summaries": NAV.memory.observation_summaries,
+        "hypotheses": NAV.memory.hypotheses,
+        "failed_actions": NAV.memory.failed_actions,
+    }
+
+    navigation_log_data = {
+        "goal": NAV.goal.to_dict(),
+        "status": NAV.current_status(),
+        "total_steps": len(NAV.records),
+        "records": [
+            {
+                "image_num": record.image_num,
+                "image_path": record.image_path,
+                "memory_update": {
+                    "useful": record.memory_update.useful,
+                    "summary": record.memory_update.summary,
+                    "landmarks": [
+                        asdict(lm)
+                        for lm in record.memory_update.landmarks
+                    ],
+                    "hypotheses": record.memory_update.hypotheses,
+                },
+                "verification": (
+                    record.verification.to_dict()
+                    if record.verification
+                    else None
+                ),
+                "action": asdict(record.action),
+                "executed": record.executed,
+            }
+            for record in NAV.records
+        ],
+    }
+
+    return {
+        "goal": NAV.goal.to_dict(),
+        "memory": memory_data,
+        "navigation_log": navigation_log_data,
+    }

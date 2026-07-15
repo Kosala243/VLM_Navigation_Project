@@ -35,7 +35,10 @@ class Landmark:
     evidence_breakdown: dict[str, float] = field(default_factory=dict)
     image_path: str = ""
     extra: dict[str, Any] = field(default_factory=dict)
-
+    # Number of separate observations in which this landmark was detected.
+    observation_count: int = 1
+    # Number of times the planner selected an action supported by this landmark.
+    selection_count: int = 0
 
 @dataclass
 class MemoryUpdate:
@@ -204,6 +207,7 @@ class NavigationMemory:
                 existing.evidence_score = landmark.evidence_score
                 existing.evidence_breakdown = landmark.evidence_breakdown
                 existing.extra.update(landmark.extra)
+                existing.observation_count += 1
                 continue
             new_landmarks.append(landmark)
 
@@ -273,6 +277,7 @@ class NavigationMemory:
         for lm in self.landmarks:
             if lm.id == landmark_id:
                 lm.status = status
+                lm.selection_count += 1
                 return
 
     def add_failed_action(self, reason: str) -> None:
