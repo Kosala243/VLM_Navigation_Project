@@ -195,7 +195,15 @@ class NavigationMemory:
             landmark = self._build_landmark(raw_lm, image_path, goal)
             if landmark is None:
                 continue
-            if self._is_duplicate_landmark(landmark):
+            existing = self._find_duplicate_landmark(landmark)
+            if existing is not None:
+                existing.description = landmark.description
+                existing.text = landmark.text or existing.text
+                existing.image_path = landmark.image_path
+                existing.confidence = landmark.confidence
+                existing.evidence_score = landmark.evidence_score
+                existing.evidence_breakdown = landmark.evidence_breakdown
+                existing.extra.update(landmark.extra)
                 continue
             new_landmarks.append(landmark)
 
@@ -253,7 +261,7 @@ class NavigationMemory:
                 evidence_breakdown=evidence_breakdown,
                 extra=extra,
             )
-            if not self._is_duplicate_landmark(landmark):
+            if self._find_duplicate_landmark(landmark) is None:
                 self.landmarks.append(landmark)
         self._trim_memory()
 
@@ -407,12 +415,12 @@ class NavigationMemory:
             return "observation"
         return category
 
-    def _is_duplicate_landmark(self, candidate: Landmark) -> bool:
-        cand_key = _landmark_key(candidate)
-        for existing in self.landmarks[-30:]:
-            if _landmark_key(existing) == cand_key:
-                return True
-        return False
+    def _find_duplicate_landmark(self, candidate: Landmark) -> Landmark | None:
+        candidate_key = _landmark_key(candidate)
+        for existing in reversed(self.landmarks[-30:]):
+            if _landmark_key(existing) == candidate_key:
+                return existing
+        return None
 
     def _add_hypothesis(self, hypothesis: str) -> None:
         if hypothesis and hypothesis not in self.hypotheses:

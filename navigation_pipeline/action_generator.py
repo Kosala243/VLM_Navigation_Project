@@ -62,72 +62,77 @@ class ActionGenerator:
     }
 
     _PROMPT = """\
-You are the high-level planner for a mobile robot navigating an unknown office/university/hospital/airport/public building.
-You must select ONE skill primitive. Do NOT output low-level wheel velocities.
+        You are the high-level planner for a mobile robot navigating an unknown office/university/hospital/airport/public building.
+        You must select ONE skill primitive. Do NOT output low-level wheel velocities.
 
-Goal:
-{goal_context}
+        Goal:
+        {goal_context}
 
-Structured memory:
-{memory_context}
+        Structured memory:
+        {memory_context}
 
-Current image: provided separately.
+        Current image: provided separately.
 
-Visual input note:
-- The current image may be a normal single front-camera image, a stitched LEFT/FRONT/RIGHT image, or three separate LEFT/FRONT/RIGHT images.
-- If stitched, treat the panels as separate camera views, not one continuous scene.
-- Use LEFT evidence for left-side actions, FRONT evidence for forward/stop/check actions, and RIGHT evidence for right-side actions.
-- If choosing a direction, include the evidence view in params as "evidence_view": "LEFT | FRONT | RIGHT | NONE".
+        Visual input note:
+        - The current image may be a normal single front-camera image, a stitched LEFT/FRONT/RIGHT image, or three separate LEFT/FRONT/RIGHT images.
+        - If stitched, treat the panels as separate camera views, not one continuous scene.
+        - Use LEFT evidence for left-side actions, FRONT evidence for forward/stop/check actions, and RIGHT evidence for right-side actions.
+        - If choosing a direction, include the evidence view in params as "evidence_view": "LEFT | FRONT | RIGHT | NONE".
 
-Available actions:
-{action_list}
+        Available actions:
+        {action_list}
 
-Decision rules:
-- Prefer reading useful signs/directories/maps over blind exploration.
-- If a visible door label may confirm the target, an alias, or a room-number pattern, use CHECK_DOOR_LABEL.
-- If a current/local sign, directory, room-range sign, or official reception/staff memory gives a direction, use FOLLOW_DIRECTION or NAVIGATE_TO_LANDMARK.
-- Prefer the newest relevant local evidence over old evidence whose status is already "used" or "visited".
-- Do not ask random people, students, visitors, or people in corridors/classrooms/labs.
-- Use ASK_RECEPTION_OR_STAFF only when a reception/front desk/information desk/security desk/help counter is clearly visible.
-- If no useful cue is visible, use NAVIGATE_TO_FRONTIER or SEARCH_FOR_CUE.
-- If a signboard, room-range sign, directory, or door label is visible but the text is too small, blurry, overexposed, or unreadable, do NOT guess the text or direction signs(arrow marks).
-- In that case, choose an action that moves closer to the visible cue.
-- If the unclear cue is in the FRONT view, choose READ_SIGN, CHECK_DOOR_LABEL, or FOLLOW_DIRECTION with direction="forward".
-- If the unclear cue is in the LEFT view, choose FOLLOW_DIRECTION with direction="left" to face/approach it.
-- If the unclear cue is in the RIGHT view, choose FOLLOW_DIRECTION with direction="right" to face/approach it.
-- In the reason, explicitly say that the text is not clearly readable and moving closer may help decide the direction.
-- Always include "direction" and "evidence_view" in params when approaching an unclear sign or label.
-- Use USE_ELEVATOR_OR_STAIRS only when recent evidence shows a lift/stairs and the goal/floor evidence suggests a floor transition.
-- Never assume a room-code structure is true until signs/labels/directories confirm it.
-- Do not repeatedly read/check a landmark whose status is already "used" or "visited"; choose a newer cue, frontier, or search action instead.
-- Treat building/zone-only markers such as "B" for goal "B0.004" as navigation cues, not strong target evidence.
-- FOLLOW_DIRECTION must include landmark_id of the sign/directory/reception/stairs/elevator evidence that supports the direction.
-- For debugging and evaluation, every action must report where the strongest current visual evidence came from.
-- Include "evidence_view" inside params.
-- evidence_view must be one of: "LEFT", "FRONT", "RIGHT", "STITCHED_UNKNOWN", or "NONE".
-- Use "LEFT" if the strongest cue is in the left camera/panel.
-- Use "FRONT" if the strongest cue is in the front camera/panel.
-- Use "RIGHT" if the strongest cue is in the right camera/panel.
-- Use "STITCHED_UNKNOWN" if the image is stitched but the panel/source is unclear.
-- Use "NONE" if no useful visual cue is visible.
+        Decision rules:
+        - Prefer reading useful signs/directories/maps over blind exploration.
+        - If a visible door label may confirm the target, an alias, or a room-number pattern, use CHECK_DOOR_LABEL.
+        - If a current/local sign, directory, room-range sign, or official reception/staff memory gives a direction, use FOLLOW_DIRECTION or NAVIGATE_TO_LANDMARK.
+        - Prefer the newest relevant local evidence over old evidence whose status is already "used" or "visited".
+        - Do not ask random people, students, visitors, or people in corridors/classrooms/labs.
+        - Prefer direct navigation cues (room labels, room-range signs, directional signs, directories, zone/building markers, corridors, doorways) over asking for help.
+        - Use ASK_RECEPTION_OR_STAFF only when no reliable navigation cue is available, or the robot cannot make further progress after searching.
+        - If both reception and a plausible navigation cue toward the goal are visible, continue navigation using the visual cue instead of asking for help.
+        - If no useful cue is visible, use NAVIGATE_TO_FRONTIER or SEARCH_FOR_CUE.
+        - If a signboard, room-range sign, directory, or door label is visible but the text is too small, blurry, overexposed, or unreadable, do NOT guess the text or direction signs(arrow marks).
+        - In that case, consider moving closer only when the unclear cue is the most relevant available evidence toward the goal.
+        - If an unreadable but potentially useful navigation cue is visible, choose an action that safely approaches the cue only if it is the most relevant current evidence toward the goal.
+        - Do not ignore a clearer or more goal-relevant navigation cue elsewhere in the current views.
+        - In the reason, explicitly say that the text is not clearly readable and moving closer may help decide the direction.
+        - Include "direction" only when the chosen action requires movement toward the selected cue.
+        - Always include "evidence_view" for the selected cue.
+        - When multiple navigation cues are visible, choose the cue that makes the most progress toward the goal rather than the most visually prominent object.
+        - Use USE_ELEVATOR_OR_STAIRS only when recent evidence shows a lift/stairs and the goal/floor evidence suggests a floor transition.
+        - Never assume a room-code structure is true until signs/labels/directories confirm it.
+        - A landmark marked "used" or "visited" may be reused when it is visible in the current images and remains relevant to the active navigation goal.
+        - Prefer a newer cue only when the previous landmark is no longer visible, has already been passed, or no longer provides useful progress.
+        - Treat building/zone-only markers such as "B" for goal "B0.004" as navigation cues, not strong target evidence.
+        - Prefer navigating toward intermediate landmarks that lead closer to the goal (e.g., the correct tower entrance, corridor, doorway, or junction) before considering assistance from reception or staff.
+        - FOLLOW_DIRECTION must include landmark_id of the sign/directory/reception/stairs/elevator evidence that supports the direction.
+        - For debugging and evaluation, every action must report where the strongest current visual evidence came from.
+        - Include "evidence_view" inside params.
+        - evidence_view must be one of: "LEFT", "FRONT", "RIGHT", "STITCHED_UNKNOWN", or "NONE".
+        - Use "LEFT" if the strongest cue is in the left camera/panel.
+        - Use "FRONT" if the strongest cue is in the front camera/panel.
+        - Use "RIGHT" if the strongest cue is in the right camera/panel.
+        - Use "STITCHED_UNKNOWN" if the image is stitched but the panel/source is unclear.
+        - Use "NONE" if no useful visual cue is visible.
 
-Return ONLY valid JSON:
-{
-  "action": "READ_SIGN | CHECK_DOOR_LABEL | NAVIGATE_TO_LANDMARK | NAVIGATE_TO_FRONTIER | FOLLOW_DIRECTION | ASK_RECEPTION_OR_STAFF | USE_ELEVATOR_OR_STAIRS | SEARCH_FOR_CUE | WAIT_OR_RECOVER",
-  "params": {
-    "landmark_id": null,
-    "direction": null,
-    "target": null,
-    "floor": null,
-    "search_for": null,
-    "evidence_view": "LEFT | FRONT | RIGHT | STITCHED_UNKNOWN | NONE"
-  },
-  "reason": "one sentence",
-  "confidence": "high | medium | low",
-  "goal_reached": true/false,
-  "needs_verification": true/false
-}
-"""
+        Return ONLY valid JSON:
+        {
+        "action": "READ_SIGN | CHECK_DOOR_LABEL | NAVIGATE_TO_LANDMARK | NAVIGATE_TO_FRONTIER | FOLLOW_DIRECTION | ASK_RECEPTION_OR_STAFF | USE_ELEVATOR_OR_STAIRS | SEARCH_FOR_CUE | WAIT_OR_RECOVER",
+        "params": {
+            "landmark_id": null,
+            "direction": null,
+            "target": null,
+            "floor": null,
+            "search_for": null,
+            "evidence_view": "LEFT | FRONT | RIGHT | STITCHED_UNKNOWN | NONE"
+        },
+        "reason": "one sentence",
+        "confidence": "high | medium | low",
+        "goal_reached": true/false,
+        "needs_verification": true/false
+        }
+    """
 
     def __init__(self, model: "ModelWrapper"):
         self.model = model
@@ -233,9 +238,14 @@ Return ONLY valid JSON:
                 action.invalid_reason = f"Unknown landmark_id: {lm_id}"
                 return action
 
-            if str(getattr(lm, "status", "")).lower() in {"used", "visited"}:
+            status = str(getattr(lm, "status", "")).lower()
+
+            if status in {"used", "visited"} and not _landmark_is_current(memory, lm):
                 action.is_valid = False
-                action.invalid_reason = f"Landmark {lm_id} was already {lm.status}; choose a newer cue."
+                action.invalid_reason = (
+                    f"Landmark {lm_id} was already {lm.status} and is not visible "
+                    "in the current observation."
+                )
                 return action
 
         if action.name == "NAVIGATE_TO_LANDMARK":
@@ -249,9 +259,14 @@ Return ONLY valid JSON:
                 action.invalid_reason = f"Unknown landmark_id: {lm_id}"
                 return action
             lm = _get_landmark(memory, lm_id)
-            if lm is not None and str(getattr(lm, "status", "")).lower() in {"used", "visited"}:
+            status = str(getattr(lm, "status", "")).lower()
+
+            if status in {"used", "visited"} and not _landmark_is_current(memory, lm):
                 action.is_valid = False
-                action.invalid_reason = f"Landmark {lm_id} was already {lm.status}; choose a newer cue."
+                action.invalid_reason = (
+                    f"Landmark {lm_id} was already {lm.status} and is not visible "
+                    "in the current observation."
+                )
                 return action
 
         if action.name == "NAVIGATE_TO_FRONTIER":
@@ -370,7 +385,10 @@ Return ONLY valid JSON:
                     partial_marker_penalty = 0.25
 
                 if str(getattr(lm, "status", "")).lower() in {"used", "visited"}:
-                    used_landmark_penalty = 0.30
+                    if _landmark_is_current(memory, lm):
+                        used_landmark_penalty = 0.0
+                    else:
+                        used_landmark_penalty = 0.30
                 
                 mismatched_room_code_penalty = _room_code_mismatch_penalty(
                     lm=lm,
@@ -660,6 +678,20 @@ def _find_best_direction_landmark(
             best_score = score
 
     return best
+
+def _landmark_is_current(
+    memory: "NavigationMemory",
+    landmark: "Landmark | None",
+) -> bool:
+    if landmark is None:
+        return False
+
+    extra = getattr(landmark, "extra", {})
+    if not isinstance(extra, dict):
+        return False
+
+    source_index = extra.get("source_image_index")
+    return source_index == getattr(memory, "image_count", None)
 
 def _has_vertical_transition_evidence(landmarks: list["Landmark"]) -> bool:
     vertical_words = ["elevator", "lift", "stairs", "staircase", "niveau", "level", "floor", "escalator"]
