@@ -250,6 +250,38 @@ def stitch_three_images(left_path, front_path, right_path, output_path, width, h
     print("[OK] Stitched image:", output_path)
     return output_path
 
+def load_saved_three_camera_files(args, local_step_dir, step_index):
+    source_dir = Path(args.saved_image_dir)
+
+    if step_index is None:
+        step_index = 1
+
+    candidates = {
+        "LEFT": source_dir / f"left_{step_index}.png",
+        "FRONT": source_dir / f"front_{step_index}.png",
+        "RIGHT": source_dir / f"right_{step_index}.png",
+    }
+
+    for label, path in candidates.items():
+        if not path.exists():
+            raise FileNotFoundError(
+                f"Missing saved {label} image: {path}"
+            )
+
+    local_step_dir.mkdir(parents=True, exist_ok=True)
+
+    image_paths = {}
+
+    for label, source_path in candidates.items():
+        target_path = local_step_dir / f"{label.lower()}.png"
+        shutil.copyfile(source_path, target_path)
+        image_paths[label] = target_path
+
+    print("[OK] Loaded saved LEFT:", image_paths["LEFT"])
+    print("[OK] Loaded saved FRONT:", image_paths["FRONT"])
+    print("[OK] Loaded saved RIGHT:", image_paths["RIGHT"])
+
+    return image_paths
 
 def get_observation(args, step_index=None):
     local_dir = Path(args.local_dir)
@@ -258,6 +290,24 @@ def get_observation(args, step_index=None):
         local_step_dir = local_dir / "single"
     else:
         local_step_dir = local_dir / "step_{:04d}".format(step_index)
+
+    if args.saved_image_dir:
+        raw_paths = load_saved_three_camera_files(
+            args,
+            local_step_dir,
+            step_index,
+        )
+
+        return {
+            "camera_mode": "separate",
+            "primary_path": raw_paths["FRONT"],
+            "image_paths": raw_paths,
+            "saved_files": {
+                "left": str(raw_paths["LEFT"]),
+                "front": str(raw_paths["FRONT"]),
+                "right": str(raw_paths["RIGHT"]),
+            },
+        }
 
     if args.camera_mode == "single":
         primary = capture_single_camera(args, local_step_dir)
@@ -802,7 +852,16 @@ def parse_args():
         help="single = one camera image, stitched = left/front/right stitched image, separate = send left/front/right as separate model images",
     )
 
-    parser.add_argument("--goal", default="B0.004")
+    parser.add_argument(
+        "--saved-image-dir",
+        default=None,
+        help=(
+            "Optional folder containing saved separate-camera images "
+            "named left_1.png, front_1.png, right_1.png, etc."
+        ),
+    )
+
+    parser.add_argument("--goal", default="C2.028")
     parser.add_argument("--api", default="http://ernis-amd395:8001")
 
     parser.add_argument("--robot-user", default="unitree")
