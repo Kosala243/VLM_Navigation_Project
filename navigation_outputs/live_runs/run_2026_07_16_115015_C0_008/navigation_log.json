@@ -1,0 +1,403 @@
+{
+  "goal": {
+    "raw_goal": "C0.008",
+    "target_type": "room_or_location",
+    "known_tokens": [
+      "C0.008",
+      "C0-008",
+      "C0008",
+      "Room C0008"
+    ],
+    "aliases": [
+      "C0.008",
+      "C0-008",
+      "C0008",
+      "Room C0008"
+    ],
+    "possible_interpretations": [
+      {
+        "interpretation": "May mean Building/Zone C, Floor 0, Room 008.",
+        "evidence_needed": [
+          "building or zone sign for C",
+          "floor indicator 0",
+          "door label matching C0.008 or C0008"
+        ],
+        "confidence": "medium"
+      },
+      {
+        "interpretation": "May simply be the full room label/code 'C0.008' without separable building/floor meaning.",
+        "evidence_needed": [
+          "door label or directory entry exactly matching C0.008"
+        ],
+        "confidence": "medium"
+      }
+    ],
+    "constraints": {
+      "possible_building": "C",
+      "possible_floor": "0",
+      "possible_room": "008",
+      "possible_zone": null,
+      "target_name": null
+    },
+    "search_strategy": "Search for door labels, corridor range signs, directories, or floor/zone indicators matching ['C0.008', 'C0-008', 'C0008', 'Room C0008']; treat building/floor/room structure as a hypothesis until confirmed."
+  },
+  "status": "Goal=C0.008 | records=5 | memory_landmarks=0 | keep_memory=False",
+  "total_steps": 5,
+  "records": [
+    {
+      "image_num": 1,
+      "image_path": "live_frames/frame_1784195419709_front.png",
+      "memory_update": {
+        "useful": false,
+        "summary": "",
+        "landmarks": [],
+        "hypotheses": []
+      },
+      "verification": {
+        "target_visible": false,
+        "target_reached": false,
+        "matched_label": "",
+        "evidence_type": "none",
+        "confidence": "low",
+        "evidence_score": 0.05,
+        "evidence_breakdown": {
+          "evidence_type_score": 0.0,
+          "visual_bonus": 0.0,
+          "label_match_bonus": 0.0,
+          "current_frame_bonus": 0.05,
+          "ambiguity_penalty": 0.0,
+          "final_score": 0.05
+        },
+        "reason": "",
+        "landmark_id": null,
+        "raw": {
+          "error": {
+            "code": 400,
+            "message": "request (13024 tokens) exceeds the available context size (8192 tokens), try increasing it",
+            "type": "exceed_context_size_error",
+            "n_prompt_tokens": 13024,
+            "n_ctx": 8192
+          }
+        }
+      },
+      "action": {
+        "name": "WAIT_OR_RECOVER",
+        "params": {
+          "evidence_view": "NONE"
+        },
+        "reason": "No parseable reason returned.",
+        "confidence": "low",
+        "evidence_score": 0.2,
+        "evidence_breakdown": {
+          "action_base_score": 0.2,
+          "supporting_landmark_score": 0.0,
+          "supporting_landmark_bonus": 0.0,
+          "no_landmark_penalty": 0.0,
+          "partial_marker_penalty": 0.0,
+          "used_landmark_penalty": 0.0,
+          "invalid_penalty": 0.0,
+          "mismatched_room_code_penalty": 0.0,
+          "final_score": 0.2
+        },
+        "goal_reached": false,
+        "needs_verification": false,
+        "raw": {
+          "error": {
+            "code": 400,
+            "message": "request (14165 tokens) exceeds the available context size (8192 tokens), try increasing it",
+            "type": "exceed_context_size_error",
+            "n_prompt_tokens": 14165,
+            "n_ctx": 8192
+          }
+        },
+        "is_valid": true,
+        "invalid_reason": ""
+      },
+      "executed": false
+    },
+    {
+      "image_num": 2,
+      "image_path": "live_frames/frame_1784195430526_front.png",
+      "memory_update": {
+        "useful": false,
+        "summary": "",
+        "landmarks": [],
+        "hypotheses": []
+      },
+      "verification": {
+        "target_visible": false,
+        "target_reached": false,
+        "matched_label": "",
+        "evidence_type": "none",
+        "confidence": "low",
+        "evidence_score": 0.05,
+        "evidence_breakdown": {
+          "evidence_type_score": 0.0,
+          "visual_bonus": 0.0,
+          "label_match_bonus": 0.0,
+          "current_frame_bonus": 0.05,
+          "ambiguity_penalty": 0.0,
+          "final_score": 0.05
+        },
+        "reason": "",
+        "landmark_id": null,
+        "raw": {
+          "error": {
+            "code": 400,
+            "message": "request (13024 tokens) exceeds the available context size (8192 tokens), try increasing it",
+            "type": "exceed_context_size_error",
+            "n_prompt_tokens": 13024,
+            "n_ctx": 8192
+          }
+        }
+      },
+      "action": {
+        "name": "WAIT_OR_RECOVER",
+        "params": {
+          "evidence_view": "NONE"
+        },
+        "reason": "No parseable reason returned.",
+        "confidence": "low",
+        "evidence_score": 0.2,
+        "evidence_breakdown": {
+          "action_base_score": 0.2,
+          "supporting_landmark_score": 0.0,
+          "supporting_landmark_bonus": 0.0,
+          "no_landmark_penalty": 0.0,
+          "partial_marker_penalty": 0.0,
+          "used_landmark_penalty": 0.0,
+          "invalid_penalty": 0.0,
+          "mismatched_room_code_penalty": 0.0,
+          "final_score": 0.2
+        },
+        "goal_reached": false,
+        "needs_verification": false,
+        "raw": {
+          "error": {
+            "code": 400,
+            "message": "request (14165 tokens) exceeds the available context size (8192 tokens), try increasing it",
+            "type": "exceed_context_size_error",
+            "n_prompt_tokens": 14165,
+            "n_ctx": 8192
+          }
+        },
+        "is_valid": true,
+        "invalid_reason": ""
+      },
+      "executed": false
+    },
+    {
+      "image_num": 3,
+      "image_path": "live_frames/frame_1784195441805_front.png",
+      "memory_update": {
+        "useful": false,
+        "summary": "",
+        "landmarks": [],
+        "hypotheses": []
+      },
+      "verification": {
+        "target_visible": false,
+        "target_reached": false,
+        "matched_label": "",
+        "evidence_type": "none",
+        "confidence": "low",
+        "evidence_score": 0.05,
+        "evidence_breakdown": {
+          "evidence_type_score": 0.0,
+          "visual_bonus": 0.0,
+          "label_match_bonus": 0.0,
+          "current_frame_bonus": 0.05,
+          "ambiguity_penalty": 0.0,
+          "final_score": 0.05
+        },
+        "reason": "",
+        "landmark_id": null,
+        "raw": {
+          "error": {
+            "code": 400,
+            "message": "request (13024 tokens) exceeds the available context size (8192 tokens), try increasing it",
+            "type": "exceed_context_size_error",
+            "n_prompt_tokens": 13024,
+            "n_ctx": 8192
+          }
+        }
+      },
+      "action": {
+        "name": "WAIT_OR_RECOVER",
+        "params": {
+          "evidence_view": "NONE"
+        },
+        "reason": "No parseable reason returned.",
+        "confidence": "low",
+        "evidence_score": 0.2,
+        "evidence_breakdown": {
+          "action_base_score": 0.2,
+          "supporting_landmark_score": 0.0,
+          "supporting_landmark_bonus": 0.0,
+          "no_landmark_penalty": 0.0,
+          "partial_marker_penalty": 0.0,
+          "used_landmark_penalty": 0.0,
+          "invalid_penalty": 0.0,
+          "mismatched_room_code_penalty": 0.0,
+          "final_score": 0.2
+        },
+        "goal_reached": false,
+        "needs_verification": false,
+        "raw": {
+          "error": {
+            "code": 400,
+            "message": "request (14165 tokens) exceeds the available context size (8192 tokens), try increasing it",
+            "type": "exceed_context_size_error",
+            "n_prompt_tokens": 14165,
+            "n_ctx": 8192
+          }
+        },
+        "is_valid": true,
+        "invalid_reason": ""
+      },
+      "executed": false
+    },
+    {
+      "image_num": 4,
+      "image_path": "live_frames/frame_1784195452116_front.png",
+      "memory_update": {
+        "useful": false,
+        "summary": "",
+        "landmarks": [],
+        "hypotheses": []
+      },
+      "verification": {
+        "target_visible": false,
+        "target_reached": false,
+        "matched_label": "",
+        "evidence_type": "none",
+        "confidence": "low",
+        "evidence_score": 0.05,
+        "evidence_breakdown": {
+          "evidence_type_score": 0.0,
+          "visual_bonus": 0.0,
+          "label_match_bonus": 0.0,
+          "current_frame_bonus": 0.05,
+          "ambiguity_penalty": 0.0,
+          "final_score": 0.05
+        },
+        "reason": "",
+        "landmark_id": null,
+        "raw": {
+          "error": {
+            "code": 400,
+            "message": "request (13024 tokens) exceeds the available context size (8192 tokens), try increasing it",
+            "type": "exceed_context_size_error",
+            "n_prompt_tokens": 13024,
+            "n_ctx": 8192
+          }
+        }
+      },
+      "action": {
+        "name": "WAIT_OR_RECOVER",
+        "params": {
+          "evidence_view": "NONE"
+        },
+        "reason": "No parseable reason returned.",
+        "confidence": "low",
+        "evidence_score": 0.2,
+        "evidence_breakdown": {
+          "action_base_score": 0.2,
+          "supporting_landmark_score": 0.0,
+          "supporting_landmark_bonus": 0.0,
+          "no_landmark_penalty": 0.0,
+          "partial_marker_penalty": 0.0,
+          "used_landmark_penalty": 0.0,
+          "invalid_penalty": 0.0,
+          "mismatched_room_code_penalty": 0.0,
+          "final_score": 0.2
+        },
+        "goal_reached": false,
+        "needs_verification": false,
+        "raw": {
+          "error": {
+            "code": 400,
+            "message": "request (14165 tokens) exceeds the available context size (8192 tokens), try increasing it",
+            "type": "exceed_context_size_error",
+            "n_prompt_tokens": 14165,
+            "n_ctx": 8192
+          }
+        },
+        "is_valid": true,
+        "invalid_reason": ""
+      },
+      "executed": false
+    },
+    {
+      "image_num": 5,
+      "image_path": "live_frames/frame_1784195462935_front.png",
+      "memory_update": {
+        "useful": false,
+        "summary": "",
+        "landmarks": [],
+        "hypotheses": []
+      },
+      "verification": {
+        "target_visible": false,
+        "target_reached": false,
+        "matched_label": "",
+        "evidence_type": "none",
+        "confidence": "low",
+        "evidence_score": 0.05,
+        "evidence_breakdown": {
+          "evidence_type_score": 0.0,
+          "visual_bonus": 0.0,
+          "label_match_bonus": 0.0,
+          "current_frame_bonus": 0.05,
+          "ambiguity_penalty": 0.0,
+          "final_score": 0.05
+        },
+        "reason": "",
+        "landmark_id": null,
+        "raw": {
+          "error": {
+            "code": 400,
+            "message": "request (13024 tokens) exceeds the available context size (8192 tokens), try increasing it",
+            "type": "exceed_context_size_error",
+            "n_prompt_tokens": 13024,
+            "n_ctx": 8192
+          }
+        }
+      },
+      "action": {
+        "name": "WAIT_OR_RECOVER",
+        "params": {
+          "evidence_view": "NONE"
+        },
+        "reason": "No parseable reason returned.",
+        "confidence": "low",
+        "evidence_score": 0.2,
+        "evidence_breakdown": {
+          "action_base_score": 0.2,
+          "supporting_landmark_score": 0.0,
+          "supporting_landmark_bonus": 0.0,
+          "no_landmark_penalty": 0.0,
+          "partial_marker_penalty": 0.0,
+          "used_landmark_penalty": 0.0,
+          "invalid_penalty": 0.0,
+          "mismatched_room_code_penalty": 0.0,
+          "final_score": 0.2
+        },
+        "goal_reached": false,
+        "needs_verification": false,
+        "raw": {
+          "error": {
+            "code": 400,
+            "message": "request (14165 tokens) exceeds the available context size (8192 tokens), try increasing it",
+            "type": "exceed_context_size_error",
+            "n_prompt_tokens": 14165,
+            "n_ctx": 8192
+          }
+        },
+        "is_valid": true,
+        "invalid_reason": ""
+      },
+      "executed": false
+    }
+  ]
+}
