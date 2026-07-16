@@ -251,15 +251,18 @@ def stitch_three_images(left_path, front_path, right_path, output_path, width, h
     return output_path
 
 def load_saved_three_camera_files(args, local_step_dir, step_index):
-    source_dir = Path(args.saved_image_dir)
-
     if step_index is None:
         step_index = 1
 
+    source_dir = (
+        Path(args.saved_image_dir)
+        / f"step_{step_index:04d}"
+    )
+
     candidates = {
-        "LEFT": source_dir / f"left_{step_index}.png",
-        "FRONT": source_dir / f"front_{step_index}.png",
-        "RIGHT": source_dir / f"right_{step_index}.png",
+        "LEFT": source_dir / "left.jpg",
+        "FRONT": source_dir / "front.jpg",
+        "RIGHT": source_dir / "right.jpg",
     }
 
     for label, path in candidates.items():
