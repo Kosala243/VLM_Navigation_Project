@@ -411,7 +411,7 @@ def post_observation_to_amd(api, endpoint, observation, goal=None):
     else:
         cmd.extend(["-F", "image=@{}".format(observation["primary_path"])])
 
-    result = run(cmd)
+    result = run(cmd, verbose=False)
 
     try:
         return json.loads(result.stdout)
@@ -423,15 +423,19 @@ def post_observation_to_amd(api, endpoint, observation, goal=None):
 def start_autonomous_session(api, goal):
     url = api.rstrip("/") + "/autonomous/start"
 
-    result = run([
-        "curl",
-        "-sS",
-        "-X",
-        "POST",
-        url,
-        "-F",
-        "goal={}".format(goal),
-    ])
+    result = run(
+        [
+            "curl",
+            "-sS",
+            "-X",
+            "POST",
+            url,
+            "-F",
+            "goal={}".format(goal),
+        ],
+        verbose=False
+    
+    )
 
     try:
         response = json.loads(result.stdout)
