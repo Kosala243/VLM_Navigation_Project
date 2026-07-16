@@ -77,6 +77,49 @@ def ffmpeg_capture_command(device, output_path, capture_size, timeout_s):
         output_path=shlex.quote(output_path),
     )
 
+def load_saved_three_camera_files(args, local_step_dir, step_index):
+    """
+    Load previously captured LEFT/FRONT/RIGHT images instead of
+    capturing from the robot.
+    """
+
+    if step_index is None:
+        step_index = 1
+
+    source_dir = (
+        Path(args.saved_image_dir)
+        / "step_{:04d}".format(step_index)
+    )
+
+    candidates = {
+        "LEFT": source_dir / "left.jpg",
+        "FRONT": source_dir / "front.jpg",
+        "RIGHT": source_dir / "right.jpg",
+    }
+
+    for label, path in candidates.items():
+        if not path.exists():
+            raise FileNotFoundError(
+                "Missing {} image: {}".format(label, path)
+            )
+
+    local_step_dir.mkdir(parents=True, exist_ok=True)
+
+    image_paths = {}
+
+    for label, src in candidates.items():
+        dst = local_step_dir / (label.lower() + ".jpg")
+
+        import shutil
+        shutil.copyfile(src, dst)
+
+        image_paths[label] = dst
+
+    print("[OK] Loaded LEFT :", image_paths["LEFT"])
+    print("[OK] Loaded FRONT:", image_paths["FRONT"])
+    print("[OK] Loaded RIGHT:", image_paths["RIGHT"])
+
+    return image_paths
 
 def capture_single_camera(args, local_step_dir):
     local_step_dir.mkdir(parents=True, exist_ok=True)
@@ -285,7 +328,17 @@ def get_observation(args, step_index=None):
         }
 
     if args.camera_mode == "separate":
-        raw_paths = capture_three_camera_files(args, local_step_dir)
+        if args.saved_image_dir:
+            raw_paths = load_saved_three_camera_files(
+                args,
+                local_step_dir,
+                step_index,
+            )
+        else:
+            raw_paths = capture_three_camera_files(
+                args,
+                local_step_dir,
+            )
         return {
             "camera_mode": "separate",
             "primary_path": raw_paths["FRONT"],
@@ -788,6 +841,15 @@ def parse_args():
         help="ThinkPad folder where copied/stiched images are saved",
     )
 
+    parser.add_argument(
+        "--saved-image-dir",
+        default=None,
+        help=(
+            "Optional folder containing step_0001/, step_0002/, ... "
+            "with left.jpg, front.jpg and right.jpg."
+        ),
+    )
+    
     parser.add_argument("--stitch-width", type=int, default=640)
     parser.add_argument("--stitch-height", type=int, default=480)
 
