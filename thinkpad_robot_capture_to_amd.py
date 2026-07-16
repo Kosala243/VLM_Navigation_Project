@@ -13,8 +13,9 @@ from pathlib import Path
 from robot_executor import SafeCmdVelExecutor
 
 
-def run(cmd, check=True):
-    print("[CMD]", " ".join(cmd))
+def run(cmd, check=True, verbose=True):
+    if verbose:
+        print("[CMD]", " ".join(cmd))
     result = subprocess.run(
         cmd,
         stdout=subprocess.PIPE,
@@ -22,11 +23,11 @@ def run(cmd, check=True):
         universal_newlines=True,
     )
 
-    if result.stdout.strip():
+    if verbose and result.stdout.strip():
         print("[STDOUT]")
         print(result.stdout)
 
-    if result.stderr.strip():
+    if verbose and result.stderr.strip():
         print("[STDERR]")
         print(result.stderr)
 
@@ -445,13 +446,16 @@ def start_autonomous_session(api, goal):
 def export_autonomous_session(api, run_dir):
     url = api.rstrip("/") + "/autonomous/export"
 
-    result = run([
-        "curl",
-        "-sS",
-        "-X",
-        "GET",
-        url,
-    ])
+    result = run(
+        [
+            "curl",
+            "-sS",
+            "-X",
+            "GET",
+            url,
+        ],
+        verbose=False,
+    )
 
     try:
         data = json.loads(result.stdout)

@@ -46,12 +46,30 @@ class VerificationResult:
         """Convert a positive verification into a STOP_AND_VERIFY action."""
         from .action_generator import Action
 
+        evidence_view = "NONE"
+        raw_landmark = self.raw.get("landmark", {})
+        if isinstance(raw_landmark, dict):
+            extra = raw_landmark.get("extra", {})
+            if isinstance(extra, dict):
+                candidate = str(
+                    extra.get("source_view", "")
+                ).upper()
+
+                if candidate in {
+                    "LEFT",
+                    "FRONT",
+                    "RIGHT",
+                    "STITCHED_UNKNOWN",
+                }:
+                    evidence_view = candidate
+
         return Action(
             name="STOP_AND_VERIFY",
             params={
                 "landmark_id": self.landmark_id,
                 "target": self.matched_label,
                 "evidence_type": self.evidence_type,
+                "evidence_view": evidence_view,
             },
             reason=self.reason or f"Target verified: {self.matched_label}",
             confidence=self.confidence,

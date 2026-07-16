@@ -104,6 +104,8 @@ class ActionGenerator:
         - Treat building/zone-only markers such as "B" for goal "B0.004" as navigation cues, not strong target evidence.
         - Prefer navigating toward intermediate landmarks that lead closer to the goal (e.g., the correct tower entrance, corridor, doorway, or junction) before considering assistance from reception or staff.
         - FOLLOW_DIRECTION must include landmark_id of the sign/directory/reception/stairs/elevator evidence that supports the direction.
+        - FOLLOW_DIRECTION must use directional evidence visible in the current observation. Do not repeatedly issue FOLLOW_DIRECTION from an old sign that is no longer visible.
+        - For FOLLOW_DIRECTION, direction must be exactly "left", "right", or "forward". Put landmark names in target or target_description, not in direction.
         - Prefer target-oriented actions over vague standalone direction commands when a useful visible landmark can serve as the next subgoal.
         - Use ALIGN_WITH_LANDMARK when the selected landmark is visible in LEFT or RIGHT and the robot must first turn until it is centred in the FRONT view.
         - Use APPROACH_LANDMARK when the selected landmark is visible ahead and the robot should move toward it while keeping it visible.
@@ -362,9 +364,20 @@ class ActionGenerator:
                 return action
 
         if action.name == "FOLLOW_DIRECTION":
-            direction = _clean_param(action.params.get("direction"))
+            direction = _normalise_direction(
+                action.params.get("direction")
+            )
+            if not direction:
+                action.is_valid = False
+                action.invalid_reason = (
+                    "FOLLOW_DIRECTION direction must be "
+                    "left, right, or forward."
+                )
+                return action
+            action.params["direction"] = direction
             target = _clean_param(action.params.get("target"))
             lm_id = _clean_param(action.params.get("landmark_id"))
+            lm = _get_landmark(memory, lm_id)
 
             if not (direction or target or lm_id):
                 action.is_valid = False
@@ -386,6 +399,18 @@ class ActionGenerator:
             if not _landmark_exists(memory, lm_id):
                 action.is_valid = False
                 action.invalid_reason = f"Unknown direction landmark_id: {lm_id}"
+                return action
+
+            if lm is None:
+                action.is_valid = False
+                action.invalid_reason = f"Unknown direction landmark_id: {lm_id}"
+                return action
+
+            if not _landmark_is_current(memory, lm):
+                action.is_valid = False
+                action.invalid_reason = (
+                    f"FOLLOW_DIRECTION landmark {lm_id} is not visible in the current observation."
+                )
                 return action
 
             if not _has_recent_direction_evidence(recent, landmark_id=lm_id):
@@ -511,7 +536,6 @@ def _landmark_has_category(memory: "NavigationMemory", landmark_id: str, categor
         for lm in getattr(memory, "landmarks", [])
     )
 
-
 def _clean_param(value: Any) -> str:
     if value is None:
         return ""
@@ -526,6 +550,17 @@ _ALLOWED_EVIDENCE_VIEWS = {
     "NONE",
 }
 
+def _normalise_direction(value: Any) -> str:
+    text = _clean_param(value).lower()
+    if not text:
+        return ""
+    if text in {"left", "turn left"} or text.startswith("←"):
+        return "left"
+    if text in {"right", "turn right"} or text.startswith("→"):
+        return "right"
+    if text in {"forward", "front", "straight", "go straight"}:
+        return "forward"
+    return ""
 
 def _normalise_evidence_view(value: Any) -> str:
     text = _clean_param(value).upper()

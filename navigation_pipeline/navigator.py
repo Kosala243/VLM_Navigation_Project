@@ -186,9 +186,7 @@ class NavigationSystem:
             )
 
         executed = False
-        if action.name == "STOP_AND_VERIFY" and action.is_valid:
-            executed = True
-        elif execute and self.executor is not None and action.is_valid:
+        if execute and self.executor is not None and action.is_valid:
             executed = bool(self.executor.execute(action))
             if not executed:
                 self.memory.add_failed_action(
@@ -296,5 +294,6 @@ class NavigationSystem:
             f"Goal={self.goal.raw_goal} | "
             f"records={len(self.records)} | "
             f"memory_landmarks={len(self.memory.landmarks)} | "
-            f"keep_memory={self._memory_kept_for_current_goal}"
+            f"session_memory_active=True | "
+            f"inherited_previous_memory={self._memory_kept_for_current_goal}"
         )
