@@ -7,6 +7,7 @@ import subprocess
 import sys
 import tarfile
 import time
+import shutil
 from datetime import datetime
 from pathlib import Path
 from robot_executor import SafeCmdVelExecutor
