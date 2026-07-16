@@ -5,3 +5,5 @@ qwen_test.py
 */*/*.pyc
 models/
 *.tar
+live_frames/
+navigation_outputs/http_api/
