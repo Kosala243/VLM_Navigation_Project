@@ -1,0 +1,805 @@
+{
+  "goal": {
+    "raw_goal": "C0.020",
+    "target_type": "room_or_location",
+    "known_tokens": [
+      "C0.020",
+      "C0-020",
+      "C0020",
+      "Room C0020"
+    ],
+    "aliases": [
+      "C0.020",
+      "C0-020",
+      "C0020",
+      "Room C0020"
+    ],
+    "possible_interpretations": [
+      {
+        "interpretation": "May mean Building/Zone C, Floor 0, Room 020.",
+        "evidence_needed": [
+          "building or zone sign for C",
+          "floor indicator 0",
+          "door label matching C0.020 or C0020"
+        ],
+        "confidence": "medium"
+      },
+      {
+        "interpretation": "May simply be the full room label/code 'C0.020' without separable building/floor meaning.",
+        "evidence_needed": [
+          "door label or directory entry exactly matching C0.020"
+        ],
+        "confidence": "medium"
+      }
+    ],
+    "constraints": {
+      "possible_building": "C",
+      "possible_floor": "0",
+      "possible_room": "020",
+      "possible_zone": null,
+      "target_name": null
+    },
+    "search_strategy": "Search for door labels, corridor range signs, directories, or floor/zone indicators matching ['C0.020', 'C0-020', 'C0020', 'Room C0020']; treat building/floor/room structure as a hypothesis until confirmed."
+  },
+  "status": "Goal=C0.020 | records=5 | memory_landmarks=6 | session_memory_active=True | inherited_previous_memory=False",
+  "total_steps": 5,
+  "records": [
+    {
+      "image_num": 1,
+      "image_path": "live_frames/frame_1784235100158_front.png",
+      "memory_update": {
+        "useful": true,
+        "summary": "Reception desk visible ahead, coffee corner to the left.",
+        "landmarks": [
+          {
+            "id": "L001",
+            "category": "reception",
+            "description": "Reception desk with 'RECEPTION' sign visible ahead.",
+            "text": "RECEPTION",
+            "pose": {},
+            "status": "unvisited",
+            "confidence": "high",
+            "evidence_score": 0.9,
+            "evidence_breakdown": {
+              "category_score": 0.55,
+              "confidence_bonus": 0.1,
+              "text_bonus": 0.1,
+              "target_relevance_bonus": 0.1,
+              "direction_bonus": 0.05,
+              "missing_text_penalty": 0.0,
+              "partial_marker_penalty": 0.0,
+              "irrelevant_sign_penalty": 0.0,
+              "final_score": 0.9
+            },
+            "image_path": "live_frames/frame_1784235100158_front.png",
+            "extra": {
+              "direction": "forward",
+              "room_range": null,
+              "arrow": null,
+              "target_relevance": "high",
+              "floor": null,
+              "zone": null,
+              "source_view": "RIGHT",
+              "source_image_index": 1
+            },
+            "observation_count": 1,
+            "selection_count": 0
+          },
+          {
+            "id": "L002",
+            "category": "sign",
+            "description": "Directional sign for Tower B and Tower C visible ahead.",
+            "text": "Tower B Noord toren Tower C Zuid toren",
+            "pose": {},
+            "status": "used",
+            "confidence": "low",
+            "evidence_score": 0.55,
+            "evidence_breakdown": {
+              "category_score": 0.7,
+              "confidence_bonus": 0.1,
+              "text_bonus": 0.1,
+              "target_relevance_bonus": 0.05,
+              "direction_bonus": 0.05,
+              "missing_text_penalty": 0.0,
+              "partial_marker_penalty": 0.35,
+              "irrelevant_sign_penalty": 0.1,
+              "final_score": 0.55
+            },
+            "image_path": "live_frames/frame_1784235100158_front.png",
+            "extra": {
+              "direction": "forward",
+              "room_range": null,
+              "arrow": "← Tower B, → Tower C",
+              "target_relevance": "medium",
+              "floor": null,
+              "zone": null,
+              "source_view": "FRONT",
+              "source_image_index": 1,
+              "partial_goal_marker": true,
+              "full_target_match": false
+            },
+            "observation_count": 1,
+            "selection_count": 1
+          },
+          {
+            "id": "L003",
+            "category": "sign",
+            "description": "Coffee corner sign visible ahead.",
+            "text": "coffee corner Campus",
+            "pose": {},
+            "status": "unvisited",
+            "confidence": "high",
+            "evidence_score": 0.9,
+            "evidence_breakdown": {
+              "category_score": 0.7,
+              "confidence_bonus": 0.1,
+              "text_bonus": 0.1,
+              "target_relevance_bonus": 0.05,
+              "direction_bonus": 0.05,
+              "missing_text_penalty": 0.0,
+              "partial_marker_penalty": 0.0,
+              "irrelevant_sign_penalty": 0.1,
+              "final_score": 0.9
+            },
+            "image_path": "live_frames/frame_1784235100158_front.png",
+            "extra": {
+              "direction": "forward",
+              "room_range": null,
+              "arrow": null,
+              "target_relevance": "medium",
+              "floor": null,
+              "zone": null,
+              "source_view": "FRONT",
+              "source_image_index": 1
+            },
+            "observation_count": 1,
+            "selection_count": 0
+          }
+        ],
+        "hypotheses": [
+          "Target room C0.020 is likely in Tower C (right direction).",
+          "Reception desk is ahead, possibly a point to ask for directions."
+        ]
+      },
+      "verification": {
+        "target_visible": true,
+        "target_reached": false,
+        "matched_label": "",
+        "evidence_type": "room_range",
+        "confidence": "medium",
+        "evidence_score": 0.65,
+        "evidence_breakdown": {
+          "evidence_type_score": 0.5,
+          "visual_bonus": 0.1,
+          "label_match_bonus": 0.0,
+          "current_frame_bonus": 0.05,
+          "ambiguity_penalty": 0.0,
+          "final_score": 0.65
+        },
+        "reason": "Current image contains target-relevant navigation evidence, but not the actual target door/entrance.",
+        "landmark_id": "L003",
+        "raw": {
+          "source": "current_memory_relevant_non_stop",
+          "landmark": {
+            "id": "L003",
+            "category": "sign",
+            "description": "Coffee corner sign visible ahead.",
+            "text": "coffee corner Campus",
+            "pose": {},
+            "status": "unvisited",
+            "confidence": "high",
+            "evidence_score": 0.9,
+            "evidence_breakdown": {
+              "category_score": 0.7,
+              "confidence_bonus": 0.1,
+              "text_bonus": 0.1,
+              "target_relevance_bonus": 0.05,
+              "direction_bonus": 0.05,
+              "missing_text_penalty": 0.0,
+              "partial_marker_penalty": 0.0,
+              "irrelevant_sign_penalty": 0.1,
+              "final_score": 0.9
+            },
+            "image_path": "live_frames/frame_1784235100158_front.png",
+            "extra": {
+              "direction": "forward",
+              "room_range": null,
+              "arrow": null,
+              "target_relevance": "medium",
+              "floor": null,
+              "zone": null,
+              "source_view": "FRONT",
+              "source_image_index": 1
+            },
+            "observation_count": 1,
+            "selection_count": 0
+          }
+        }
+      },
+      "action": {
+        "name": "FOLLOW_DIRECTION",
+        "params": {
+          "landmark_id": "L002",
+          "direction": "right",
+          "target": "Tower C",
+          "target_description": "Tower C (Zuid toren) as indicated by the directional sign.",
+          "floor": null,
+          "search_for": null,
+          "stop_condition": null,
+          "capture_after": true,
+          "evidence_view": "FRONT"
+        },
+        "reason": "The directional sign clearly indicates 'Tower C' to the right, which aligns with the goal 'C0.020' likely being in Tower C.",
+        "confidence": "low",
+        "evidence_score": 0.48250000000000004,
+        "evidence_breakdown": {
+          "action_base_score": 0.65,
+          "supporting_landmark_score": 0.55,
+          "supporting_landmark_bonus": 0.0825,
+          "no_landmark_penalty": 0.0,
+          "partial_marker_penalty": 0.25,
+          "used_landmark_penalty": 0.0,
+          "invalid_penalty": 0.0,
+          "mismatched_room_code_penalty": 0.0,
+          "final_score": 0.48250000000000004
+        },
+        "goal_reached": false,
+        "needs_verification": true,
+        "raw": {
+          "action": "FOLLOW_DIRECTION",
+          "params": {
+            "landmark_id": "L002",
+            "direction": "right",
+            "target": "Tower C",
+            "target_description": "Tower C (Zuid toren) as indicated by the directional sign.",
+            "floor": null,
+            "search_for": null,
+            "stop_condition": null,
+            "capture_after": true,
+            "evidence_view": "FRONT"
+          },
+          "reason": "The directional sign clearly indicates 'Tower C' to the right, which aligns with the goal 'C0.020' likely being in Tower C.",
+          "confidence": "high",
+          "goal_reached": false,
+          "needs_verification": true
+        },
+        "is_valid": true,
+        "invalid_reason": ""
+      },
+      "executed": false
+    },
+    {
+      "image_num": 2,
+      "image_path": "live_frames/frame_1784235147012_front.png",
+      "memory_update": {
+        "useful": false,
+        "summary": "",
+        "landmarks": [],
+        "hypotheses": []
+      },
+      "verification": {
+        "target_visible": false,
+        "target_reached": false,
+        "matched_label": "",
+        "evidence_type": "none",
+        "confidence": "low",
+        "evidence_score": 0.15000000000000002,
+        "evidence_breakdown": {
+          "evidence_type_score": 0.0,
+          "visual_bonus": 0.1,
+          "label_match_bonus": 0.0,
+          "current_frame_bonus": 0.05,
+          "ambiguity_penalty": 0.0,
+          "final_score": 0.15000000000000002
+        },
+        "reason": "The target room label 'C0.020' is not visible in any of the provided camera views. The images show entrances and general interior/exterior areas, but no specific room label matching the goal is present.",
+        "landmark_id": null,
+        "raw": {
+          "target_visible": false,
+          "target_reached": false,
+          "matched_label": "",
+          "evidence_type": "none",
+          "confidence": "high",
+          "reason": "The target room label 'C0.020' is not visible in any of the provided camera views. The images show entrances and general interior/exterior areas, but no specific room label matching the goal is present.",
+          "landmark_id": null
+        }
+      },
+      "action": {
+        "name": "FOLLOW_DIRECTION",
+        "params": {
+          "landmark_id": "L002",
+          "direction": "right",
+          "target": "Tower C",
+          "target_description": "Tower C direction indicated by sign.",
+          "floor": null,
+          "search_for": null,
+          "stop_condition": null,
+          "capture_after": true,
+          "evidence_view": "FRONT"
+        },
+        "reason": "The sign 'Tower B Noord toren Tower C Zuid toren' indicates that Tower C is to the right, which aligns with the goal room C0.020 likely being in Tower C.",
+        "confidence": "low",
+        "evidence_score": 0.0,
+        "evidence_breakdown": {
+          "invalid_action": 1.0,
+          "final_score": 0.0
+        },
+        "goal_reached": false,
+        "needs_verification": true,
+        "raw": {
+          "action": "FOLLOW_DIRECTION",
+          "params": {
+            "landmark_id": "L002",
+            "direction": "right",
+            "target": "Tower C",
+            "target_description": "Tower C direction indicated by sign.",
+            "floor": null,
+            "search_for": null,
+            "stop_condition": null,
+            "capture_after": true,
+            "evidence_view": "FRONT"
+          },
+          "reason": "The sign 'Tower B Noord toren Tower C Zuid toren' indicates that Tower C is to the right, which aligns with the goal room C0.020 likely being in Tower C.",
+          "confidence": "high",
+          "goal_reached": false,
+          "needs_verification": true
+        },
+        "is_valid": false,
+        "invalid_reason": "FOLLOW_DIRECTION landmark L002 is not visible in the current observation."
+      },
+      "executed": false
+    },
+    {
+      "image_num": 3,
+      "image_path": "live_frames/frame_1784235177884_front.png",
+      "memory_update": {
+        "useful": false,
+        "summary": "",
+        "landmarks": [],
+        "hypotheses": []
+      },
+      "verification": {
+        "target_visible": false,
+        "target_reached": false,
+        "matched_label": "",
+        "evidence_type": "none",
+        "confidence": "low",
+        "evidence_score": 0.15000000000000002,
+        "evidence_breakdown": {
+          "evidence_type_score": 0.0,
+          "visual_bonus": 0.1,
+          "label_match_bonus": 0.0,
+          "current_frame_bonus": 0.05,
+          "ambiguity_penalty": 0.0,
+          "final_score": 0.15000000000000002
+        },
+        "reason": "The target room label 'C0.020' is not visible in any of the provided camera views. The images show general lobby areas, a lost and found station, and an office space, but no specific room label matching the goal is present.",
+        "landmark_id": null,
+        "raw": {
+          "target_visible": false,
+          "target_reached": false,
+          "matched_label": "",
+          "evidence_type": "none",
+          "confidence": "high",
+          "reason": "The target room label 'C0.020' is not visible in any of the provided camera views. The images show general lobby areas, a lost and found station, and an office space, but no specific room label matching the goal is present.",
+          "landmark_id": null
+        }
+      },
+      "action": {
+        "name": "FOLLOW_DIRECTION",
+        "params": {
+          "landmark_id": "L002",
+          "direction": "right",
+          "target": "C0.020",
+          "target_description": "Target room C0.020 is likely in Tower C (right direction).",
+          "floor": "0",
+          "search_for": null,
+          "stop_condition": null,
+          "capture_after": true,
+          "evidence_view": "FRONT"
+        },
+        "reason": "The directional sign 'Tower B Noord toren Tower C Zuid toren' indicates Tower C is to the right, which aligns with the hypothesis that C0.020 is in Tower C.",
+        "confidence": "low",
+        "evidence_score": 0.0,
+        "evidence_breakdown": {
+          "invalid_action": 1.0,
+          "final_score": 0.0
+        },
+        "goal_reached": false,
+        "needs_verification": true,
+        "raw": {
+          "action": "FOLLOW_DIRECTION",
+          "params": {
+            "landmark_id": "L002",
+            "direction": "right",
+            "target": "C0.020",
+            "target_description": "Target room C0.020 is likely in Tower C (right direction).",
+            "floor": "0",
+            "search_for": null,
+            "stop_condition": null,
+            "capture_after": true,
+            "evidence_view": "FRONT"
+          },
+          "reason": "The directional sign 'Tower B Noord toren Tower C Zuid toren' indicates Tower C is to the right, which aligns with the hypothesis that C0.020 is in Tower C.",
+          "confidence": "high",
+          "goal_reached": false,
+          "needs_verification": true
+        },
+        "is_valid": false,
+        "invalid_reason": "FOLLOW_DIRECTION landmark L002 is not visible in the current observation."
+      },
+      "executed": false
+    },
+    {
+      "image_num": 4,
+      "image_path": "live_frames/frame_1784235209222_front.png",
+      "memory_update": {
+        "useful": true,
+        "summary": "Target room C0.020 is indicated on a sign near the door on the right side.",
+        "landmarks": [
+          {
+            "id": "L004",
+            "category": "sign",
+            "description": "A directional sign mounted on the wooden slat wall, indicating room ranges including C0.016-C0.020 to the left and C0.004-C0.008 to the right.",
+            "text": "← C0.016-C0.020\n→ C0.004-C0.008",
+            "pose": {},
+            "status": "used",
+            "confidence": "high",
+            "evidence_score": 1.0,
+            "evidence_breakdown": {
+              "category_score": 0.7,
+              "confidence_bonus": 0.1,
+              "text_bonus": 0.1,
+              "target_relevance_bonus": 0.1,
+              "direction_bonus": 0.05,
+              "missing_text_penalty": 0.0,
+              "partial_marker_penalty": 0.0,
+              "irrelevant_sign_penalty": 0.0,
+              "final_score": 1.0
+            },
+            "image_path": "live_frames/frame_1784235209222_front.png",
+            "extra": {
+              "direction": "left",
+              "room_range": "C0.016-C0.020",
+              "arrow": "left",
+              "target_relevance": "high",
+              "floor": "0",
+              "zone": null,
+              "source_view": "FRONT",
+              "source_image_index": 4
+            },
+            "observation_count": 1,
+            "selection_count": 1
+          },
+          {
+            "id": "L005",
+            "category": "door",
+            "description": "A white door with a QR code and room label C0.004, located on the right side of the corridor.",
+            "text": "C0.004",
+            "pose": {},
+            "status": "unvisited",
+            "confidence": "high",
+            "evidence_score": 1.0,
+            "evidence_breakdown": {
+              "category_score": 0.8,
+              "confidence_bonus": 0.1,
+              "text_bonus": 0.1,
+              "target_relevance_bonus": 0.05,
+              "direction_bonus": 0.05,
+              "missing_text_penalty": 0.0,
+              "partial_marker_penalty": 0.0,
+              "irrelevant_sign_penalty": 0.0,
+              "final_score": 1.0
+            },
+            "image_path": "live_frames/frame_1784235209222_front.png",
+            "extra": {
+              "direction": "right",
+              "room_range": null,
+              "arrow": null,
+              "target_relevance": "medium",
+              "floor": "0",
+              "zone": null,
+              "source_view": "RIGHT",
+              "source_image_index": 4
+            },
+            "observation_count": 1,
+            "selection_count": 0
+          }
+        ],
+        "hypotheses": [
+          "The sign indicates that room C0.020 is in the left direction from this point."
+        ]
+      },
+      "verification": {
+        "target_visible": true,
+        "target_reached": false,
+        "matched_label": "C0.020",
+        "evidence_type": "room_range",
+        "confidence": "medium",
+        "evidence_score": 0.75,
+        "evidence_breakdown": {
+          "evidence_type_score": 0.5,
+          "visual_bonus": 0.1,
+          "label_match_bonus": 0.1,
+          "current_frame_bonus": 0.05,
+          "ambiguity_penalty": 0.0,
+          "final_score": 0.75
+        },
+        "reason": "Current image contains target-related room range for 'C0.020', but not an actual target door/entrance.",
+        "landmark_id": "L004",
+        "raw": {
+          "source": "current_memory_non_stop",
+          "landmark": {
+            "id": "L004",
+            "category": "sign",
+            "description": "A directional sign mounted on the wooden slat wall, indicating room ranges including C0.016-C0.020 to the left and C0.004-C0.008 to the right.",
+            "text": "← C0.016-C0.020\n→ C0.004-C0.008",
+            "pose": {},
+            "status": "unvisited",
+            "confidence": "high",
+            "evidence_score": 1.0,
+            "evidence_breakdown": {
+              "category_score": 0.7,
+              "confidence_bonus": 0.1,
+              "text_bonus": 0.1,
+              "target_relevance_bonus": 0.1,
+              "direction_bonus": 0.05,
+              "missing_text_penalty": 0.0,
+              "partial_marker_penalty": 0.0,
+              "irrelevant_sign_penalty": 0.0,
+              "final_score": 1.0
+            },
+            "image_path": "live_frames/frame_1784235209222_front.png",
+            "extra": {
+              "direction": "left",
+              "room_range": "C0.016-C0.020",
+              "arrow": "left",
+              "target_relevance": "high",
+              "floor": "0",
+              "zone": null,
+              "source_view": "FRONT",
+              "source_image_index": 4
+            },
+            "observation_count": 1,
+            "selection_count": 0
+          }
+        }
+      },
+      "action": {
+        "name": "FOLLOW_DIRECTION",
+        "params": {
+          "landmark_id": "L004",
+          "direction": "left",
+          "target": "C0.020",
+          "target_description": "Room C0.020 is in the left direction from this point, as indicated by the sign.",
+          "floor": "0",
+          "search_for": null,
+          "stop_condition": null,
+          "capture_after": true,
+          "evidence_view": "FRONT"
+        },
+        "reason": "The directional sign L004 clearly indicates that room C0.020 is to the left, making this the most direct and reliable navigation cue available.",
+        "confidence": "medium",
+        "evidence_score": 0.8,
+        "evidence_breakdown": {
+          "action_base_score": 0.65,
+          "supporting_landmark_score": 1.0,
+          "supporting_landmark_bonus": 0.15,
+          "no_landmark_penalty": 0.0,
+          "partial_marker_penalty": 0.0,
+          "used_landmark_penalty": 0.0,
+          "invalid_penalty": 0.0,
+          "mismatched_room_code_penalty": 0.0,
+          "final_score": 0.8
+        },
+        "goal_reached": false,
+        "needs_verification": true,
+        "raw": {
+          "action": "FOLLOW_DIRECTION",
+          "params": {
+            "landmark_id": "L004",
+            "direction": "left",
+            "target": "C0.020",
+            "target_description": "Room C0.020 is in the left direction from this point, as indicated by the sign.",
+            "floor": "0",
+            "search_for": null,
+            "stop_condition": null,
+            "capture_after": true,
+            "evidence_view": "FRONT"
+          },
+          "reason": "The directional sign L004 clearly indicates that room C0.020 is to the left, making this the most direct and reliable navigation cue available.",
+          "confidence": "high",
+          "goal_reached": false,
+          "needs_verification": true
+        },
+        "is_valid": true,
+        "invalid_reason": ""
+      },
+      "executed": false
+    },
+    {
+      "image_num": 5,
+      "image_path": "live_frames/frame_1784235295618_front.png",
+      "memory_update": {
+        "useful": true,
+        "summary": "Target room C0.020 is visible on the left wall in the front view.",
+        "landmarks": [
+          {
+            "id": "L006",
+            "category": "door",
+            "description": "A white door with a room label 'C0.001' is visible on the left side of the hallway. The target room C0.020 is likely nearby.",
+            "text": "C0.001",
+            "pose": {},
+            "status": "used",
+            "confidence": "high",
+            "evidence_score": 1.0,
+            "evidence_breakdown": {
+              "category_score": 0.8,
+              "confidence_bonus": 0.1,
+              "text_bonus": 0.1,
+              "target_relevance_bonus": 0.1,
+              "direction_bonus": 0.05,
+              "missing_text_penalty": 0.0,
+              "partial_marker_penalty": 0.0,
+              "irrelevant_sign_penalty": 0.0,
+              "final_score": 1.0
+            },
+            "image_path": "live_frames/frame_1784235295618_front.png",
+            "extra": {
+              "direction": "left",
+              "room_range": null,
+              "arrow": null,
+              "target_relevance": "high",
+              "floor": "0",
+              "zone": null,
+              "source_view": "FRONT",
+              "source_image_index": 5
+            },
+            "observation_count": 1,
+            "selection_count": 1
+          }
+        ],
+        "hypotheses": [
+          "The target room C0.020 is likely in the same hallway, possibly just ahead or to the left of the visible C0.001 door."
+        ]
+      },
+      "verification": {
+        "target_visible": true,
+        "target_reached": true,
+        "matched_label": "C0.020",
+        "evidence_type": "target_door_label",
+        "confidence": "high",
+        "evidence_score": 1.0,
+        "evidence_breakdown": {
+          "evidence_type_score": 0.95,
+          "visual_bonus": 0.1,
+          "label_match_bonus": 0.1,
+          "current_frame_bonus": 0.05,
+          "ambiguity_penalty": 0.0,
+          "final_score": 1.0
+        },
+        "reason": "Target verified in current image: door label 'C0.020' matches the goal.",
+        "landmark_id": "L006",
+        "raw": {
+          "source": "current_memory",
+          "landmark": {
+            "id": "L006",
+            "category": "door",
+            "description": "A white door with a room label 'C0.001' is visible on the left side of the hallway. The target room C0.020 is likely nearby.",
+            "text": "C0.001",
+            "pose": {},
+            "status": "unvisited",
+            "confidence": "high",
+            "evidence_score": 1.0,
+            "evidence_breakdown": {
+              "category_score": 0.8,
+              "confidence_bonus": 0.1,
+              "text_bonus": 0.1,
+              "target_relevance_bonus": 0.1,
+              "direction_bonus": 0.05,
+              "missing_text_penalty": 0.0,
+              "partial_marker_penalty": 0.0,
+              "irrelevant_sign_penalty": 0.0,
+              "final_score": 1.0
+            },
+            "image_path": "live_frames/frame_1784235295618_front.png",
+            "extra": {
+              "direction": "left",
+              "room_range": null,
+              "arrow": null,
+              "target_relevance": "high",
+              "floor": "0",
+              "zone": null,
+              "source_view": "FRONT",
+              "source_image_index": 5
+            },
+            "observation_count": 1,
+            "selection_count": 0
+          }
+        }
+      },
+      "action": {
+        "name": "STOP_AND_VERIFY",
+        "params": {
+          "landmark_id": "L006",
+          "target": "C0.020",
+          "evidence_type": "target_door_label",
+          "evidence_view": "FRONT"
+        },
+        "reason": "Target verified in current image: door label 'C0.020' matches the goal.",
+        "confidence": "high",
+        "evidence_score": 1.0,
+        "evidence_breakdown": {
+          "evidence_type_score": 0.95,
+          "visual_bonus": 0.1,
+          "label_match_bonus": 0.1,
+          "current_frame_bonus": 0.05,
+          "ambiguity_penalty": 0.0,
+          "final_score": 1.0
+        },
+        "goal_reached": true,
+        "needs_verification": false,
+        "raw": {
+          "verification": {
+            "target_visible": true,
+            "target_reached": true,
+            "matched_label": "C0.020",
+            "evidence_type": "target_door_label",
+            "confidence": "high",
+            "evidence_score": 1.0,
+            "evidence_breakdown": {
+              "evidence_type_score": 0.95,
+              "visual_bonus": 0.1,
+              "label_match_bonus": 0.1,
+              "current_frame_bonus": 0.05,
+              "ambiguity_penalty": 0.0,
+              "final_score": 1.0
+            },
+            "reason": "Target verified in current image: door label 'C0.020' matches the goal.",
+            "landmark_id": "L006",
+            "raw": {
+              "source": "current_memory",
+              "landmark": {
+                "id": "L006",
+                "category": "door",
+                "description": "A white door with a room label 'C0.001' is visible on the left side of the hallway. The target room C0.020 is likely nearby.",
+                "text": "C0.001",
+                "pose": {},
+                "status": "unvisited",
+                "confidence": "high",
+                "evidence_score": 1.0,
+                "evidence_breakdown": {
+                  "category_score": 0.8,
+                  "confidence_bonus": 0.1,
+                  "text_bonus": 0.1,
+                  "target_relevance_bonus": 0.1,
+                  "direction_bonus": 0.05,
+                  "missing_text_penalty": 0.0,
+                  "partial_marker_penalty": 0.0,
+                  "irrelevant_sign_penalty": 0.0,
+                  "final_score": 1.0
+                },
+                "image_path": "live_frames/frame_1784235295618_front.png",
+                "extra": {
+                  "direction": "left",
+                  "room_range": null,
+                  "arrow": null,
+                  "target_relevance": "high",
+                  "floor": "0",
+                  "zone": null,
+                  "source_view": "FRONT",
+                  "source_image_index": 5
+                },
+                "observation_count": 1,
+                "selection_count": 0
+              }
+            }
+          }
+        },
+        "is_valid": true,
+        "invalid_reason": ""
+      },
+      "executed": false
+    }
+  ]
+}
