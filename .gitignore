@@ -7,3 +7,5 @@ models/
 *.tar
 live_frames/
 navigation_outputs/http_api/
+qwen36_27b_llm_debug.log
+qwen36_27b_pipeline_debug.log
