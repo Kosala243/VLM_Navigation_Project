@@ -1,0 +1,97 @@
+{
+  "run_settings": {
+    "started_at": "2026-07-19T04:00:55",
+    "goal": "C0.004",
+    "mode": "auto",
+    "camera_mode": "separate",
+    "api": "http://ernis-amd395:8001",
+    "robot_user": "unitree",
+    "robot_ip": "192.168.123.14",
+    "camera_device": "/dev/video3",
+    "front_device": "/dev/video2",
+    "left_device": "/dev/video4",
+    "right_device": "/dev/video3",
+    "capture_size": "960x720",
+    "execute": "false",
+    "cmd_vel_topic": "/cmd_vel",
+    "forward_speed": 0.12,
+    "turn_speed": 0.2,
+    "move_duration": 5.0,
+    "invert_turn": false,
+    "memory": "true",
+    "interval": 5.0,
+    "max_steps": 20,
+    "stitch_width": 960,
+    "stitch_height": 720,
+    "min_evidence_score": 0.3,
+    "allow_low_confidence": false
+  },
+  "step": 4,
+  "timestamp": "2026-07-19T04:01:32",
+  "camera_mode": "separate",
+  "primary_path": "robot_live_frames/step_0004/front.png",
+  "saved_files": {
+    "left": "robot_live_frames/step_0004/left.png",
+    "front": "robot_live_frames/step_0004/front.png",
+    "right": "robot_live_frames/step_0004/right.png"
+  },
+  "executed": false,
+  "step_metric": {
+    "done": false,
+    "executed": false,
+    "mode": "autonomous_step",
+    "observation_mode": "separate",
+    "action_name": "WAIT_OR_RECOVER",
+    "confidence": "low",
+    "evidence_score": 0.2,
+    "is_valid": true,
+    "evidence_view": null
+  },
+  "evidence_view": null,
+  "response": {
+    "mode": "autonomous_step",
+    "goal": "C0.004",
+    "observation_mode": "separate",
+    "image_path": "live_frames/frame_1784426490624_front.png",
+    "image_paths": {
+      "LEFT": "live_frames/frame_1784426490623_left.png",
+      "FRONT": "live_frames/frame_1784426490624_front.png",
+      "RIGHT": "live_frames/frame_1784426490625_right.png"
+    },
+    "done": false,
+    "action": {
+      "name": "WAIT_OR_RECOVER",
+      "params": {},
+      "reason": "No parseable reason returned.",
+      "confidence": "low",
+      "evidence_score": 0.2,
+      "evidence_breakdown": {
+        "action_base_score": 0.2,
+        "supporting_landmark_score": 0.0,
+        "supporting_landmark_bonus": 0.0,
+        "no_landmark_penalty": 0.0,
+        "partial_marker_penalty": 0.0,
+        "used_landmark_penalty": 0.0,
+        "invalid_penalty": 0.0,
+        "mismatched_room_code_penalty": 0.0,
+        "final_score": 0.2
+      },
+      "goal_reached": false,
+      "needs_verification": false,
+      "raw": {
+        "error": {
+          "code": 400,
+          "message": "request (13553 tokens) exceeds the available context size (8192 tokens), try increasing it",
+          "type": "exceed_context_size_error",
+          "n_prompt_tokens": 13553,
+          "n_ctx": 8192
+        }
+      },
+      "is_valid": true,
+      "invalid_reason": ""
+    },
+    "action_display": "WAIT_OR_RECOVER({}) [low, score=0.20] valid - No parseable reason returned.",
+    "status": "Goal=C0.004 | records=4 | memory_landmarks=0 | keep_memory=False",
+    "saved_result": "navigation_outputs/http_api/autonomous_step_latest_result.json"
+  }
+}

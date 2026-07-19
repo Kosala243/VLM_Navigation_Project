@@ -67,7 +67,7 @@ class ModelWrapper:
     def load(self) -> "ModelWrapper":
         if self._loaded:
             print(f"[ModelWrapper] Already loaded: {self.model_name}")
-            return self
+            return self 
 
         if self.backend in self.LLAMA_SERVER_BACKENDS:
             return self._load_llama_cpp_server()
@@ -190,12 +190,51 @@ class ModelWrapper:
         except Exception as exc:
             return f"[ERROR] llama.cpp server request failed: {exc}"
 
+        if not isinstance(data, dict):
+            raise RuntimeError(
+                f"llama.cpp returned an unexpected response type: {type(data).__name__}"
+            )
+
+        if "error" in data:
+            error = data.get("error", {})
+            if isinstance(error, dict):
+                code = error.get("code", "unknown")
+                message = error.get("message", "Unknown llama.cpp error")
+                n_prompt_tokens = error.get("n_prompt_tokens")
+                n_ctx = error.get("n_ctx")
+
+                raise RuntimeError(
+                    "llama.cpp request failed: "
+                    f"code={code}, message={message}, "
+                    f"prompt_tokens={n_prompt_tokens}, context_size={n_ctx}"
+                )
+
+            raise RuntimeError(f"llama.cpp request failed: {error}")
+
         try:
-            output = data["choices"][0]["message"]["content"]
-        except Exception:
-            output = json.dumps(data, ensure_ascii=False)
+            message = data["choices"][0]["message"]
+        except (KeyError, IndexError, TypeError) as exc:
+            raise RuntimeError(
+                "llama.cpp response does not contain choices[0].message: "
+                f"{json.dumps(data, ensure_ascii=False)[:2000]}"
+            ) from exc
+
+        output = message.get("content")
+
+        if output is None:
+            reasoning = message.get("reasoning_content", "")
+            raise RuntimeError(
+                "llama.cpp returned no message.content. "
+                f"reasoning_content={str(reasoning)[:1000]}"
+            )
 
         output = str(output).strip()
+
+        if not output:
+            raise RuntimeError(
+                "llama.cpp returned an empty message.content."
+            )
+
         self.last_response = output
         return output
 

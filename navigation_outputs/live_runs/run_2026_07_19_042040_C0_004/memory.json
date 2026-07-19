@@ -1,0 +1,227 @@
+{
+  "image_count": 4,
+  "landmarks": [
+    {
+      "id": "L001",
+      "category": "sign",
+      "description": "Overhead directional sign in the FRONT view indicating directions for Tower B and Tower C.",
+      "text": "Tower B Noord toren, Tower C Zuid toren",
+      "pose": {},
+      "status": "used",
+      "confidence": "medium",
+      "evidence_score": 0.65,
+      "evidence_breakdown": {
+        "category_score": 0.7,
+        "confidence_bonus": 0.1,
+        "text_bonus": 0.1,
+        "target_relevance_bonus": 0.05,
+        "direction_bonus": 0.05,
+        "missing_text_penalty": 0.0,
+        "partial_marker_penalty": 0.35,
+        "irrelevant_sign_penalty": 0.0,
+        "final_score": 0.65
+      },
+      "image_path": "live_frames/frame_1784427641920_front.png",
+      "extra": {
+        "direction": "right",
+        "room_range": null,
+        "arrow": "right",
+        "target_relevance": "medium",
+        "floor": null,
+        "zone": "Tower C",
+        "source_view": "FRONT",
+        "source_image_index": 1,
+        "partial_goal_marker": true,
+        "full_target_match": false
+      },
+      "observation_count": 1,
+      "selection_count": 1
+    },
+    {
+      "id": "L002",
+      "category": "reception",
+      "description": "Reception desk visible in the RIGHT view with 'RECEPTION' text on the glass partition.",
+      "text": "RECEPTION",
+      "pose": {},
+      "status": "unvisited",
+      "confidence": "medium",
+      "evidence_score": 0.8,
+      "evidence_breakdown": {
+        "category_score": 0.55,
+        "confidence_bonus": 0.1,
+        "text_bonus": 0.1,
+        "target_relevance_bonus": 0.05,
+        "direction_bonus": 0.0,
+        "missing_text_penalty": 0.0,
+        "partial_marker_penalty": 0.0,
+        "irrelevant_sign_penalty": 0.0,
+        "final_score": 0.8
+      },
+      "image_path": "live_frames/frame_1784427641920_front.png",
+      "extra": {
+        "direction": null,
+        "room_range": null,
+        "arrow": null,
+        "target_relevance": "medium",
+        "floor": null,
+        "zone": null,
+        "source_view": "RIGHT",
+        "source_image_index": 1
+      },
+      "observation_count": 1,
+      "selection_count": 0
+    },
+    {
+      "id": "L003",
+      "category": "directory",
+      "description": "A blue rectangular sign mounted on the wooden slat wall in the FRONT view, positioned between the vending machine area and the white double doors. The text is too small to read clearly from this distance.",
+      "text": "",
+      "pose": {},
+      "status": "used",
+      "confidence": "low",
+      "evidence_score": 0.5,
+      "evidence_breakdown": {
+        "category_score": 0.65,
+        "confidence_bonus": 0.1,
+        "text_bonus": 0.0,
+        "target_relevance_bonus": 0.1,
+        "direction_bonus": 0.0,
+        "missing_text_penalty": 0.35,
+        "partial_marker_penalty": 0.0,
+        "irrelevant_sign_penalty": 0.0,
+        "final_score": 0.5
+      },
+      "image_path": "live_frames/frame_1784428296554_front.png",
+      "extra": {
+        "direction": null,
+        "room_range": null,
+        "arrow": null,
+        "target_relevance": "high",
+        "floor": null,
+        "zone": null,
+        "source_view": "FRONT",
+        "source_image_index": 3
+      },
+      "observation_count": 1,
+      "selection_count": 1
+    },
+    {
+      "id": "L004",
+      "category": "door",
+      "description": "White double doors in the FRONT view, likely leading to a corridor or another section of the building.",
+      "text": "",
+      "pose": {},
+      "status": "unvisited",
+      "confidence": "medium",
+      "evidence_score": 0.6000000000000001,
+      "evidence_breakdown": {
+        "category_score": 0.8,
+        "confidence_bonus": 0.1,
+        "text_bonus": 0.0,
+        "target_relevance_bonus": 0.05,
+        "direction_bonus": 0.0,
+        "missing_text_penalty": 0.35,
+        "partial_marker_penalty": 0.0,
+        "irrelevant_sign_penalty": 0.0,
+        "final_score": 0.6000000000000001
+      },
+      "image_path": "live_frames/frame_1784428296554_front.png",
+      "extra": {
+        "direction": null,
+        "room_range": null,
+        "arrow": null,
+        "target_relevance": "medium",
+        "floor": null,
+        "zone": null,
+        "source_view": "FRONT",
+        "source_image_index": 3
+      },
+      "observation_count": 1,
+      "selection_count": 0
+    },
+    {
+      "id": "L005",
+      "category": "door",
+      "description": "White double doors with a room label plate 'C0.004' and a blue QR code sign on the left door panel. Located in the RIGHT view.",
+      "text": "C0.004",
+      "pose": {},
+      "status": "used",
+      "confidence": "high",
+      "evidence_score": 1.0,
+      "evidence_breakdown": {
+        "category_score": 0.8,
+        "confidence_bonus": 0.1,
+        "text_bonus": 0.1,
+        "target_relevance_bonus": 0.1,
+        "direction_bonus": 0.05,
+        "missing_text_penalty": 0.0,
+        "partial_marker_penalty": 0.0,
+        "irrelevant_sign_penalty": 0.0,
+        "final_score": 1.0
+      },
+      "image_path": "live_frames/frame_1784428606816_front.png",
+      "extra": {
+        "direction": "RIGHT",
+        "room_range": null,
+        "arrow": null,
+        "target_relevance": "high",
+        "floor": null,
+        "zone": null,
+        "source_view": "RIGHT",
+        "source_image_index": 4
+      },
+      "observation_count": 1,
+      "selection_count": 1
+    },
+    {
+      "id": "L006",
+      "category": "sign",
+      "description": "Blue directional sign mounted on the wooden slat wall in the FRONT view. It displays icons for restrooms and stairs, and text indicating room ranges with arrows.",
+      "text": "<- C0.016 - C0.020, -> C0.004 - C0.008",
+      "pose": {},
+      "status": "unvisited",
+      "confidence": "high",
+      "evidence_score": 1.0,
+      "evidence_breakdown": {
+        "category_score": 0.7,
+        "confidence_bonus": 0.1,
+        "text_bonus": 0.1,
+        "target_relevance_bonus": 0.1,
+        "direction_bonus": 0.05,
+        "missing_text_penalty": 0.0,
+        "partial_marker_penalty": 0.0,
+        "irrelevant_sign_penalty": 0.0,
+        "final_score": 1.0
+      },
+      "image_path": "live_frames/frame_1784428606816_front.png",
+      "extra": {
+        "direction": "RIGHT",
+        "room_range": "C0.004 - C0.008",
+        "arrow": "RIGHT",
+        "target_relevance": "high",
+        "floor": null,
+        "zone": null,
+        "source_view": "FRONT",
+        "source_image_index": 4
+      },
+      "observation_count": 1,
+      "selection_count": 0
+    }
+  ],
+  "observation_summaries": [
+    "Image 1: Signage in the FRONT view indicates 'Tower C' is to the right. A reception desk is visible in the RIGHT view, which may assist with locating Room C0.004.",
+    "Image 3: A blue directory sign is visible on the wall in the FRONT view, located to the left of the white double doors. It likely contains room numbers and directions.",
+    "Image 4: Found the target room C0.004 directly in the RIGHT view. A directional sign in the FRONT view also confirms C0.004 is to the right."
+  ],
+  "hypotheses": [
+    "The target room C0.004 is likely located in Tower C, which the sign indicates is to the right.",
+    "The reception desk on the right may provide assistance or be located near the target zone.",
+    "The blue directory sign in the FRONT view likely lists room numbers including C0.004.",
+    "The white double doors in the FRONT view may lead to the corridor containing the target room.",
+    "The target room C0.004 is located immediately to the right of the robot's current position.",
+    "Room numbers in the range C0.004-C0.008 are to the right, while C0.016-C0.020 are to the left."
+  ],
+  "failed_actions": [
+    "PASS_THROUGH_DOORWAY requires landmark L001 to be visible in the current observation."
+  ]
+}
