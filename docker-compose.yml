@@ -16,6 +16,7 @@ services:
 
     environment:
       - HSA_OVERRIDE_GFX_VERSION=11.5.1
+      - LD_LIBRARY_PATH=/opt/llama:/opt/rocm/lib:/opt/rocm/lib64
 
     volumes:
       - ${LLAMA_ROCM_DIR:?set LLAMA_ROCM_DIR in .env}:/opt/llama:ro

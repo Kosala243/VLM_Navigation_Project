@@ -177,6 +177,9 @@ class ModelWrapper:
             "temperature": self.temperature,
             "top_p": self.top_p,
             "stream": False,
+	    "chat_template_kwargs": {
+		"enable_thinking": False,
+	    },
         }
 
         try:
