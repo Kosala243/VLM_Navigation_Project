@@ -1,0 +1,104 @@
+{
+  "run_settings": {
+    "started_at": "2026-07-19T03:46:12",
+    "goal": "C0.016",
+    "mode": "auto",
+    "camera_mode": "separate",
+    "api": "http://ernis-amd395:8001",
+    "robot_user": "unitree",
+    "robot_ip": "192.168.123.14",
+    "camera_device": "/dev/video3",
+    "front_device": "/dev/video2",
+    "left_device": "/dev/video4",
+    "right_device": "/dev/video3",
+    "capture_size": "960x720",
+    "execute": "false",
+    "cmd_vel_topic": "/cmd_vel",
+    "forward_speed": 0.12,
+    "turn_speed": 0.2,
+    "move_duration": 5.0,
+    "invert_turn": false,
+    "memory": "true",
+    "interval": 5.0,
+    "max_steps": 20,
+    "stitch_width": 960,
+    "stitch_height": 720,
+    "min_evidence_score": 0.3,
+    "allow_low_confidence": false
+  },
+  "step": 1,
+  "timestamp": "2026-07-19T03:46:55",
+  "camera_mode": "separate",
+  "primary_path": "robot_live_frames/step_0001/front.png",
+  "saved_files": {
+    "left": "robot_live_frames/step_0001/left.png",
+    "front": "robot_live_frames/step_0001/front.png",
+    "right": "robot_live_frames/step_0001/right.png"
+  },
+  "executed": false,
+  "step_metric": {
+    "done": false,
+    "executed": false,
+    "mode": "autonomous_step",
+    "observation_mode": "separate",
+    "action_name": "FOLLOW_DIRECTION",
+    "confidence": "low",
+    "evidence_score": 0.49750000000000005,
+    "is_valid": true,
+    "evidence_view": "FRONT"
+  },
+  "evidence_view": "FRONT",
+  "response": {
+    "mode": "autonomous_step",
+    "goal": "C0.016",
+    "observation_mode": "separate",
+    "image_path": "live_frames/frame_1784425573860_front.png",
+    "image_paths": {
+      "LEFT": "live_frames/frame_1784425573859_left.png",
+      "FRONT": "live_frames/frame_1784425573860_front.png",
+      "RIGHT": "live_frames/frame_1784425573860_right.png"
+    },
+    "done": false,
+    "action": {
+      "name": "FOLLOW_DIRECTION",
+      "params": {
+        "direction": "right",
+        "landmark_id": "L002",
+        "evidence_view": "FRONT"
+      },
+      "reason": "The directional sign above the coffee corner clearly indicates 'Tower C' is to the right, and the goal 'C0.016' likely corresponds to a room in Tower C.",
+      "confidence": "low",
+      "evidence_score": 0.49750000000000005,
+      "evidence_breakdown": {
+        "action_base_score": 0.65,
+        "supporting_landmark_score": 0.65,
+        "supporting_landmark_bonus": 0.0975,
+        "no_landmark_penalty": 0.0,
+        "partial_marker_penalty": 0.25,
+        "used_landmark_penalty": 0.0,
+        "invalid_penalty": 0.0,
+        "mismatched_room_code_penalty": 0.0,
+        "final_score": 0.49750000000000005
+      },
+      "goal_reached": false,
+      "needs_verification": true,
+      "raw": {
+        "action": "FOLLOW_DIRECTION",
+        "params": {
+          "direction": "right",
+          "landmark_id": "L002",
+          "evidence_view": "FRONT"
+        },
+        "reason": "The directional sign above the coffee corner clearly indicates 'Tower C' is to the right, and the goal 'C0.016' likely corresponds to a room in Tower C.",
+        "confidence": "high",
+        "goal_reached": false,
+        "needs_verification": true
+      },
+      "is_valid": true,
+      "invalid_reason": ""
+    },
+    "action_display": "FOLLOW_DIRECTION({'direction': 'right', 'landmark_id': 'L002', 'evidence_view': 'FRONT'}) [low, score=0.50] valid - The directional sign above the coffee corner clearly indicates 'Tower C' is to the right, and the goal 'C0.016' likely corresponds to a room in Tower C.",
+    "status": "Goal=C0.016 | records=1 | memory_landmarks=3 | keep_memory=False",
+    "saved_result": "navigation_outputs/http_api/autonomous_step_latest_result.json"
+  }
+}

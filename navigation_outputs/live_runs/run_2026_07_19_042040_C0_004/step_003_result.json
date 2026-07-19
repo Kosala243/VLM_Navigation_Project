@@ -1,0 +1,116 @@
+{
+  "run_settings": {
+    "started_at": "2026-07-19T04:20:40",
+    "goal": "C0.004",
+    "mode": "auto",
+    "camera_mode": "separate",
+    "api": "http://ernis-amd395:8001",
+    "robot_user": "unitree",
+    "robot_ip": "192.168.123.14",
+    "camera_device": "/dev/video3",
+    "front_device": "/dev/video2",
+    "left_device": "/dev/video4",
+    "right_device": "/dev/video3",
+    "capture_size": "960x720",
+    "execute": "false",
+    "cmd_vel_topic": "/cmd_vel",
+    "forward_speed": 0.12,
+    "turn_speed": 0.2,
+    "move_duration": 5.0,
+    "invert_turn": false,
+    "memory": "true",
+    "interval": 5.0,
+    "max_steps": 20,
+    "stitch_width": 960,
+    "stitch_height": 720,
+    "min_evidence_score": 0.3,
+    "allow_low_confidence": false
+  },
+  "step": 3,
+  "timestamp": "2026-07-19T04:36:40",
+  "camera_mode": "separate",
+  "primary_path": "robot_live_frames/step_0003/front.png",
+  "saved_files": {
+    "left": "robot_live_frames/step_0003/left.png",
+    "front": "robot_live_frames/step_0003/front.png",
+    "right": "robot_live_frames/step_0003/right.png"
+  },
+  "executed": false,
+  "step_metric": {
+    "done": false,
+    "executed": false,
+    "mode": "autonomous_step",
+    "observation_mode": "separate",
+    "action_name": "READ_SIGN",
+    "confidence": "medium",
+    "evidence_score": 0.7749999999999999,
+    "is_valid": true,
+    "evidence_view": "FRONT"
+  },
+  "evidence_view": "FRONT",
+  "response": {
+    "mode": "autonomous_step",
+    "goal": "C0.004",
+    "observation_mode": "separate",
+    "image_path": "live_frames/frame_1784428296554_front.png",
+    "image_paths": {
+      "LEFT": "live_frames/frame_1784428296553_left.png",
+      "FRONT": "live_frames/frame_1784428296554_front.png",
+      "RIGHT": "live_frames/frame_1784428296555_right.png"
+    },
+    "done": false,
+    "action": {
+      "name": "READ_SIGN",
+      "params": {
+        "landmark_id": "L003",
+        "direction": "forward",
+        "target": "blue directory sign",
+        "target_description": "Blue directory sign on the wooden slat wall in the FRONT view",
+        "floor": null,
+        "search_for": null,
+        "stop_condition": "Robot is close enough to read the text on the blue directory sign",
+        "capture_after": true,
+        "evidence_view": "FRONT"
+      },
+      "reason": "The blue directory sign (L003) is visible in the front view and likely contains the room numbers needed to locate C0.004, so I will approach it to read the text.",
+      "confidence": "medium",
+      "evidence_score": 0.7749999999999999,
+      "evidence_breakdown": {
+        "action_base_score": 0.7,
+        "supporting_landmark_score": 0.5,
+        "supporting_landmark_bonus": 0.075,
+        "no_landmark_penalty": 0.0,
+        "partial_marker_penalty": 0.0,
+        "used_landmark_penalty": 0.0,
+        "invalid_penalty": 0.0,
+        "mismatched_room_code_penalty": 0.0,
+        "final_score": 0.7749999999999999
+      },
+      "goal_reached": false,
+      "needs_verification": true,
+      "raw": {
+        "action": "READ_SIGN",
+        "params": {
+          "landmark_id": "L003",
+          "direction": "forward",
+          "target": "blue directory sign",
+          "target_description": "Blue directory sign on the wooden slat wall in the FRONT view",
+          "floor": null,
+          "search_for": null,
+          "stop_condition": "Robot is close enough to read the text on the blue directory sign",
+          "capture_after": true,
+          "evidence_view": "FRONT"
+        },
+        "reason": "The blue directory sign (L003) is visible in the front view and likely contains the room numbers needed to locate C0.004, so I will approach it to read the text.",
+        "confidence": "high",
+        "goal_reached": false,
+        "needs_verification": true
+      },
+      "is_valid": true,
+      "invalid_reason": ""
+    },
+    "action_display": "READ_SIGN({'landmark_id': 'L003', 'direction': 'forward', 'target': 'blue directory sign', 'target_description': 'Blue directory sign on the wooden slat wall in the FRONT view', 'floor': None, 'search_for': None, 'stop_condition': 'Robot is close enough to read the text on the blue directory sign', 'capture_after': True, 'evidence_view': 'FRONT'}) [medium, score=0.77] valid - The blue directory sign (L003) is visible in the front view and likely contains the room numbers needed to locate C0.004, so I will approach it to read the text.",
+    "status": "Goal=C0.004 | records=3 | memory_landmarks=4 | session_memory_active=True | inherited_previous_memory=False",
+    "saved_result": "navigation_outputs/http_api/autonomous_step_latest_result.json"
+  }
+}
