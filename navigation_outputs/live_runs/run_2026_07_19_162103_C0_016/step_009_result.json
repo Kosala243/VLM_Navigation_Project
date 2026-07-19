@@ -1,0 +1,103 @@
+{
+  "run_settings": {
+    "started_at": "2026-07-19T16:21:03",
+    "goal": "C0.016",
+    "mode": "auto",
+    "camera_mode": "separate",
+    "api": "http://ernis-amd395:8001",
+    "robot_user": "unitree",
+    "robot_ip": "192.168.123.14",
+    "camera_device": "/dev/video3",
+    "front_device": "/dev/video2",
+    "left_device": "/dev/video4",
+    "right_device": "/dev/video3",
+    "capture_size": "960x720",
+    "execute": "false",
+    "cmd_vel_topic": "/cmd_vel",
+    "forward_speed": 0.12,
+    "turn_speed": 0.2,
+    "move_duration": 5.0,
+    "invert_turn": false,
+    "memory": "true",
+    "interval": 5.0,
+    "max_steps": 20,
+    "stitch_width": 960,
+    "stitch_height": 720,
+    "min_evidence_score": 0.3,
+    "allow_low_confidence": false
+  },
+  "step": 9,
+  "timestamp": "2026-07-19T16:43:36",
+  "camera_mode": "separate",
+  "primary_path": "robot_live_frames/step_0009/front.png",
+  "saved_files": {
+    "left": "robot_live_frames/step_0009/left.png",
+    "front": "robot_live_frames/step_0009/front.png",
+    "right": "robot_live_frames/step_0009/right.png"
+  },
+  "executed": false,
+  "step_metric": {
+    "done": false,
+    "executed": false,
+    "mode": "autonomous_step",
+    "observation_mode": "separate",
+    "action_name": "NAVIGATE_TO_LANDMARK",
+    "confidence": "low",
+    "evidence_score": 0.0,
+    "is_valid": false,
+    "evidence_view": "LEFT"
+  },
+  "evidence_view": "LEFT",
+  "response": {
+    "mode": "autonomous_step",
+    "goal": "C0.016",
+    "observation_mode": "separate",
+    "image_path": "live_frames/frame_1784472074396_front.png",
+    "image_paths": {
+      "LEFT": "live_frames/frame_1784472074394_left.png",
+      "FRONT": "live_frames/frame_1784472074396_front.png",
+      "RIGHT": "live_frames/frame_1784472074396_right.png"
+    },
+    "done": false,
+    "action": {
+      "name": "NAVIGATE_TO_LANDMARK",
+      "params": {
+        "landmark_id": "L011",
+        "target": "L011",
+        "target_description": "Directory sign listing room numbers C0.016 - C0.020",
+        "stop_condition": "robot near doorway",
+        "capture_after": true,
+        "evidence_view": "LEFT"
+      },
+      "reason": "The directory sign L011 visible in the left view confirms the target room C0.016 is located in the adjacent room, so the robot should navigate to that doorway.",
+      "confidence": "low",
+      "evidence_score": 0.0,
+      "evidence_breakdown": {
+        "invalid_action": 1.0,
+        "final_score": 0.0
+      },
+      "goal_reached": false,
+      "needs_verification": false,
+      "raw": {
+        "action": "NAVIGATE_TO_LANDMARK",
+        "params": {
+          "landmark_id": "L011",
+          "target": "L011",
+          "target_description": "Directory sign listing room numbers C0.016 - C0.020",
+          "stop_condition": "robot near doorway",
+          "capture_after": true,
+          "evidence_view": "LEFT"
+        },
+        "reason": "The directory sign L011 visible in the left view confirms the target room C0.016 is located in the adjacent room, so the robot should navigate to that doorway.",
+        "confidence": "high",
+        "goal_reached": false,
+        "needs_verification": false
+      },
+      "is_valid": false,
+      "invalid_reason": "Landmark L011 was already visited and is not visible in the current observation."
+    },
+    "action_display": "NAVIGATE_TO_LANDMARK({'landmark_id': 'L011', 'target': 'L011', 'target_description': 'Directory sign listing room numbers C0.016 - C0.020', 'stop_condition': 'robot near doorway', 'capture_after': True, 'evidence_view': 'LEFT'}) [low, score=0.00] INVALID: Landmark L011 was already visited and is not visible in the current observation. - The directory sign L011 visible in the left view confirms the target room C0.016 is located in the adjacent room, so the robot should navigate to that doorway.",
+    "status": "Goal=C0.016 | records=9 | memory_landmarks=14 | session_memory_active=True | inherited_previous_memory=False",
+    "saved_result": "navigation_outputs/http_api/autonomous_step_latest_result.json"
+  }
+}

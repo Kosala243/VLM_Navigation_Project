@@ -1,0 +1,292 @@
+{
+  "image_count": 4,
+  "landmarks": [
+    {
+      "id": "L001",
+      "category": "sign",
+      "description": "A hanging directional sign visible in the front view indicating directions to Tower B (Noord toren) and Tower C (Zuid toren).",
+      "text": "Tower B Noord toren | Tower C Zuid toren",
+      "pose": {},
+      "status": "used",
+      "confidence": "low",
+      "evidence_score": 0.55,
+      "evidence_breakdown": {
+        "category_score": 0.7,
+        "confidence_bonus": 0.1,
+        "text_bonus": 0.1,
+        "target_relevance_bonus": 0.05,
+        "direction_bonus": 0.05,
+        "missing_text_penalty": 0.0,
+        "partial_marker_penalty": 0.35,
+        "irrelevant_sign_penalty": 0.1,
+        "final_score": 0.55
+      },
+      "image_path": "live_frames/frame_1784467699053_front.png",
+      "extra": {
+        "direction": null,
+        "room_range": null,
+        "arrow": "left, right",
+        "target_relevance": "medium",
+        "floor": null,
+        "zone": null,
+        "source_view": "FRONT",
+        "source_image_index": 1,
+        "partial_goal_marker": true,
+        "full_target_match": false
+      },
+      "observation_count": 1,
+      "selection_count": 1
+    },
+    {
+      "id": "L002",
+      "category": "reception",
+      "description": "A reception desk with a staff member visible behind the counter in the right view.",
+      "text": "RECEPTION",
+      "pose": {},
+      "status": "unvisited",
+      "confidence": "medium",
+      "evidence_score": 0.8,
+      "evidence_breakdown": {
+        "category_score": 0.55,
+        "confidence_bonus": 0.1,
+        "text_bonus": 0.1,
+        "target_relevance_bonus": 0.05,
+        "direction_bonus": 0.0,
+        "missing_text_penalty": 0.0,
+        "partial_marker_penalty": 0.0,
+        "irrelevant_sign_penalty": 0.0,
+        "final_score": 0.8
+      },
+      "image_path": "live_frames/frame_1784467699053_front.png",
+      "extra": {
+        "direction": null,
+        "room_range": null,
+        "arrow": null,
+        "target_relevance": "medium",
+        "floor": null,
+        "zone": null,
+        "source_view": "RIGHT",
+        "source_image_index": 1
+      },
+      "observation_count": 1,
+      "selection_count": 0
+    },
+    {
+      "id": "L003",
+      "category": "door",
+      "description": "Open double glass doors leading into the building interior, visible in the front view.",
+      "text": "",
+      "pose": {},
+      "status": "unvisited",
+      "confidence": "medium",
+      "evidence_score": 0.6000000000000001,
+      "evidence_breakdown": {
+        "category_score": 0.8,
+        "confidence_bonus": 0.1,
+        "text_bonus": 0.0,
+        "target_relevance_bonus": 0.05,
+        "direction_bonus": 0.0,
+        "missing_text_penalty": 0.35,
+        "partial_marker_penalty": 0.0,
+        "irrelevant_sign_penalty": 0.0,
+        "final_score": 0.6000000000000001
+      },
+      "image_path": "live_frames/frame_1784467850117_front.png",
+      "extra": {
+        "direction": null,
+        "room_range": null,
+        "arrow": null,
+        "target_relevance": "medium",
+        "floor": null,
+        "zone": null,
+        "source_view": "FRONT",
+        "source_image_index": 2
+      },
+      "observation_count": 1,
+      "selection_count": 0
+    },
+    {
+      "id": "L004",
+      "category": "directory",
+      "description": "A digital directory kiosk or information screen visible inside the building through the open doors in the front view.",
+      "text": "",
+      "pose": {},
+      "status": "visited",
+      "confidence": "low",
+      "evidence_score": 0.45000000000000007,
+      "evidence_breakdown": {
+        "category_score": 0.65,
+        "confidence_bonus": 0.05,
+        "text_bonus": 0.0,
+        "target_relevance_bonus": 0.1,
+        "direction_bonus": 0.0,
+        "missing_text_penalty": 0.35,
+        "partial_marker_penalty": 0.0,
+        "irrelevant_sign_penalty": 0.0,
+        "final_score": 0.45000000000000007
+      },
+      "image_path": "live_frames/frame_1784467850117_front.png",
+      "extra": {
+        "direction": null,
+        "room_range": null,
+        "arrow": null,
+        "target_relevance": "high",
+        "floor": null,
+        "zone": null,
+        "source_view": "FRONT",
+        "source_image_index": 2
+      },
+      "observation_count": 1,
+      "selection_count": 1
+    },
+    {
+      "id": "L005",
+      "category": "sign",
+      "description": "Signs on the glass partition in the left view instructing to 'KEEP THIS DOOR CLOSED'.",
+      "text": "KEEP THIS DOOR CLOSED",
+      "pose": {},
+      "status": "unvisited",
+      "confidence": "low",
+      "evidence_score": 0.4499999999999999,
+      "evidence_breakdown": {
+        "category_score": 0.7,
+        "confidence_bonus": 0.1,
+        "text_bonus": 0.1,
+        "target_relevance_bonus": 0.0,
+        "direction_bonus": 0.0,
+        "missing_text_penalty": 0.0,
+        "partial_marker_penalty": 0.0,
+        "irrelevant_sign_penalty": 0.45,
+        "final_score": 0.4499999999999999
+      },
+      "image_path": "live_frames/frame_1784467850117_front.png",
+      "extra": {
+        "direction": null,
+        "room_range": null,
+        "arrow": null,
+        "target_relevance": "low",
+        "floor": null,
+        "zone": null,
+        "source_view": "LEFT",
+        "source_image_index": 2
+      },
+      "observation_count": 1,
+      "selection_count": 0
+    },
+    {
+      "id": "L006",
+      "category": "sign",
+      "description": "A blue directory sign mounted on the wooden slat wall in the front view. It lists room numbers and indicates a direction to the right.",
+      "text": "C0.004 - C0.008",
+      "pose": {},
+      "status": "used",
+      "confidence": "high",
+      "evidence_score": 1.0,
+      "evidence_breakdown": {
+        "category_score": 0.7,
+        "confidence_bonus": 0.1,
+        "text_bonus": 0.1,
+        "target_relevance_bonus": 0.1,
+        "direction_bonus": 0.05,
+        "missing_text_penalty": 0.0,
+        "partial_marker_penalty": 0.0,
+        "irrelevant_sign_penalty": 0.0,
+        "final_score": 1.0
+      },
+      "image_path": "live_frames/frame_1784468004957_front.png",
+      "extra": {
+        "direction": "right",
+        "room_range": "C0.004 - C0.008",
+        "arrow": "right",
+        "target_relevance": "high",
+        "floor": "0",
+        "zone": "C",
+        "source_view": "FRONT",
+        "source_image_index": 3
+      },
+      "observation_count": 1,
+      "selection_count": 1
+    },
+    {
+      "id": "L007",
+      "category": "door",
+      "description": "A white double door on the right side of the corridor with a room label plate.",
+      "text": "C0.004",
+      "pose": {},
+      "status": "used",
+      "confidence": "high",
+      "evidence_score": 1.0,
+      "evidence_breakdown": {
+        "category_score": 0.8,
+        "confidence_bonus": 0.1,
+        "text_bonus": 0.1,
+        "target_relevance_bonus": 0.1,
+        "direction_bonus": 0.05,
+        "missing_text_penalty": 0.0,
+        "partial_marker_penalty": 0.0,
+        "irrelevant_sign_penalty": 0.0,
+        "final_score": 1.0
+      },
+      "image_path": "live_frames/frame_1784468153805_front.png",
+      "extra": {
+        "direction": "right",
+        "room_range": null,
+        "arrow": null,
+        "target_relevance": "high",
+        "floor": null,
+        "zone": null,
+        "source_view": "RIGHT",
+        "source_image_index": 4
+      },
+      "observation_count": 1,
+      "selection_count": 1
+    },
+    {
+      "id": "L008",
+      "category": "sign",
+      "description": "A blue directional sign mounted on the wooden slat wall in the front view, indicating room ranges.",
+      "text": "C0.004 - C0.008",
+      "pose": {},
+      "status": "unvisited",
+      "confidence": "high",
+      "evidence_score": 1.0,
+      "evidence_breakdown": {
+        "category_score": 0.7,
+        "confidence_bonus": 0.1,
+        "text_bonus": 0.1,
+        "target_relevance_bonus": 0.1,
+        "direction_bonus": 0.05,
+        "missing_text_penalty": 0.0,
+        "partial_marker_penalty": 0.0,
+        "irrelevant_sign_penalty": 0.0,
+        "final_score": 1.0
+      },
+      "image_path": "live_frames/frame_1784468153805_front.png",
+      "extra": {
+        "direction": "right",
+        "room_range": "C0.004 - C0.008",
+        "arrow": "right",
+        "target_relevance": "high",
+        "floor": null,
+        "zone": null,
+        "source_view": "FRONT",
+        "source_image_index": 4
+      },
+      "observation_count": 1,
+      "selection_count": 0
+    }
+  ],
+  "observation_summaries": [
+    "Image 1: A directional sign for Tower B and Tower C is visible in the front view, and a Reception desk is visible in the right view.",
+    "Image 2: The front view shows an open entrance to a building interior with a directory kiosk visible inside, which may contain room information. The left view shows a closed glass partition with 'Keep this door closed' signs.",
+    "Image 3: A directory sign on the wall in the front view indicates a room range including C0.004, pointing to the right.",
+    "Image 4: The target room C0.004 is visible on the door to the right, and a directional sign in the front view confirms the room is located to the right."
+  ],
+  "hypotheses": [
+    "The target room C0.004 is likely located in one of the towers indicated by the front sign.",
+    "The target room C0.004 is likely inside the building accessible through the open doors in the front view.",
+    "The target room C0.004 is located to the right, as indicated by the directory sign.",
+    "The target room C0.004 is located immediately to the right."
+  ],
+  "failed_actions": []
+}

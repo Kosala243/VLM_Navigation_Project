@@ -1,0 +1,109 @@
+{
+  "run_settings": {
+    "started_at": "2026-07-19T16:21:03",
+    "goal": "C0.016",
+    "mode": "auto",
+    "camera_mode": "separate",
+    "api": "http://ernis-amd395:8001",
+    "robot_user": "unitree",
+    "robot_ip": "192.168.123.14",
+    "camera_device": "/dev/video3",
+    "front_device": "/dev/video2",
+    "left_device": "/dev/video4",
+    "right_device": "/dev/video3",
+    "capture_size": "960x720",
+    "execute": "false",
+    "cmd_vel_topic": "/cmd_vel",
+    "forward_speed": 0.12,
+    "turn_speed": 0.2,
+    "move_duration": 5.0,
+    "invert_turn": false,
+    "memory": "true",
+    "interval": 5.0,
+    "max_steps": 20,
+    "stitch_width": 960,
+    "stitch_height": 720,
+    "min_evidence_score": 0.3,
+    "allow_low_confidence": false
+  },
+  "step": 2,
+  "timestamp": "2026-07-19T16:26:02",
+  "camera_mode": "separate",
+  "primary_path": "robot_live_frames/step_0002/front.png",
+  "saved_files": {
+    "left": "robot_live_frames/step_0002/left.png",
+    "front": "robot_live_frames/step_0002/front.png",
+    "right": "robot_live_frames/step_0002/right.png"
+  },
+  "executed": false,
+  "step_metric": {
+    "done": false,
+    "executed": false,
+    "mode": "autonomous_step",
+    "observation_mode": "separate",
+    "action_name": "FOLLOW_DIRECTION",
+    "confidence": "low",
+    "evidence_score": 0.0,
+    "is_valid": false,
+    "evidence_view": "FRONT"
+  },
+  "evidence_view": "FRONT",
+  "response": {
+    "mode": "autonomous_step",
+    "goal": "C0.016",
+    "observation_mode": "separate",
+    "image_path": "live_frames/frame_1784471020818_front.png",
+    "image_paths": {
+      "LEFT": "live_frames/frame_1784471020817_left.png",
+      "FRONT": "live_frames/frame_1784471020818_front.png",
+      "RIGHT": "live_frames/frame_1784471020819_right.png"
+    },
+    "done": false,
+    "action": {
+      "name": "FOLLOW_DIRECTION",
+      "params": {
+        "landmark_id": "L001",
+        "direction": "right",
+        "target": "Tower C",
+        "target_description": "Directional sign indicating 'Tower C Zuid toren' to the right",
+        "floor": null,
+        "search_for": null,
+        "stop_condition": "robot near doorway or junction leading to Tower C",
+        "capture_after": true,
+        "evidence_view": "FRONT"
+      },
+      "reason": "The directional sign visible in the front view indicates that Tower C is to the right, which aligns with the target room code C0.016.",
+      "confidence": "low",
+      "evidence_score": 0.0,
+      "evidence_breakdown": {
+        "invalid_action": 1.0,
+        "final_score": 0.0
+      },
+      "goal_reached": false,
+      "needs_verification": false,
+      "raw": {
+        "action": "FOLLOW_DIRECTION",
+        "params": {
+          "landmark_id": "L001",
+          "direction": "right",
+          "target": "Tower C",
+          "target_description": "Directional sign indicating 'Tower C Zuid toren' to the right",
+          "floor": null,
+          "search_for": null,
+          "stop_condition": "robot near doorway or junction leading to Tower C",
+          "capture_after": true,
+          "evidence_view": "FRONT"
+        },
+        "reason": "The directional sign visible in the front view indicates that Tower C is to the right, which aligns with the target room code C0.016.",
+        "confidence": "high",
+        "goal_reached": false,
+        "needs_verification": false
+      },
+      "is_valid": false,
+      "invalid_reason": "FOLLOW_DIRECTION landmark L001 is not visible in the current observation."
+    },
+    "action_display": "FOLLOW_DIRECTION({'landmark_id': 'L001', 'direction': 'right', 'target': 'Tower C', 'target_description': \"Directional sign indicating 'Tower C Zuid toren' to the right\", 'floor': None, 'search_for': None, 'stop_condition': 'robot near doorway or junction leading to Tower C', 'capture_after': True, 'evidence_view': 'FRONT'}) [low, score=0.00] INVALID: FOLLOW_DIRECTION landmark L001 is not visible in the current observation. - The directional sign visible in the front view indicates that Tower C is to the right, which aligns with the target room code C0.016.",
+    "status": "Goal=C0.016 | records=2 | memory_landmarks=4 | session_memory_active=True | inherited_previous_memory=False",
+    "saved_result": "navigation_outputs/http_api/autonomous_step_latest_result.json"
+  }
+}

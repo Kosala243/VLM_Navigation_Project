@@ -1,0 +1,110 @@
+{
+  "run_settings": {
+    "started_at": "2026-07-19T16:21:03",
+    "goal": "C0.016",
+    "mode": "auto",
+    "camera_mode": "separate",
+    "api": "http://ernis-amd395:8001",
+    "robot_user": "unitree",
+    "robot_ip": "192.168.123.14",
+    "camera_device": "/dev/video3",
+    "front_device": "/dev/video2",
+    "left_device": "/dev/video4",
+    "right_device": "/dev/video3",
+    "capture_size": "960x720",
+    "execute": "false",
+    "cmd_vel_topic": "/cmd_vel",
+    "forward_speed": 0.12,
+    "turn_speed": 0.2,
+    "move_duration": 5.0,
+    "invert_turn": false,
+    "memory": "true",
+    "interval": 5.0,
+    "max_steps": 20,
+    "stitch_width": 960,
+    "stitch_height": 720,
+    "min_evidence_score": 0.3,
+    "allow_low_confidence": false
+  },
+  "step": 7,
+  "timestamp": "2026-07-19T16:38:39",
+  "camera_mode": "separate",
+  "primary_path": "robot_live_frames/step_0007/front.png",
+  "saved_files": {
+    "left": "robot_live_frames/step_0007/left.png",
+    "front": "robot_live_frames/step_0007/front.png",
+    "right": "robot_live_frames/step_0007/right.png"
+  },
+  "executed": false,
+  "step_metric": {
+    "done": false,
+    "executed": false,
+    "mode": "autonomous_step",
+    "observation_mode": "separate",
+    "action_name": "NAVIGATE_TO_LANDMARK",
+    "confidence": "medium",
+    "evidence_score": 0.75,
+    "is_valid": true,
+    "evidence_view": "FRONT"
+  },
+  "evidence_view": "FRONT",
+  "response": {
+    "mode": "autonomous_step",
+    "goal": "C0.016",
+    "observation_mode": "separate",
+    "image_path": "live_frames/frame_1784471772850_front.png",
+    "image_paths": {
+      "LEFT": "live_frames/frame_1784471772849_left.png",
+      "FRONT": "live_frames/frame_1784471772850_front.png",
+      "RIGHT": "live_frames/frame_1784471772850_right.png"
+    },
+    "done": false,
+    "action": {
+      "name": "NAVIGATE_TO_LANDMARK",
+      "params": {
+        "landmark_id": "L010",
+        "target": "L010",
+        "target_description": "Black directional sign on the left wall indicating room range C0.016 - C0.020",
+        "stop_condition": "robot near the sign",
+        "capture_after": true,
+        "evidence_view": "FRONT"
+      },
+      "reason": "The black directional sign (L010) visible in the front view explicitly indicates that the target room C0.016 is located in the direction of the open doorway to the left, making it the most relevant navigation cue.",
+      "confidence": "medium",
+      "evidence_score": 0.75,
+      "evidence_breakdown": {
+        "action_base_score": 0.6,
+        "supporting_landmark_score": 1.0,
+        "supporting_landmark_bonus": 0.15,
+        "no_landmark_penalty": 0.0,
+        "partial_marker_penalty": 0.0,
+        "used_landmark_penalty": 0.0,
+        "invalid_penalty": 0.0,
+        "mismatched_room_code_penalty": 0.0,
+        "final_score": 0.75
+      },
+      "goal_reached": false,
+      "needs_verification": false,
+      "raw": {
+        "action": "NAVIGATE_TO_LANDMARK",
+        "params": {
+          "landmark_id": "L010",
+          "target": "L010",
+          "target_description": "Black directional sign on the left wall indicating room range C0.016 - C0.020",
+          "stop_condition": "robot near the sign",
+          "capture_after": true,
+          "evidence_view": "FRONT"
+        },
+        "reason": "The black directional sign (L010) visible in the front view explicitly indicates that the target room C0.016 is located in the direction of the open doorway to the left, making it the most relevant navigation cue.",
+        "confidence": "high",
+        "goal_reached": false,
+        "needs_verification": false
+      },
+      "is_valid": true,
+      "invalid_reason": ""
+    },
+    "action_display": "NAVIGATE_TO_LANDMARK({'landmark_id': 'L010', 'target': 'L010', 'target_description': 'Black directional sign on the left wall indicating room range C0.016 - C0.020', 'stop_condition': 'robot near the sign', 'capture_after': True, 'evidence_view': 'FRONT'}) [medium, score=0.75] valid - The black directional sign (L010) visible in the front view explicitly indicates that the target room C0.016 is located in the direction of the open doorway to the left, making it the most relevant navigation cue.",
+    "status": "Goal=C0.016 | records=7 | memory_landmarks=12 | session_memory_active=True | inherited_previous_memory=False",
+    "saved_result": "navigation_outputs/http_api/autonomous_step_latest_result.json"
+  }
+}
