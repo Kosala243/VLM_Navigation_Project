@@ -285,34 +285,68 @@ class NavigationMemory:
             self.failed_actions.append(reason)
             self.failed_actions = self.failed_actions[-self.max_failed_actions:]
 
-    def context_for_planner(self, n_recent: int = 8, n_relevant: int = 8) -> str:
-        """Return compact structured context for the action planner.
+    def context_for_planner(
+        self,
+        n_recent: int = 4,
+        n_relevant: int = 4,
+    ) -> str:
+        """Return compact navigation memory for the action planner."""
 
-        The planner gets recent landmarks plus target-relevant landmarks. This is
-        better than sending only the last few observations, because old signs or
-        door labels can still be important.
-        """
         recent = self.landmarks[-n_recent:]
         relevant = self._target_relevant_landmarks(n_relevant)
 
-        # Avoid repeating the same landmark if it is both recent and relevant.
         seen_ids = {lm.id for lm in recent}
         relevant = [lm for lm in relevant if lm.id not in seen_ids]
 
+        def compact_landmark(lm: Landmark) -> dict[str, Any]:
+            extra = lm.extra if isinstance(lm.extra, dict) else {}
+
+            return {
+                "id": lm.id,
+                "category": lm.category,
+                "description": lm.description[:240],
+                "text": lm.text[:160],
+                "status": lm.status,
+                "confidence": lm.confidence,
+                "evidence_score": round(float(lm.evidence_score), 3),
+                "observation_count": lm.observation_count,
+                "source_view": extra.get("source_view", "NONE"),
+                "direction": extra.get("direction"),
+                "arrow": extra.get("arrow"),
+                "room_range": extra.get("room_range"),
+                "target_relevance": extra.get("target_relevance"),
+                "floor": extra.get("floor"),
+                "zone": extra.get("zone"),
+            }
+
         data = {
-            "recent_observations": self.observation_summaries[-n_recent:],
-            "recent_landmarks": [asdict(lm) for lm in recent],
-            "target_relevant_landmarks": [asdict(lm) for lm in relevant],
-            "current_beliefs": self.hypotheses[-10:],
-            "failed_actions": self.failed_actions[-5:],
-            "memory_limits": {
-                "stored_landmarks": len(self.landmarks),
-                "max_landmarks": self.max_landmarks,
-                "planner_recent_landmarks": n_recent,
-                "planner_relevant_landmarks": n_relevant,
-            },
+            "recent_observations": [
+                str(item)[:300]
+                for item in self.observation_summaries[-4:]
+            ],
+            "recent_landmarks": [
+                compact_landmark(lm)
+                for lm in recent
+            ],
+            "target_relevant_landmarks": [
+                compact_landmark(lm)
+                for lm in relevant
+            ],
+            "current_beliefs": [
+                str(item)[:240]
+                for item in self.hypotheses[-4:]
+            ],
+            "failed_actions": [
+                str(item)[:240]
+                for item in self.failed_actions[-3:]
+            ],
         }
-        return json.dumps(data, indent=2, ensure_ascii=False)
+
+        return json.dumps(
+            data,
+            ensure_ascii=False,
+            separators=(",", ":"),
+        )
 
     def save(self, path: str) -> None:
         data = {
