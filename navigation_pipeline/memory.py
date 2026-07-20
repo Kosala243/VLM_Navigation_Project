@@ -56,6 +56,15 @@ class MemoryUpdate:
     landmarks: list[Landmark] = field(default_factory=list)
     hypotheses: list[str] = field(default_factory=list)
 
+@dataclass
+class NavigationSubgoal:
+    description: str = ""
+    landmark_id: str = ""
+    landmark_category: str = ""
+    direction: str = ""
+    source: str = ""          # semantic | structural
+    status: str = "inactive"  # inactive | active | completed
+    image_index: int = -1
 
 class NavigationMemory:
     """Structured memory bank updated from every robot camera image."""
@@ -233,6 +242,7 @@ class NavigationMemory:
         self.max_summaries = max_summaries
         self.max_hypotheses = max_hypotheses
         self.max_failed_actions = max_failed_actions
+        self.current_subgoal = NavigationSubgoal()
 
         self.landmarks: list[Landmark] = []
         self.observation_summaries: list[str] = []
@@ -294,6 +304,8 @@ class NavigationMemory:
             self._add_room_sequence_hypotheses()
             self._trim_memory()
 
+        self.update_current_subgoal()
+
         return MemoryUpdate(
             useful=useful,
             summary=summary,
@@ -351,6 +363,94 @@ class NavigationMemory:
         if reason:
             self.failed_actions.append(reason)
             self.failed_actions = self.failed_actions[-self.max_failed_actions:]
+
+    def update_current_subgoal(self) -> None:
+        """
+        Choose the best current navigation objective.
+
+        Priority
+
+        1. Current semantic landmark.
+        2. Current structural landmark.
+        3. Recent remembered structural landmark.
+        """
+
+        self.current_subgoal = NavigationSubgoal()
+
+        semantic = None
+        structural = None
+
+        for lm in reversed(self.landmarks):
+            extra = (
+                lm.extra
+                if isinstance(getattr(lm, "extra", {}), dict)
+                else {}
+            )
+            current = (
+                extra.get("source_image_index")
+                == self.image_count
+            )
+            category = str(lm.category).lower()
+            if (
+                current
+                and category in {
+                    "sign",
+                    "directory",
+                    "reception",
+                }
+                and semantic is None
+            ):
+                semantic = lm
+
+            if (
+                current
+                and category in {
+                    "corridor",
+                    "corridor_bend",
+                    "junction",
+                    "doorway",
+                    "passage",
+                }
+                and structural is None
+            ):
+                structural = lm
+
+        if semantic is not None:
+
+            extra = semantic.extra
+
+            self.current_subgoal = NavigationSubgoal(
+                description=str(semantic.description),
+                landmark_id=str(semantic.id),
+                landmark_category=str(semantic.category),
+                direction=str(
+                    extra.get("arrow")
+                    or extra.get("direction")
+                    or ""
+                ),
+                source="semantic",
+                status="active",
+                image_index=self.image_count,
+            )
+
+            return
+
+        if structural is not None:
+
+            extra = structural.extra
+
+            self.current_subgoal = NavigationSubgoal(
+                description=str(structural.description),
+                landmark_id=str(structural.id),
+                landmark_category=str(structural.category),
+                direction=str(
+                    extra.get("continuation_direction")
+                    or ""
+                ),
+                source="structural",
+                status="active",
+                image_index=self.image_count,
+            )
 
     def context_for_planner(
         self,
@@ -422,14 +522,26 @@ class NavigationMemory:
                 compact_landmark(lm)
                 for lm in structural
             ],
+            "current_subgoal": (
+                {
+                    "description": self.current_subgoal.description,
+                    "landmark_id": self.current_subgoal.landmark_id,
+                    "category": self.current_subgoal.landmark_category,
+                    "direction": self.current_subgoal.direction,
+                    "source": self.current_subgoal.source,
+                    "status": self.current_subgoal.status,
+                    "image_index": self.current_subgoal.image_index,
+                }
+                if self.current_subgoal.status == "active"
+                else None
+            ),
         }
-
         return json.dumps(
             data,
             ensure_ascii=False,
             separators=(",", ":"),
         )
-
+        
     def save(self, path: str) -> None:
         data = {
             "image_count": self.image_count,
