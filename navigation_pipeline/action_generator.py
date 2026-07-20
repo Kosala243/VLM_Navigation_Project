@@ -238,8 +238,74 @@ class ActionGenerator:
             raw=data,
         )
         validated = self._validate(action, memory, goal)
-        self._attach_action_evidence_score(validated, memory, goal)
-        self._ensure_evidence_view(validated, memory)
+        semantic_lm = _best_current_semantic_direction_landmark(memory)
+
+        if semantic_lm is not None:
+            extra = (
+                semantic_lm.extra
+                if isinstance(getattr(semantic_lm, "extra", {}), dict)
+                else {}
+            )
+
+            semantic_direction = _normalise_direction(
+                extra.get("arrow") or extra.get("direction")
+            )
+
+            selected_lm_id = _clean_param(
+                validated.params.get("landmark_id")
+            )
+            selected_direction = _normalise_direction(
+                validated.params.get("direction")
+            )
+
+            already_using_current_semantic = (
+                validated.name == "FOLLOW_DIRECTION"
+                and selected_lm_id == str(semantic_lm.id)
+                and selected_direction == semantic_direction
+            )
+
+            if semantic_direction and not already_using_current_semantic:
+                validated = Action(
+                    name="FOLLOW_DIRECTION",
+                    params={
+                        "landmark_id": str(semantic_lm.id),
+                        "direction": semantic_direction,
+                        "target": str(getattr(goal, "raw_goal", "")),
+                        "target_description": str(
+                            getattr(semantic_lm, "description", "")
+                        ),
+                        "stop_condition": (
+                            f"robot aligned with the {semantic_direction} route "
+                            "indicated by the current sign"
+                        ),
+                        "capture_after": True,
+                        "evidence_view": extra.get(
+                            "source_view",
+                            "NONE",
+                        ),
+                    },
+                    reason=(
+                        "Current target-relevant directional evidence has priority "
+                        "over structural or exploratory actions."
+                    ),
+                    confidence="high",
+                )
+
+                validated = self._validate(
+                    validated,
+                    memory,
+                    goal,
+                )
+
+        self._attach_action_evidence_score(
+            validated,
+            memory,
+            goal,
+        )
+        self._ensure_evidence_view(
+            validated,
+            memory,
+        )
         return validated
 
     def _ensure_evidence_view(self, action: Action, memory: "NavigationMemory") -> None:
@@ -501,6 +567,7 @@ class ActionGenerator:
             direction = _normalise_direction(
                 action.params.get("direction")
             )
+
             if not direction:
                 action.is_valid = False
                 action.invalid_reason = (
@@ -508,56 +575,116 @@ class ActionGenerator:
                     "left, right, or forward."
                 )
                 return action
+
             action.params["direction"] = direction
-            target = _clean_param(action.params.get("target"))
-            lm_id = _clean_param(action.params.get("landmark_id"))
-            lm = _get_landmark(memory, lm_id)
 
-            if not (direction or target or lm_id):
-                action.is_valid = False
-                action.invalid_reason = "FOLLOW_DIRECTION requires direction, target, or landmark_id."
-                return action
-            
+            target = _clean_param(
+                action.params.get("target")
+            )
+            lm_id = _clean_param(
+                action.params.get("landmark_id")
+            )
+            lm = None
+
             if not lm_id:
-                supporting_lm = _find_best_direction_landmark(
-                    recent,
-                    direction,
+                supporting_lm = _best_current_semantic_direction_landmark(
+                    memory
                 )
+
                 if supporting_lm is not None:
-                    lm_id = str(getattr(supporting_lm, "id", ""))
-                    action.params["landmark_id"] = lm_id
-                    lm = supporting_lm
+                    supporting_extra = (
+                        supporting_lm.extra
+                        if isinstance(
+                            getattr(supporting_lm, "extra", {}),
+                            dict,
+                        )
+                        else {}
+                    )
+                    supporting_direction = _normalise_direction(
+                        supporting_extra.get("arrow")
+                        or supporting_extra.get("direction")
+                    )
+
+                    if supporting_direction == direction:
+                        lm_id = str(
+                            getattr(supporting_lm, "id", "")
+                        )
+                        action.params["landmark_id"] = lm_id
+                        lm = supporting_lm
 
             if not lm_id:
                 action.is_valid = False
-                action.invalid_reason = "FOLLOW_DIRECTION requires landmark_id for robot execution."
+                action.invalid_reason = (
+                    "FOLLOW_DIRECTION requires a current "
+                    "semantic landmark_id."
+                )
                 return action
 
             if not _landmark_exists(memory, lm_id):
-                action.is_valid = False
-                action.invalid_reason = f"Unknown direction landmark_id: {lm_id}"
-                return action
-            lm = _get_landmark(memory, lm_id)
+                supporting_lm = _best_current_semantic_direction_landmark(
+                    memory
+                )
+
+                if supporting_lm is not None:
+                    supporting_extra = (
+                        supporting_lm.extra
+                        if isinstance(
+                            getattr(supporting_lm, "extra", {}),
+                            dict,
+                        )
+                        else {}
+                    )
+                    supporting_direction = _normalise_direction(
+                        supporting_extra.get("arrow")
+                        or supporting_extra.get("direction")
+                    )
+
+                    if supporting_direction == direction:
+                        lm_id = str(
+                            getattr(supporting_lm, "id", "")
+                        )
+                        action.params["landmark_id"] = lm_id
+                        lm = supporting_lm
+                    else:
+                        supporting_lm = None
+
+                if supporting_lm is None:
+                    action.is_valid = False
+                    action.invalid_reason = (
+                        "The supplied direction landmark ID is unknown, "
+                        "and no current semantic landmark supports "
+                        f"direction={direction}."
+                    )
+                    return action
+
+            if lm is None:
+                lm = _get_landmark(memory, lm_id)
 
             if lm is None:
                 action.is_valid = False
-                action.invalid_reason = f"Unknown direction landmark_id: {lm_id}"
+                action.invalid_reason = (
+                    f"Unknown direction landmark_id: {lm_id}"
+                )
                 return action
 
             if not _landmark_is_current(memory, lm):
                 action.is_valid = False
                 action.invalid_reason = (
-                    f"FOLLOW_DIRECTION landmark {lm_id} is not visible in the current observation."
+                    f"FOLLOW_DIRECTION landmark {lm_id} is not "
+                    "visible in the current observation."
                 )
                 return action
 
-            if not _has_recent_direction_evidence(recent, landmark_id=lm_id):
+            if not _has_recent_direction_evidence(
+                recent,
+                landmark_id=lm_id,
+            ):
                 action.is_valid = False
                 action.invalid_reason = (
-                    f"FOLLOW_DIRECTION landmark {lm_id} does not contain recent direction evidence."
+                    f"FOLLOW_DIRECTION landmark {lm_id} does not "
+                    "contain current direction evidence."
                 )
                 return action
-
         if action.name == "USE_ELEVATOR_OR_STAIRS":
             if not _has_vertical_transition_evidence(recent):
                 action.is_valid = False
@@ -864,6 +991,21 @@ def _validate_structural_route_landmark(
             f"{landmark_direction}, but the latest semantic evidence "
             f"points {latest_semantic_direction}.",
         )
+    
+    current_semantic = _best_current_semantic_direction_landmark(memory)
+    if current_semantic is not None:
+        semantic_direction = _normalise_direction(
+            current_semantic.extra.get("arrow")
+            or current_semantic.extra.get("direction")
+        )
+
+        if semantic_direction:
+            return (
+                False,
+                f"Current semantic landmark {current_semantic.id} "
+                f"must be handled before structural landmark "
+                f"{landmark_id}.",
+            )
 
     return True, ""
 
@@ -911,12 +1053,58 @@ def _latest_semantic_direction(
             if target_relevance not in {"high", "medium"}:
                 continue
         direction = _normalise_direction(
-            extra.get("direction") or extra.get("arrow")
+            extra.get("arrow") or extra.get("direction")
         )
         if direction:
             return direction
 
     return ""
+
+def _best_current_semantic_direction_landmark(
+    memory: "NavigationMemory",
+) -> "Landmark | None":
+    current_index = getattr(memory, "image_count", None)
+
+    best = None
+    best_score = -1.0
+
+    for lm in getattr(memory, "landmarks", []):
+        extra = (
+            lm.extra
+            if isinstance(getattr(lm, "extra", {}), dict)
+            else {}
+        )
+
+        if extra.get("source_image_index") != current_index:
+            continue
+
+        if str(getattr(lm, "category", "")).lower() not in {
+            "sign",
+            "directory",
+            "reception",
+        }:
+            continue
+
+        relevance = str(
+            extra.get("target_relevance", "none")
+        ).lower()
+
+        direction = _normalise_direction(
+            extra.get("arrow") or extra.get("direction")
+        )
+
+        if relevance not in {"high", "medium"} or not direction:
+            continue
+
+        score = float(
+            getattr(lm, "evidence_score", 0.0) or 0.0
+        )
+
+        if score > best_score:
+            best = lm
+            best_score = score
+
+    return best
 
 def _has_explicit_direction_metadata(extra: dict[str, Any]) -> bool:
     for key in ("direction", "arrow"):
