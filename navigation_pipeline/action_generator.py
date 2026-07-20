@@ -1098,21 +1098,6 @@ def _validate_structural_route_landmark(
                 f"Doorway landmark {landmark_id} is not linked to "
                 "the active goal or route.",
             )
-    latest_semantic_direction = _latest_semantic_direction(memory)
-    landmark_bearing = _structural_landmark_bearing(landmark)
-
-    if latest_semantic_direction and landmark_bearing:
-        if latest_semantic_direction != landmark_bearing:
-            return (
-                False,
-                f"Structural landmark {landmark_id} is currently located "
-                f"{landmark_bearing}, but the latest semantic evidence "
-                f"points {latest_semantic_direction}.",
-            )
-
-        # Turn toward the landmark now. Its continuation direction may become
-        # forward after the robot is aligned with it.
-        action.params["direction"] = latest_semantic_direction
     
     current_semantic = _best_current_semantic_direction_landmark(memory)
     if current_semantic is not None:
@@ -1203,7 +1188,6 @@ def _best_current_semantic_direction_landmark(
         if str(getattr(lm, "category", "")).lower() not in {
             "sign",
             "directory",
-            "reception",
             "observation",
         }:
             continue

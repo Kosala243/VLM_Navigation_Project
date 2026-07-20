@@ -1,0 +1,115 @@
+{
+  "run_settings": {
+    "started_at": "2026-07-20T11:53:11",
+    "goal": "C0.004",
+    "mode": "auto",
+    "camera_mode": "separate",
+    "api": "http://ernis-amd395:8001",
+    "robot_user": "unitree",
+    "robot_ip": "192.168.123.14",
+    "camera_device": "/dev/video3",
+    "front_device": "/dev/video2",
+    "left_device": "/dev/video4",
+    "right_device": "/dev/video3",
+    "capture_size": "960x720",
+    "execute": "false",
+    "cmd_vel_topic": "/cmd_vel",
+    "forward_speed": 0.12,
+    "turn_speed": 0.2,
+    "move_duration": 5.0,
+    "invert_turn": false,
+    "memory": "true",
+    "interval": 5.0,
+    "max_steps": 6,
+    "stitch_width": 960,
+    "stitch_height": 720,
+    "min_evidence_score": 0.3,
+    "allow_low_confidence": false
+  },
+  "step": 4,
+  "timestamp": "2026-07-20T12:04:04",
+  "camera_mode": "separate",
+  "primary_path": "robot_live_frames/step_0004/front.png",
+  "saved_files": {
+    "left": "robot_live_frames/step_0004/left.png",
+    "front": "robot_live_frames/step_0004/front.png",
+    "right": "robot_live_frames/step_0004/right.png"
+  },
+  "executed": false,
+  "step_metric": {
+    "done": false,
+    "executed": false,
+    "mode": "autonomous_step",
+    "observation_mode": "separate",
+    "action_name": "NAVIGATE_TO_LANDMARK",
+    "confidence": "medium",
+    "evidence_score": 0.7095,
+    "is_valid": true,
+    "evidence_view": "LEFT"
+  },
+  "evidence_view": "LEFT",
+  "response": {
+    "mode": "autonomous_step",
+    "goal": "C0.004",
+    "observation_mode": "separate",
+    "image_path": "live_frames/frame_1784541685545_front.png",
+    "image_paths": {
+      "LEFT": "live_frames/frame_1784541685544_left.png",
+      "FRONT": "live_frames/frame_1784541685545_front.png",
+      "RIGHT": "live_frames/frame_1784541685545_right.png"
+    },
+    "done": false,
+    "action": {
+      "name": "NAVIGATE_TO_LANDMARK",
+      "params": {
+        "landmark_id": "L006",
+        "direction": "left",
+        "target": "L006",
+        "target_description": "A corridor or open area visible to the left, extending past a table and chair.",
+        "floor": "0",
+        "stop_condition": "capture when near the corridor bend",
+        "capture_after": true,
+        "evidence_view": "LEFT"
+      },
+      "reason": "The current view is dominated by a closed door, but the active subgoal and directional sign (L007) indicate the target is to the left; therefore, I will navigate toward the remembered corridor (L006) which serves as the route continuation in that direction.",
+      "confidence": "medium",
+      "evidence_score": 0.7095,
+      "evidence_breakdown": {
+        "action_base_score": 0.6,
+        "supporting_landmark_score": 0.7300000000000001,
+        "supporting_landmark_bonus": 0.10950000000000001,
+        "no_landmark_penalty": 0.0,
+        "partial_marker_penalty": 0.0,
+        "used_landmark_penalty": 0.0,
+        "invalid_penalty": 0.0,
+        "mismatched_room_code_penalty": 0.0,
+        "structural_route_penalty": 0.0,
+        "final_score": 0.7095
+      },
+      "goal_reached": false,
+      "needs_verification": true,
+      "raw": {
+        "action": "NAVIGATE_TO_LANDMARK",
+        "params": {
+          "landmark_id": "L006",
+          "direction": "left",
+          "target": "L006",
+          "target_description": "A corridor or open area visible to the left, extending past a table and chair.",
+          "floor": "0",
+          "stop_condition": "capture when near the corridor bend",
+          "capture_after": true,
+          "evidence_view": "LEFT"
+        },
+        "reason": "The current view is dominated by a closed door, but the active subgoal and directional sign (L007) indicate the target is to the left; therefore, I will navigate toward the remembered corridor (L006) which serves as the route continuation in that direction.",
+        "confidence": "high",
+        "goal_reached": false,
+        "needs_verification": true
+      },
+      "is_valid": true,
+      "invalid_reason": ""
+    },
+    "action_display": "NAVIGATE_TO_LANDMARK({'landmark_id': 'L006', 'direction': 'left', 'target': 'L006', 'target_description': 'A corridor or open area visible to the left, extending past a table and chair.', 'floor': '0', 'stop_condition': 'capture when near the corridor bend', 'capture_after': True, 'evidence_view': 'LEFT'}) [medium, score=0.71] valid - The current view is dominated by a closed door, but the active subgoal and directional sign (L007) indicate the target is to the left; therefore, I will navigate toward the remembered corridor (L006) which serves as the route continuation in that direction.",
+    "status": "Goal=C0.004 | records=4 | memory_landmarks=8 | session_memory_active=True | inherited_previous_memory=False",
+    "saved_result": "navigation_outputs/http_api/autonomous_step_latest_result.json"
+  }
+}
