@@ -1,13 +1,22 @@
 """memory.py
-Structured navigation memory bank for generalized indoor navigation.
+    Structured navigation memory bank for generalized indoor navigation.
 
-The memory stores navigation-useful evidence only: signs, door labels,
-directories/maps, stairs/elevators, reachable frontiers, reception/help desks,
-room-number trends, and target-relevant observations.
+    The memory stores two kinds of navigation-useful evidence:
 
-It deliberately avoids treating random people as navigation landmarks. The robot
-may store/ask only official help sources such as reception, information desk,
-front desk, or security desk.
+    1. Semantic landmarks:
+    signs, door labels, directories, elevators, stairs, reception/help desks,
+    room-number trends, and target-relevant observations.
+
+    2. Structural navigation landmarks:
+    corridors, corridor bends, junctions, passages, open doorways,
+    reachable frontiers, dead ends, and visible route continuations.
+
+    Structural landmarks describe where the robot can move. They do not automatically
+    override semantic directional evidence. The action planner must use them only when
+    their direction and role are compatible with the active goal or subgoal.
+
+    Random people are never stored as navigation landmarks. Official help sources such
+    as reception, information desks, front desks, and security desks may be stored.
 """
 from __future__ import annotations
 
@@ -52,15 +61,23 @@ class NavigationMemory:
     """Structured memory bank updated from every robot camera image."""
 
     VALID_CATEGORIES = {
+        # Semantic landmarks
         "sign",
         "door",
-        "frontier",
         "reception",
         "directory",
         "stairs",
         "elevator",
         "observation",
+
+        # Structural navigation landmarks
+        "corridor",
+        "corridor_bend",
         "junction",
+        "doorway",
+        "passage",
+        "frontier",
+        "dead_end",
     }
 
     _PROMPT = """\
@@ -103,6 +120,37 @@ class NavigationMemory:
         - Such landmarks are useful because the robot can move closer to read them.
         - Prefer current visual evidence over old memory.
         - For every landmark, set extra.source_view to LEFT, FRONT, RIGHT, STITCHED_UNKNOWN, or NONE.
+        Structural navigation landmark rules:
+        - Store visible navigable structures even when they do not contain readable text.
+        - Useful structural landmarks include:
+            - a corridor continuing forward;
+            - a corridor bending left or right;
+            - an open doorway or passage;
+            - a corridor junction or intersection;
+            - a reachable unexplored path;
+            - a visible dead end;
+            - an opening at the end of a corridor.
+        - Do not store ordinary walls, furniture, floor texture, or decorative openings.
+        - A structure is useful only when it can affect future robot movement.
+        - Create separate landmarks for distinct useful structures visible in LEFT, FRONT, and RIGHT.
+        - Do not return only one "best" structure. Return all clearly visible, navigation-relevant structures.
+        - If the same camera view contains both a doorway and a corridor, store both when they represent different possible routes.
+        For every landmark, set extra.landmark_type:
+        - "semantic" for signs, labelled doors, directories, reception, stairs, elevators, and target observations.
+        - "structural" for corridors, bends, junctions, doorways, passages, frontiers, and dead ends.
+        For structural landmarks, set:
+        - extra.navigation_role: "continue_route | turn_point | branch | entrance | exit | exploration | dead_end"
+        - extra.traversable: true, false, or null when uncertain
+        - extra.continuation_direction: "left | right | forward | left_forward | right_forward | none | unknown"
+        - extra.route_state: "visible_now | remembered | reached | passed | blocked"
+        - extra.goal_support: "direct | indirect | none | unknown"
+
+        Important route-selection rule:
+        - Do not treat structural attractiveness as proof that a route leads toward the goal.
+        - An open glass door is not automatically better than a corridor.
+        - Semantic directional evidence, such as a sign arrow, takes priority over structural landmarks.
+        - Structural landmarks support execution of an already justified direction or help when no semantic cue is currently visible.
+        - If a directional sign says left and both a corridor and a glass doorway are visible on the left, record both landmarks separately. Do not decide which one is correct in memory extraction.
         - Use LEFT when the landmark/cue is visible in the left image/panel.
         - Use FRONT when the landmark/cue is visible in the front image/panel.
         - Use RIGHT when the landmark/cue is visible in the right image/panel.
@@ -111,14 +159,23 @@ class NavigationMemory:
 
         Extract ONLY navigation-useful evidence. Ignore furniture, ceiling, wall colour, general room appearance, and random people unless they are part of an official help desk.
 
-        Look for:
+        Look for semantic landmarks:
         - directional signs, arrows, room ranges, building/zone/floor signs
-        - door labels and room plates
-        - directories, maps, "you are here" boards
-        - elevators, stairs, floor indicators
-        - corridor junctions and reachable unexplored paths/frontiers
+        - labelled doors, door labels, and room plates
+        - directories, maps, and "you are here" boards
+        - elevators, stairs, and floor indicators
         - reception desks, information desks, front desks, security desks, or official help counters
-        - visible evidence that confirms/rejects the target goal
+        - visible evidence that confirms or rejects the target goal
+
+        Look for structural navigation landmarks:
+        - corridors continuing forward, left, or right
+        - corridor bends visible near or at the end of a hallway
+        - junctions, intersections, and branching paths
+        - open doorways and passable entrances
+        - open passages between areas
+        - reachable unexplored paths or frontiers
+        - visible dead ends or blocked continuations
+        - openings at the end of otherwise visually empty corridors
 
         Important rule about people:
         - Do NOT create a landmark for students, visitors, pedestrians, or random people in corridors/classrooms/labs.
@@ -130,7 +187,7 @@ class NavigationMemory:
         "summary": "one short note, or empty string",
         "landmarks": [
             {
-            "category": "sign | door | frontier | reception | directory | stairs | elevator | observation | junction",
+            "category": "sign | door | reception | directory | stairs | elevator | observation | corridor | corridor_bend | junction | doorway | passage | frontier | dead_end",
             "description": "what it is and where it is in view",
             "text": "exact readable text if any, else empty",
             "confidence": "high | medium | low",
@@ -142,12 +199,22 @@ class NavigationMemory:
                 "target_relevance": "high | medium | low | none",
                 "floor": null,
                 "zone": null,
-                "source_view": "LEFT | FRONT | RIGHT | STITCHED_UNKNOWN | NONE"
+                "source_view": "LEFT | FRONT | RIGHT | STITCHED_UNKNOWN | NONE",
+
+                "landmark_type": "semantic | structural",
+                "navigation_role": "continue_route | turn_point | branch | entrance | exit | exploration | dead_end | none",
+                "traversable": true,
+                "continuation_direction": "left | right | forward | left_forward | right_forward | none | unknown",
+                "route_state": "visible_now | remembered | reached | passed | blocked",
+                "goal_support": "direct | indirect | none | unknown"
             }
             }
         ],
         "hypotheses": ["short useful inference, e.g. room numbers increase forward"]
         }
+
+        - For semantic landmarks, structural fields may use null, "none", or "unknown".
+        - For structural landmarks, text should normally be empty unless readable text is physically attached to that structure.
 
         If no useful navigation evidence is visible, return exactly:
         {"useful": false, "summary": "", "landmarks": [], "hypotheses": []}
@@ -294,6 +361,7 @@ class NavigationMemory:
 
         recent = self.landmarks[-n_recent:]
         relevant = self._target_relevant_landmarks(n_relevant)
+        structural = self._recent_structural_landmarks(limit=6)
 
         seen_ids = {lm.id for lm in recent}
         relevant = [lm for lm in relevant if lm.id not in seen_ids]
@@ -317,6 +385,16 @@ class NavigationMemory:
                 "target_relevance": extra.get("target_relevance"),
                 "floor": extra.get("floor"),
                 "zone": extra.get("zone"),
+                "landmark_type": extra.get("landmark_type", "semantic"),
+                "navigation_role": extra.get("navigation_role", "none"),
+                "traversable": extra.get("traversable"),
+                "continuation_direction": extra.get(
+                    "continuation_direction",
+                    extra.get("direction"),
+                ),
+                "route_state": extra.get("route_state", "visible_now"),
+                "goal_support": extra.get("goal_support", "unknown"),
+                "source_image_index": extra.get("source_image_index"),
             }
 
         data = {
@@ -339,6 +417,10 @@ class NavigationMemory:
             "failed_actions": [
                 str(item)[:240]
                 for item in self.failed_actions[-3:]
+            ],
+            "remembered_route_landmarks": [
+                compact_landmark(lm)
+                for lm in structural
             ],
         }
 
@@ -394,6 +476,45 @@ class NavigationMemory:
         category = self._normalise_category(category, description, text)
         if category is None:
             return None
+        
+        structural_categories = {
+            "corridor",
+            "corridor_bend",
+            "junction",
+            "doorway",
+            "passage",
+            "frontier",
+            "dead_end",
+        }
+
+        semantic_categories = {
+            "sign",
+            "door",
+            "reception",
+            "directory",
+            "stairs",
+            "elevator",
+            "observation",
+        }
+
+        if category in structural_categories:
+            extra.setdefault("landmark_type", "structural")
+            extra.setdefault("navigation_role", _default_navigation_role(category))
+            extra.setdefault("traversable", None)
+            extra.setdefault(
+                "continuation_direction",
+                extra.get("direction") or "unknown",
+            )
+            extra.setdefault("route_state", "visible_now")
+            extra.setdefault("goal_support", "unknown")
+
+        elif category in semantic_categories:
+            extra.setdefault("landmark_type", "semantic")
+            extra.setdefault("navigation_role", "none")
+            extra.setdefault("traversable", None)
+            extra.setdefault("continuation_direction", "none")
+            extra.setdefault("route_state", "visible_now")
+            extra.setdefault("goal_support", "unknown")
 
         extra = _correct_target_relevance(category, description, text, extra, goal)
 
@@ -424,6 +545,7 @@ class NavigationMemory:
         combined = f"{category} {description} {text}".lower()
 
         category_map = {
+            # Semantic aliases
             "map": "directory",
             "you_are_here": "directory",
             "helpdesk": "reception",
@@ -434,9 +556,25 @@ class NavigationMemory:
             "room_label": "door",
             "door_label": "door",
             "room_plate": "door",
-            "corridor": "frontier",
-            "path": "frontier",
+
+            # Structural aliases
+            "hallway": "corridor",
+            "hall": "corridor",
+            "corridor_turn": "corridor_bend",
+            "hallway_bend": "corridor_bend",
+            "bend": "corridor_bend",
             "intersection": "junction",
+            "crossroad": "junction",
+            "branch": "junction",
+            "open_door": "doorway",
+            "open_doorway": "doorway",
+            "entrance": "doorway",
+            "exit": "doorway",
+            "opening": "passage",
+            "open_passage": "passage",
+            "path": "frontier",
+            "unexplored_path": "frontier",
+            "blocked_path": "dead_end",
         }
         category = category_map.get(category, category)
 
@@ -499,6 +637,43 @@ class NavigationMemory:
                 break
         return list(reversed(relevant))
 
+    def _recent_structural_landmarks(self, limit: int = 6) -> list[Landmark]:
+        structural_categories = {
+            "corridor",
+            "corridor_bend",
+            "junction",
+            "doorway",
+            "passage",
+            "frontier",
+            "dead_end",
+        }
+
+        result: list[Landmark] = []
+
+        for lm in reversed(self.landmarks):
+            extra = lm.extra if isinstance(lm.extra, dict) else {}
+
+            is_structural = (
+                lm.category in structural_categories
+                or extra.get("landmark_type") == "structural"
+            )
+
+            if not is_structural:
+                continue
+
+            if lm.status == "ignored":
+                continue
+
+            if extra.get("route_state") in {"passed", "blocked"}:
+                continue
+
+            result.append(lm)
+
+            if len(result) >= limit:
+                break
+
+        return list(reversed(result))
+
     def _trim_memory(self) -> None:
         self.landmarks = self.landmarks[-self.max_landmarks:]
         self.observation_summaries = self.observation_summaries[-self.max_summaries:]
@@ -514,15 +689,23 @@ def _score_landmark(
 ) -> tuple[float, dict[str, float]]:
     """Compute robot-side evidence quality for a memory landmark."""
     category_scores = {
+        # Semantic evidence
         "door": 0.80,
         "sign": 0.70,
         "directory": 0.65,
         "elevator": 0.60,
         "stairs": 0.60,
         "reception": 0.55,
-        "junction": 0.45,
-        "frontier": 0.35,
         "observation": 0.25,
+
+        # Structural navigation evidence
+        "corridor_bend": 0.52,
+        "junction": 0.50,
+        "corridor": 0.48,
+        "doorway": 0.45,
+        "passage": 0.45,
+        "frontier": 0.35,
+        "dead_end": 0.55,
     }
     confidence_scores = {"high": 0.10, "medium": 0.05, "low": 0.00}
 
@@ -533,6 +716,23 @@ def _score_landmark(
     target_relevance = str(extra.get("target_relevance", "")).lower() if isinstance(extra, dict) else ""
     target_bonus = 0.10 if target_relevance == "high" else 0.05 if target_relevance == "medium" else 0.0
     direction_bonus = 0.05 if isinstance(extra, dict) and (extra.get("direction") or extra.get("arrow")) else 0.0
+    traversable_bonus = 0.0
+    if isinstance(extra, dict):
+        if extra.get("traversable") is True:
+            traversable_bonus = 0.05
+        elif extra.get("traversable") is False:
+            traversable_bonus = -0.15
+
+    route_role_bonus = 0.0
+    if isinstance(extra, dict):
+        navigation_role = str(extra.get("navigation_role", "")).lower()
+
+        if navigation_role in {"continue_route", "turn_point"}:
+            route_role_bonus = 0.05
+        elif navigation_role == "dead_end":
+            # Dead ends are useful to remember, but must never be selected
+            # as approach targets.
+            route_role_bonus = 0.0
     partial_marker_penalty = 0.35 if isinstance(extra, dict) and extra.get("partial_goal_marker") else 0.0
     irrelevant_sign_penalty = _irrelevant_sign_penalty(category, text, extra)
 
@@ -543,7 +743,18 @@ def _score_landmark(
     if category in {"door", "sign", "directory"} and not str(text).strip():
         missing_text_penalty = 0.35
 
-    score = base + confidence_bonus + text_bonus + target_bonus + direction_bonus - missing_text_penalty - partial_marker_penalty - irrelevant_sign_penalty
+    score = (
+        base
+        + confidence_bonus
+        + text_bonus
+        + target_bonus
+        + direction_bonus
+        + traversable_bonus
+        + route_role_bonus
+        - missing_text_penalty
+        - partial_marker_penalty
+        - irrelevant_sign_penalty
+    )
     score = max(0.0, min(1.0, score))
 
     breakdown = {
@@ -552,12 +763,26 @@ def _score_landmark(
         "text_bonus": text_bonus,
         "target_relevance_bonus": target_bonus,
         "direction_bonus": direction_bonus,
+        "traversable_bonus": traversable_bonus,
+        "route_role_bonus": route_role_bonus,
         "missing_text_penalty": missing_text_penalty,
         "partial_marker_penalty": partial_marker_penalty,
         "irrelevant_sign_penalty": irrelevant_sign_penalty,
         "final_score": score,
     }
     return score, breakdown
+
+def _default_navigation_role(category: str) -> str:
+    roles = {
+        "corridor": "continue_route",
+        "corridor_bend": "turn_point",
+        "junction": "branch",
+        "doorway": "entrance",
+        "passage": "continue_route",
+        "frontier": "exploration",
+        "dead_end": "dead_end",
+    }
+    return roles.get(category, "none")
 
 def _looks_like_room_or_range(text: str) -> bool:
     t = str(text)

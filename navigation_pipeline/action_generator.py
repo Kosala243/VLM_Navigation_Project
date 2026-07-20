@@ -1,12 +1,16 @@
 """action_generator.py
-High-level action generator for generalized indoor navigation.
+    High-level action generator for generalized indoor navigation.
 
-The VLM selects skill primitives, not low-level robot control.
-This version matches the generalized goal parser and updated memory design:
-- no random-person interaction;
-- official help only through reception/front-desk/security/help-counter evidence;
-- prefer current/local evidence over old used evidence;
-- validate directions, vertical movement, and stopping against recent memory.
+    The VLM selects skill primitives, not low-level robot control.
+
+    The planner uses:
+    - current semantic evidence such as signs, directories, room labels, and reception;
+    - current structural evidence such as corridors, bends, junctions, and doorways;
+    - recent remembered structural landmarks when the current view is visually sparse.
+
+    Semantic evidence decides which route is relevant to the goal.
+    Structural landmarks support execution of that route and must not override
+    stronger or newer semantic evidence.
 """
 from __future__ import annotations
 
@@ -46,8 +50,14 @@ class ActionGenerator:
     VALID_ACTIONS = {
         "READ_SIGN": "Approach/read a visible sign, directory, map, room-range sign, or arrow sign.",
         "CHECK_DOOR_LABEL": "Approach/read a visible door plate or room label.",
-        "NAVIGATE_TO_LANDMARK": "Navigate to a known landmark id from memory.",
-        "NAVIGATE_TO_FRONTIER": "Move to an unexplored reachable path/frontier.",
+        "NAVIGATE_TO_LANDMARK": (
+            "Navigate toward a current or recently remembered semantic/structural "
+            "route landmark that is compatible with the active goal or direction."
+        ),
+        "NAVIGATE_TO_FRONTIER": (
+            "Move toward a current reachable unexplored path only when no stronger "
+            "semantic or remembered route evidence is available."
+        ),
         "FOLLOW_DIRECTION": "Follow a direction from current/local evidence such as a sign, directory, room-range sign, or official staff/reception instruction.",
         "ASK_RECEPTION_OR_STAFF": "Ask only a clearly visible official help source: reception, front desk, information desk, security desk, or staff/help counter.",
         "USE_ELEVATOR_OR_STAIRS": "Use lift/stairs when recent evidence says a floor transition is needed.",
@@ -67,6 +77,11 @@ class ActionGenerator:
 
         Structured memory:
         {memory_context}
+
+        The structured memory may contain:
+        - recent_landmarks: landmarks from the latest observations;
+        - target_relevant_landmarks: semantic evidence relevant to the goal;
+        - remembered_route_landmarks: corridors, bends, junctions, passages, doorways, frontiers, and dead ends observed in current or recent images.
 
         Current image: provided separately.
 
@@ -89,6 +104,34 @@ class ActionGenerator:
         - Use ASK_RECEPTION_OR_STAFF only when no reliable navigation cue is available, or the robot cannot make further progress after searching.
         - If both reception and a plausible navigation cue toward the goal are visible, continue navigation using the visual cue instead of asking for help.
         - If no useful cue is visible, use NAVIGATE_TO_FRONTIER or SEARCH_FOR_CUE.
+        Structural route-memory rules:
+        - Do not immediately use SEARCH_FOR_CUE or WAIT_OR_RECOVER merely because the current image contains plain walls or an visually empty corridor.
+        - First check remembered_route_landmarks for a recent route continuation, corridor bend, junction, passage, or doorway that has not been passed, blocked, ignored, or contradicted.
+        - A remembered structural landmark may support continued movement when:
+          1. it was observed recently;
+          2. it is still marked visible_now or remembered;
+          3. it is traversable or not known to be blocked;
+          4. its direction is compatible with the latest valid semantic direction;
+          5. no newer current evidence contradicts it.
+        - Use NAVIGATE_TO_LANDMARK for a remembered corridor continuation, corridor bend, junction, or passage when the current view is sparse and the remembered landmark remains the best route anchor.
+        - Do not use APPROACH_LANDMARK, ALIGN_WITH_LANDMARK, or PASS_THROUGH_DOORWAY for a landmark that is not visible in the current observation. Those actions require current visual tracking.
+        - A remembered route landmark is not proof that it leads to the final goal. It may only continue a route already supported by semantic evidence.
+        - Current exact room labels, room-range signs, directories, directional signs, and floor evidence override remembered structural landmarks.
+        - A generic open doorway must not override a corridor simply because the doorway has higher confidence or is visually prominent.
+        - Prefer a corridor or passage with navigation_role="continue_route" when it matches the active direction.
+        - Prefer a corridor_bend with navigation_role="turn_point" when the robot is progressing toward the remembered bend.
+        - Use a doorway with navigation_role="entrance" only when current or remembered semantic evidence associates that doorway with the goal, tower, zone, or required route.
+        - Never navigate toward a landmark with navigation_role="dead_end", route_state="blocked", route_state="passed", or traversable=false.
+        - Do not choose landmarks solely by evidence_score. Apply goal relevance, directional compatibility, navigation role, traversability, route state, and recency before comparing confidence.
+        Route-selection priority:
+        1. Exact current target evidence, such as the target door label.
+        2. Current semantic directional evidence relevant to the goal.
+        3. Current structural landmark compatible with that semantic direction.
+        4. Recent remembered structural landmark compatible with that direction.
+        5. Current reachable frontier.
+        6. SEARCH_FOR_CUE.
+        7. WAIT_OR_RECOVER only when the input failed, the route is unsafe,
+           blocked, contradictory, or no safe progress action exists.
         - If a signboard, room-range sign, directory, or door label is visible but the text is too small, blurry, overexposed, or unreadable, do NOT guess the text or direction signs(arrow marks).
         - In that case, consider moving closer only when the unclear cue is the most relevant available evidence toward the goal.
         - If an unreadable but potentially useful navigation cue is visible, choose an action that safely approaches the cue only if it is the most relevant current evidence toward the goal.
@@ -121,6 +164,20 @@ class ActionGenerator:
         - Use "RIGHT" if the strongest cue is in the right camera/panel.
         - Use "STITCHED_UNKNOWN" if the image is stitched but the panel/source is unclear.
         - Use "NONE" if no useful visual cue is visible.
+
+        When using a remembered structural landmark:
+        - Choose NAVIGATE_TO_LANDMARK.
+        - Include its exact landmark_id.
+        - Include direction from continuation_direction when available.
+        - Include target_description from the stored landmark description.
+        - Use a stop_condition that requires a new observation, such as:
+          "capture when near the corridor bend",
+          "capture after advancing toward the remembered junction", or
+          "capture before entering the passage".
+        - Set capture_after=true.
+        - Set evidence_view to the stored source_view.
+        - In the reason, explicitly say that the current view is sparse and the
+          recent remembered route landmark supports continued progress.
 
         Return ONLY valid JSON:
         {
@@ -261,22 +318,72 @@ class ActionGenerator:
             lm_id = _clean_param(action.params.get("landmark_id"))
             if not lm_id:
                 action.is_valid = False
-                action.invalid_reason = "NAVIGATE_TO_LANDMARK requires landmark_id."
+                action.invalid_reason = (
+                    "NAVIGATE_TO_LANDMARK requires landmark_id."
+                )
                 return action
-            if not _landmark_exists(memory, lm_id):
+            lm = _get_landmark(memory, lm_id)
+
+            if lm is None:
                 action.is_valid = False
                 action.invalid_reason = f"Unknown landmark_id: {lm_id}"
                 return action
-            lm = _get_landmark(memory, lm_id)
-            status = str(getattr(lm, "status", "")).lower()
 
-            if status in {"used", "visited"} and not _landmark_is_current(memory, lm):
+            status = str(getattr(lm, "status", "")).lower()
+            extra = (
+                getattr(lm, "extra", {})
+                if isinstance(getattr(lm, "extra", {}), dict)
+                else {}
+            )
+            is_current = _landmark_is_current(memory, lm)
+            is_structural = _is_structural_landmark(lm)
+            if status in {"ignored", "used", "visited"} and not is_current:
                 action.is_valid = False
                 action.invalid_reason = (
-                    f"Landmark {lm_id} was already {lm.status} and is not visible "
-                    "in the current observation."
+                    f"Landmark {lm_id} is {status} and is no longer current."
                 )
                 return action
+            if is_structural:
+                valid_route, route_reason = _validate_structural_route_landmark(
+                    memory=memory,
+                    landmark=lm,
+                    action=action,
+                )
+
+                if not valid_route:
+                    action.is_valid = False
+                    action.invalid_reason = route_reason
+                    return action
+
+                # Structural route actions should always stop and recapture.
+                action.params["capture_after"] = True
+
+                if not _clean_param(action.params.get("target_description")):
+                    action.params["target_description"] = str(
+                        getattr(lm, "description", "")
+                    ).strip()
+
+                if not _clean_param(action.params.get("stop_condition")):
+                    action.params["stop_condition"] = (
+                        "advance toward the route landmark, "
+                        "then stop and capture a new observation"
+                    )
+
+                remembered_direction = _structural_landmark_direction(lm)
+                if remembered_direction and not _normalise_direction(
+                    action.params.get("direction")
+                ):
+                    action.params["direction"] = remembered_direction
+
+            elif not is_current:
+                # Do not approach stale semantic objects as physical navigation targets.
+                action.is_valid = False
+                action.invalid_reason = (
+                    f"NAVIGATE_TO_LANDMARK semantic landmark {lm_id} "
+                    "is not visible in the current observation."
+                )
+                return action
+
         if action.name in {
             "ALIGN_WITH_LANDMARK",
             "APPROACH_LANDMARK",
@@ -330,14 +437,41 @@ class ActionGenerator:
             action.params["capture_after"] = True
 
             if action.name == "PASS_THROUGH_DOORWAY":
-                if str(getattr(lm, "category", "")).lower() not in {
-                    "door",
-                    "frontier",
-                }:
+                allowed_categories = {
+                    "doorway",
+                    "passage",
+                    "door",      # backward compatibility
+                    "frontier",  # backward compatibility
+                }
+                category = str(getattr(lm, "category", "")).lower()
+                if category not in allowed_categories:
                     action.is_valid = False
                     action.invalid_reason = (
-                        "PASS_THROUGH_DOORWAY requires a door "
-                        "or doorway/frontier landmark."
+                        "PASS_THROUGH_DOORWAY requires a doorway, passage, "
+                        "door, or compatible frontier landmark."
+                    )
+                    return action
+                extra = (
+                    getattr(lm, "extra", {})
+                    if isinstance(getattr(lm, "extra", {}), dict)
+                    else {}
+                )
+                if extra.get("traversable") is False:
+                    action.is_valid = False
+                    action.invalid_reason = (
+                        f"PASS_THROUGH_DOORWAY landmark {lm_id} "
+                        "is not traversable."
+                    )
+                    return action
+                route_state = str(
+                    extra.get("route_state", "visible_now")
+                ).lower()
+
+                if route_state in {"blocked", "passed"}:
+                    action.is_valid = False
+                    action.invalid_reason = (
+                        f"PASS_THROUGH_DOORWAY landmark {lm_id} "
+                        f"has route_state={route_state}."
                     )
                     return action
 
@@ -384,12 +518,15 @@ class ActionGenerator:
                 action.invalid_reason = "FOLLOW_DIRECTION requires direction, target, or landmark_id."
                 return action
             
-            # If VLM forgot landmark_id, attach the best recent supporting landmark.
             if not lm_id:
-                supporting_lm = _find_best_direction_landmark(recent, direction)
+                supporting_lm = _find_best_direction_landmark(
+                    recent,
+                    direction,
+                )
                 if supporting_lm is not None:
                     lm_id = str(getattr(supporting_lm, "id", ""))
                     action.params["landmark_id"] = lm_id
+                    lm = supporting_lm
 
             if not lm_id:
                 action.is_valid = False
@@ -400,6 +537,7 @@ class ActionGenerator:
                 action.is_valid = False
                 action.invalid_reason = f"Unknown direction landmark_id: {lm_id}"
                 return action
+            lm = _get_landmark(memory, lm_id)
 
             if lm is None:
                 action.is_valid = False
@@ -473,6 +611,7 @@ class ActionGenerator:
         partial_marker_penalty = 0.0
         used_landmark_penalty = 0.0
         mismatched_room_code_penalty = 0.0
+        structural_route_penalty = 0.0
 
         if lm_id:
             lm = _get_landmark(memory, lm_id)
@@ -493,6 +632,26 @@ class ActionGenerator:
                     goal=goal,
                     action_name=action.name,
                 )
+                if _is_structural_landmark(lm):
+                    extra = (
+                        getattr(lm, "extra", {})
+                        if isinstance(getattr(lm, "extra", {}), dict)
+                        else {}
+                    )
+
+                    navigation_role = str(
+                        extra.get("navigation_role", "")
+                    ).lower()
+
+                    goal_support = str(
+                        extra.get("goal_support", "unknown")
+                    ).lower()
+
+                    if (
+                        navigation_role == "entrance"
+                        and goal_support not in {"direct", "indirect"}
+                    ):
+                        structural_route_penalty = 0.25
 
         no_landmark_penalty = 0.0
         if action.name in {"FOLLOW_DIRECTION", "CHECK_DOOR_LABEL", "READ_SIGN", "NAVIGATE_TO_LANDMARK", "ALIGN_WITH_LANDMARK", "APPROACH_LANDMARK", "PASS_THROUGH_DOORWAY",} and not lm_id:
@@ -500,7 +659,16 @@ class ActionGenerator:
 
         invalid_penalty = 0.40 if not action.is_valid else 0.0
 
-        score = base + landmark_bonus - no_landmark_penalty - invalid_penalty - partial_marker_penalty - used_landmark_penalty - mismatched_room_code_penalty
+        score = (
+            base
+            + landmark_bonus
+            - no_landmark_penalty
+            - invalid_penalty
+            - partial_marker_penalty
+            - used_landmark_penalty
+            - mismatched_room_code_penalty
+            - structural_route_penalty
+        )
         score = max(0.0, min(1.0, score))
 
         action.evidence_score = score
@@ -513,6 +681,7 @@ class ActionGenerator:
             "used_landmark_penalty": used_landmark_penalty,
             "invalid_penalty": invalid_penalty,
             "mismatched_room_code_penalty": mismatched_room_code_penalty,
+            "structural_route_penalty": structural_route_penalty,
             "final_score": score,
         }
         action.confidence = _confidence_from_score(score)
@@ -535,6 +704,240 @@ def _landmark_has_category(memory: "NavigationMemory", landmark_id: str, categor
         str(lm.id) == str(landmark_id) and str(lm.category).lower() in cats
         for lm in getattr(memory, "landmarks", [])
     )
+
+_STRUCTURAL_CATEGORIES = {
+    "corridor",
+    "corridor_bend",
+    "junction",
+    "doorway",
+    "passage",
+    "frontier",
+    "dead_end",
+}
+
+def _is_structural_landmark(lm: "Landmark | None") -> bool:
+    if lm is None:
+        return False
+    category = str(getattr(lm, "category", "")).lower()
+    extra = (
+        getattr(lm, "extra", {})
+        if isinstance(getattr(lm, "extra", {}), dict)
+        else {}
+    )
+    return (
+        category in _STRUCTURAL_CATEGORIES
+        or str(extra.get("landmark_type", "")).lower() == "structural"
+    )
+
+def _structural_landmark_direction(
+    lm: "Landmark | None",
+) -> str:
+    if lm is None:
+        return ""
+    extra = (
+        getattr(lm, "extra", {})
+        if isinstance(getattr(lm, "extra", {}), dict)
+        else {}
+    )
+    raw_direction = (
+        extra.get("continuation_direction")
+        or extra.get("direction")
+        or ""
+    )
+    text = str(raw_direction).strip().lower()
+    if text in {"left", "left_forward", "forward_left"}:
+        return "left"
+    if text in {"right", "right_forward", "forward_right"}:
+        return "right"
+    if text in {"forward", "straight", "ahead", "continue"}:
+        return "forward"
+    return ""
+
+def _validate_structural_route_landmark(
+    memory: "NavigationMemory",
+    landmark: "Landmark",
+    action: Action,
+    max_age_images: int = 3,
+) -> tuple[bool, str]:
+    extra = (
+        getattr(landmark, "extra", {})
+        if isinstance(getattr(landmark, "extra", {}), dict)
+        else {}
+    )
+
+    category = str(getattr(landmark, "category", "")).lower()
+    landmark_id = str(getattr(landmark, "id", ""))
+    status = str(getattr(landmark, "status", "")).lower()
+
+    route_state = str(
+        extra.get("route_state", "visible_now")
+    ).lower()
+
+    navigation_role = str(
+        extra.get("navigation_role", "")
+    ).lower()
+
+    traversable = extra.get("traversable")
+    source_index = extra.get("source_image_index")
+    current_index = int(getattr(memory, "image_count", 0) or 0)
+
+    if status == "ignored":
+        return False, f"Structural landmark {landmark_id} is ignored."
+
+    if route_state in {"blocked", "passed"}:
+        return (
+            False,
+            f"Structural landmark {landmark_id} has "
+            f"route_state={route_state}.",
+        )
+
+    if traversable is False:
+        return (
+            False,
+            f"Structural landmark {landmark_id} is not traversable.",
+        )
+
+    if category == "dead_end" or navigation_role == "dead_end":
+        return (
+            False,
+            f"Structural landmark {landmark_id} is a dead end.",
+        )
+
+    # Remembered route landmarks must be recent.
+    if source_index is not None:
+        try:
+            age = current_index - int(source_index)
+        except (TypeError, ValueError):
+            age = max_age_images + 1
+
+        if age > max_age_images:
+            return (
+                False,
+                f"Remembered structural landmark {landmark_id} is stale "
+                f"({age} observations old).",
+            )
+
+    action_direction = _normalise_direction(
+        action.params.get("direction")
+    )
+    landmark_direction = _structural_landmark_direction(landmark)
+
+    if (
+        action_direction
+        and landmark_direction
+        and action_direction != landmark_direction
+    ):
+        return (
+            False,
+            f"Action direction {action_direction} conflicts with "
+            f"structural landmark direction {landmark_direction}.",
+        )
+
+    if navigation_role == "entrance":
+        goal_support = str(
+            extra.get("goal_support", "unknown")
+        ).lower()
+
+        target_relevance = str(
+            extra.get("target_relevance", "none")
+        ).lower()
+
+        # Generic doorways should not become route targets without support.
+        if (
+            goal_support not in {"direct", "indirect"}
+            and target_relevance not in {"high", "medium"}
+        ):
+            return (
+                False,
+                f"Doorway landmark {landmark_id} is not linked to "
+                "the active goal or route.",
+            )
+    latest_semantic_direction = _latest_semantic_direction(memory)
+    if (
+        latest_semantic_direction
+        and landmark_direction
+        and latest_semantic_direction != landmark_direction
+    ):
+        return (
+            False,
+            f"Structural landmark {landmark_id} points "
+            f"{landmark_direction}, but the latest semantic evidence "
+            f"points {latest_semantic_direction}.",
+        )
+
+    return True, ""
+
+def _latest_semantic_direction(
+    memory: "NavigationMemory",
+    max_age_images: int = 3,
+) -> str:
+    current_index = int(getattr(memory, "image_count", 0) or 0)
+
+    semantic_categories = {
+        "sign",
+        "directory",
+        "reception",
+        "stairs",
+        "elevator",
+        "observation",
+        "door",
+    }
+
+    for lm in reversed(getattr(memory, "landmarks", [])):
+        category = str(getattr(lm, "category", "")).lower()
+
+        if category not in semantic_categories:
+            continue
+
+        extra = (
+            getattr(lm, "extra", {})
+            if isinstance(getattr(lm, "extra", {}), dict)
+            else {}
+        )
+        source_index = extra.get("source_image_index")
+        if source_index is not None:
+            try:
+                age = current_index - int(source_index)
+            except (TypeError, ValueError):
+                continue
+
+            if age > max_age_images:
+                continue
+        target_relevance = str(
+            extra.get("target_relevance", "none")
+        ).lower()
+
+        if category not in {"stairs", "elevator"}:
+            if target_relevance not in {"high", "medium"}:
+                continue
+        direction = _normalise_direction(
+            extra.get("direction") or extra.get("arrow")
+        )
+        if direction:
+            return direction
+
+    return ""
+
+def _has_explicit_direction_metadata(extra: dict[str, Any]) -> bool:
+    for key in ("direction", "arrow"):
+        value = _clean_param(extra.get(key)).lower()
+
+        if value in {
+            "left",
+            "right",
+            "forward",
+            "front",
+            "straight",
+            "go straight",
+            "turn left",
+            "turn right",
+            "←",
+            "→",
+            "↑",
+        }:
+            return True
+
+    return False
 
 def _clean_param(value: Any) -> str:
     if value is None:
@@ -726,9 +1129,9 @@ def _has_recent_direction_evidence(landmarks: list["Landmark"], landmark_id: str
         if landmark_id and str(getattr(lm, "id", "")) != str(landmark_id):
             continue
         category = str(getattr(lm, "category", "")).lower()
-        text = _landmark_text(lm)
+        text = _visible_landmark_content(lm)
         extra = getattr(lm, "extra", {}) if isinstance(getattr(lm, "extra", {}), dict) else {}
-        has_extra_direction = any(k in extra and extra.get(k) not in (None, "", [], {}) for k in ("direction", "arrow"))
+        has_extra_direction = _has_explicit_direction_metadata(extra)
         if category in direction_categories and (has_extra_direction or any(word in text for word in direction_words)):
             return True
     return False
@@ -759,13 +1162,10 @@ def _find_best_direction_landmark(
         }:
             continue
 
-        text = _landmark_text(lm)
+        text = _visible_landmark_content(lm)
         extra = getattr(lm, "extra", {}) if isinstance(getattr(lm, "extra", {}), dict) else {}
 
-        has_direction = any(
-            extra.get(k) not in (None, "", [], {})
-            for k in ("direction", "arrow")
-        ) or any(
+        has_direction = _has_explicit_direction_metadata(extra) or any(
             word in text
             for word in ["left", "right", "straight", "forward", "ahead", "up", "down", "←", "→", "↑", "↓"]
         )
@@ -775,7 +1175,11 @@ def _find_best_direction_landmark(
 
         # Prefer landmarks whose text/extra matches requested direction.
         match_bonus = 0.0
-        combined = f"{text} {extra}".lower()
+        direction_metadata = " ".join([
+            _clean_param(extra.get("direction")),
+            _clean_param(extra.get("arrow")),
+        ]).lower()
+        combined = f"{text} {direction_metadata}"
         if direction and any(part in combined for part in direction.replace("and", " ").split()):
             match_bonus = 0.25
 
@@ -912,6 +1316,13 @@ def _room_code_mismatch_penalty(
         return 0.35
 
     return 0.15
+
+def _visible_landmark_content(lm: "Landmark") -> str:
+    return " ".join([
+        str(getattr(lm, "category", "")),
+        str(getattr(lm, "description", "")),
+        str(getattr(lm, "text", "")),
+    ]).lower()
 
 # JSON parsing
 
