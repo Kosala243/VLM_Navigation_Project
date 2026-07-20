@@ -366,91 +366,182 @@ class NavigationMemory:
 
     def update_current_subgoal(self) -> None:
         """
-        Choose the best current navigation objective.
+        Select the best navigation subgoal.
 
-        Priority
-
-        1. Current semantic landmark.
-        2. Current structural landmark.
-        3. Recent remembered structural landmark.
+        Priority:
+        1. Current target-relevant semantic directional landmark.
+        2. Current traversable structural landmark.
+        3. Keep the previous active subgoal when it is still usable.
+        4. Recent remembered structural landmark.
         """
-
-        self.current_subgoal = NavigationSubgoal()
-
-        semantic = None
-        structural = None
-
-        for lm in reversed(self.landmarks):
+        current_index = self.image_count
+        current_semantic: list[Landmark] = []
+        current_structural: list[Landmark] = []
+        remembered_structural: list[Landmark] = []
+        structural_categories = {
+            "corridor",
+            "corridor_bend",
+            "junction",
+            "doorway",
+            "passage",
+        }
+        for lm in self.landmarks:
             extra = (
                 lm.extra
                 if isinstance(getattr(lm, "extra", {}), dict)
                 else {}
             )
-            current = (
-                extra.get("source_image_index")
-                == self.image_count
-            )
-            category = str(lm.category).lower()
+            category = str(getattr(lm, "category", "")).lower()
+            status = str(getattr(lm, "status", "")).lower()
+            source_index = extra.get("source_image_index")
+            route_state = str(
+                extra.get("route_state", "visible_now")
+            ).lower()
+            is_current = source_index == current_index
+            if status == "ignored":
+                continue
+            if route_state in {"blocked", "passed"}:
+                continue
+            # Current semantic directional evidence.
             if (
-                current
-                and category in {
-                    "sign",
-                    "directory",
-                    "reception",
-                }
-                and semantic is None
+                is_current
+                and category in {"sign", "directory", "reception"}
             ):
-                semantic = lm
+                relevance = str(
+                    extra.get("target_relevance", "none")
+                ).lower()
 
+                direction = _normalise_subgoal_direction(
+                    extra.get("arrow") or extra.get("direction")
+                )
+                if (
+                    relevance in {"high", "medium"}
+                    and direction
+                ):
+                    current_semantic.append(lm)
+            # Current structural evidence.
             if (
-                current
-                and category in {
-                    "corridor",
-                    "corridor_bend",
-                    "junction",
-                    "doorway",
-                    "passage",
-                }
-                and structural is None
+                is_current
+                and category in structural_categories
+                and extra.get("traversable") is not False
             ):
-                structural = lm
+                current_structural.append(lm)
+            # Recent remembered structural evidence.
+            if (
+                not is_current
+                and category in structural_categories
+                and status not in {"visited", "used"}
+                and extra.get("traversable") is not False
+            ):
+                try:
+                    age = current_index - int(source_index)
+                except (TypeError, ValueError):
+                    continue
 
-        if semantic is not None:
-
-            extra = semantic.extra
-
-            self.current_subgoal = NavigationSubgoal(
-                description=str(semantic.description),
-                landmark_id=str(semantic.id),
-                landmark_category=str(semantic.category),
-                direction=str(
-                    extra.get("arrow")
-                    or extra.get("direction")
-                    or ""
+                if 0 < age <= 3:
+                    remembered_structural.append(lm)
+        if current_semantic:
+            selected = max(
+                current_semantic,
+                key=lambda lm: float(
+                    getattr(lm, "evidence_score", 0.0) or 0.0
                 ),
+            )
+            extra = selected.extra
+            direction = _normalise_subgoal_direction(
+                extra.get("arrow") or extra.get("direction")
+            )
+            self.current_subgoal = NavigationSubgoal(
+                description=str(selected.description),
+                landmark_id=str(selected.id),
+                landmark_category=str(selected.category),
+                direction=direction,
                 source="semantic",
                 status="active",
-                image_index=self.image_count,
+                image_index=current_index,
             )
-
             return
-
-        if structural is not None:
-
-            extra = structural.extra
-
+        if current_structural:
+            selected = max(
+                current_structural,
+                key=lambda lm: _structural_subgoal_score(lm),
+            )
+            extra = selected.extra
             self.current_subgoal = NavigationSubgoal(
-                description=str(structural.description),
-                landmark_id=str(structural.id),
-                landmark_category=str(structural.category),
-                direction=str(
+                description=str(selected.description),
+                landmark_id=str(selected.id),
+                landmark_category=str(selected.category),
+                direction=_normalise_subgoal_direction(
                     extra.get("continuation_direction")
-                    or ""
+                    or extra.get("direction")
                 ),
                 source="structural",
                 status="active",
-                image_index=self.image_count,
+                image_index=current_index,
             )
+            return
+
+        # Keep the previous subgoal only when its landmark is still usable.
+        previous_id = self.current_subgoal.landmark_id
+
+        if (
+            self.current_subgoal.status == "active"
+            and previous_id
+        ):
+            previous = next(
+                (
+                    lm
+                    for lm in self.landmarks
+                    if str(lm.id) == str(previous_id)
+                ),
+                None,
+            )
+            if previous is not None:
+                previous_extra = (
+                    previous.extra
+                    if isinstance(previous.extra, dict)
+                    else {}
+                )
+                previous_status = str(previous.status).lower()
+                previous_route_state = str(
+                    previous_extra.get(
+                        "route_state",
+                        "visible_now",
+                    )
+                ).lower()
+                if (
+                    previous_status not in {
+                        "visited",
+                        "used",
+                        "ignored",
+                    }
+                    and previous_route_state not in {
+                        "blocked",
+                        "passed",
+                    }
+                ):
+                    return
+        if remembered_structural:
+            selected = max(
+                remembered_structural,
+                key=lambda lm: _structural_subgoal_score(lm),
+            )
+
+            extra = selected.extra
+            self.current_subgoal = NavigationSubgoal(
+                description=str(selected.description),
+                landmark_id=str(selected.id),
+                landmark_category=str(selected.category),
+                direction=_normalise_subgoal_direction(
+                    extra.get("continuation_direction")
+                    or extra.get("direction")
+                ),
+                source="structural",
+                status="active",
+                image_index=current_index,
+            )
+            return
+        self.current_subgoal = NavigationSubgoal()
 
     def context_for_planner(
         self,
@@ -541,7 +632,7 @@ class NavigationMemory:
             ensure_ascii=False,
             separators=(",", ":"),
         )
-        
+
     def save(self, path: str) -> None:
         data = {
             "image_count": self.image_count,
@@ -549,6 +640,7 @@ class NavigationMemory:
             "observation_summaries": self.observation_summaries,
             "hypotheses": self.hypotheses,
             "failed_actions": self.failed_actions,
+            "current_subgoal": asdict(self.current_subgoal),
             "limits": {
                 "max_landmarks": self.max_landmarks,
                 "max_summaries": self.max_summaries,
@@ -563,6 +655,7 @@ class NavigationMemory:
         self.observation_summaries.clear()
         self.hypotheses.clear()
         self.failed_actions.clear()
+        self.current_subgoal = NavigationSubgoal()
         self.image_count = 0
         self._next_id = 1
 
@@ -883,6 +976,46 @@ def _score_landmark(
         "final_score": score,
     }
     return score, breakdown
+
+def _normalise_subgoal_direction(value: Any) -> str:
+    text = str(value or "").strip().lower()
+    if text in {"left", "turn left", "left_forward", "forward_left"}:
+        return "left"
+    if text in {"right", "turn right", "right_forward", "forward_right"}:
+        return "right"
+    if text in {"forward", "front", "straight", "ahead", "continue"}:
+        return "forward"
+    return ""
+
+def _structural_subgoal_score(lm: Landmark) -> float:
+    extra = (
+        lm.extra
+        if isinstance(getattr(lm, "extra", {}), dict)
+        else {}
+    )
+    score = float(
+        getattr(lm, "evidence_score", 0.0) or 0.0
+    )
+    role = str(
+        extra.get("navigation_role", "")
+    ).lower()
+
+    if role in {"continue_route", "turn_point"}:
+        score += 0.20
+    elif role == "branch":
+        score += 0.10
+    elif role == "entrance":
+        goal_support = str(
+            extra.get("goal_support", "unknown")
+        ).lower()
+
+        if goal_support in {"direct", "indirect"}:
+            score += 0.10
+        else:
+            score -= 0.20
+    if extra.get("traversable") is True:
+        score += 0.10
+    return score
 
 def _default_navigation_role(category: str) -> str:
     roles = {
