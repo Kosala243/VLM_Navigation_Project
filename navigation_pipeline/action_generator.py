@@ -956,6 +956,49 @@ def _structural_landmark_direction(
         return "forward"
     return ""
 
+def _structural_landmark_bearing(
+    lm: "Landmark | None",
+) -> str:
+    """
+    Return where the structural landmark currently appears relative to the robot.
+
+    This is different from continuation_direction:
+    - bearing='right' means turn right now to face the landmark;
+    - continuation_direction='forward' means continue forward after alignment.
+    """
+    if lm is None:
+        return ""
+
+    extra = (
+        getattr(lm, "extra", {})
+        if isinstance(getattr(lm, "extra", {}), dict)
+        else {}
+    )
+
+    explicit_bearing = _normalise_direction(
+        extra.get("bearing")
+        or extra.get("relative_direction")
+    )
+
+    if explicit_bearing:
+        return explicit_bearing
+
+    source_view = _normalise_evidence_view(
+        extra.get("source_view")
+        or extra.get("evidence_view")
+    )
+
+    if source_view == "LEFT":
+        return "left"
+
+    if source_view == "RIGHT":
+        return "right"
+
+    if source_view == "FRONT":
+        return "forward"
+
+    return ""
+
 def _validate_structural_route_landmark(
     memory: "NavigationMemory",
     landmark: "Landmark",
@@ -1056,17 +1099,20 @@ def _validate_structural_route_landmark(
                 "the active goal or route.",
             )
     latest_semantic_direction = _latest_semantic_direction(memory)
-    if (
-        latest_semantic_direction
-        and landmark_direction
-        and latest_semantic_direction != landmark_direction
-    ):
-        return (
-            False,
-            f"Structural landmark {landmark_id} points "
-            f"{landmark_direction}, but the latest semantic evidence "
-            f"points {latest_semantic_direction}.",
-        )
+    landmark_bearing = _structural_landmark_bearing(landmark)
+
+    if latest_semantic_direction and landmark_bearing:
+        if latest_semantic_direction != landmark_bearing:
+            return (
+                False,
+                f"Structural landmark {landmark_id} is currently located "
+                f"{landmark_bearing}, but the latest semantic evidence "
+                f"points {latest_semantic_direction}.",
+            )
+
+        # Turn toward the landmark now. Its continuation direction may become
+        # forward after the robot is aligned with it.
+        action.params["direction"] = latest_semantic_direction
     
     current_semantic = _best_current_semantic_direction_landmark(memory)
     if current_semantic is not None:
@@ -1158,6 +1204,7 @@ def _best_current_semantic_direction_landmark(
             "sign",
             "directory",
             "reception",
+            "observation",
         }:
             continue
 
