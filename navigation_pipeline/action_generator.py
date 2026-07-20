@@ -239,31 +239,26 @@ class ActionGenerator:
         )
         validated = self._validate(action, memory, goal)
         semantic_lm = _best_current_semantic_direction_landmark(memory)
-
         if semantic_lm is not None:
             extra = (
                 semantic_lm.extra
                 if isinstance(getattr(semantic_lm, "extra", {}), dict)
                 else {}
             )
-
             semantic_direction = _normalise_direction(
                 extra.get("arrow") or extra.get("direction")
             )
-
             selected_lm_id = _clean_param(
                 validated.params.get("landmark_id")
             )
             selected_direction = _normalise_direction(
                 validated.params.get("direction")
             )
-
             already_using_current_semantic = (
                 validated.name == "FOLLOW_DIRECTION"
                 and selected_lm_id == str(semantic_lm.id)
                 and selected_direction == semantic_direction
             )
-
             if semantic_direction and not already_using_current_semantic:
                 validated = Action(
                     name="FOLLOW_DIRECTION",
@@ -296,7 +291,7 @@ class ActionGenerator:
                     memory,
                     goal,
                 )
-
+        validated = self._enforce_visual_alignment(validated, memory)
         self._attach_action_evidence_score(
             validated,
             memory,
@@ -334,6 +329,59 @@ class ActionGenerator:
             inferred = _infer_evidence_view_from_action(action)
 
         action.params["evidence_view"] = inferred or "NONE"
+
+    def _enforce_visual_alignment(
+        self,
+        action: Action,
+        memory: "NavigationMemory",
+    ) -> Action:
+        """
+        Ensure physically reachable target actions.
+
+        A landmark in LEFT/RIGHT must first be aligned into
+        the FRONT camera before approach or doorway traversal.
+        """
+        if action.name not in {
+            "NAVIGATE_TO_LANDMARK",
+            "APPROACH_LANDMARK",
+            "PASS_THROUGH_DOORWAY",
+        }:
+            return action
+        lm_id = _clean_param(
+            action.params.get("landmark_id")
+        )
+        if not lm_id:
+            return action
+        lm = _get_landmark(memory, lm_id)
+        if lm is None:
+            return action
+        view = _infer_evidence_view_from_landmark(lm)
+        if view == "FRONT":
+            return action
+        if view not in {"LEFT", "RIGHT"}:
+            return action
+        return Action(
+            name="ALIGN_WITH_LANDMARK",
+            params={
+                "landmark_id": lm_id,
+                "direction": view.lower(),
+                "target_description": action.params.get(
+                    "target_description",
+                    lm.description,
+                ),
+                "stop_condition": (
+                    "landmark centred in FRONT camera"
+                ),
+                "capture_after": True,
+                "evidence_view": view,
+            },
+            reason=(
+                "Selected landmark is visible in the "
+                f"{view} view and must be aligned "
+                "before approaching."
+            ),
+            confidence=action.confidence,
+        )
     
     def _validate(self, action: Action, memory: "NavigationMemory", goal: "NavigationGoal") -> Action:
         """Block unsafe or hallucinated high-level actions before execution."""
@@ -483,6 +531,31 @@ class ActionGenerator:
                 action.invalid_reason = (
                     f"{action.name} requires landmark {lm_id} "
                     "to be visible in the current observation."
+                )
+                return action
+            
+            view = _infer_evidence_view_from_landmark(lm)
+            if (
+                action.name == "ALIGN_WITH_LANDMARK"
+                and view not in {"LEFT", "RIGHT"}
+            ):
+                action.is_valid = False
+                action.invalid_reason = (
+                    "ALIGN_WITH_LANDMARK requires a landmark "
+                    "visible in LEFT or RIGHT."
+                )
+                return action
+            if (
+                action.name in {
+                    "APPROACH_LANDMARK",
+                    "PASS_THROUGH_DOORWAY",
+                }
+                and view != "FRONT"
+            ):
+                action.is_valid = False
+                action.invalid_reason = (
+                    f"{action.name} requires landmark "
+                    "to be visible in FRONT."
                 )
                 return action
 
