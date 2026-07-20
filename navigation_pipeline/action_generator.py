@@ -292,6 +292,7 @@ class ActionGenerator:
                     goal,
                 )
         validated = self._enforce_visual_alignment(validated, memory)
+        validated = self._validate(validated, memory, goal)
         self._attach_action_evidence_score(
             validated,
             memory,
@@ -341,19 +342,21 @@ class ActionGenerator:
         A landmark in LEFT/RIGHT must first be aligned into
         the FRONT camera before approach or doorway traversal.
         """
+        if not action.is_valid:
+            return action
         if action.name not in {
             "NAVIGATE_TO_LANDMARK",
             "APPROACH_LANDMARK",
             "PASS_THROUGH_DOORWAY",
         }:
             return action
-        lm_id = _clean_param(
-            action.params.get("landmark_id")
-        )
+        lm_id = _clean_param(action.params.get("landmark_id"))
         if not lm_id:
             return action
         lm = _get_landmark(memory, lm_id)
         if lm is None:
+            return action
+        if not _landmark_is_current(memory, lm):
             return action
         view = _infer_evidence_view_from_landmark(lm)
         if view == "FRONT":
