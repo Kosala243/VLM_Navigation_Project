@@ -129,11 +129,19 @@ class NavigationMemory:
         - Such landmarks are useful because the robot can move closer to read them.
         - Prefer current visual evidence over old memory.
         - For every landmark, set extra.source_view to LEFT, FRONT, RIGHT, STITCHED_UNKNOWN, or NONE.
+        - For every visible landmark, set extra.horizontal_position to "left", "center", "right", or "unknown" relative to its own source image.
+        - Use "center" only when the landmark is approximately within the middle third of the image.
+        - For every visible landmark, set extra.proximity to "far", "medium", "near", "reached", or "unknown".
+        - Use "reached" only when the robot is immediately at the target/entrance and should not move forward again.
+        - A target that is merely readable in FRONT is not automatically reached.
+        - Set extra.path_clear_visual to true, false, or null.
+        - Visual path clearance is advisory only and does not replace LiDAR.
         - For a sign containing multiple destinations or multiple arrows, identify the single direction associated with the active navigation goal.
         - Store that goal-specific direction in extra.target_direction.
         - extra.target_direction must be exactly left, right, forward, none, or unknown.
         - Do not store combined values such as "left, right" in target_direction.
         - extra.arrow may preserve the raw visible arrow information.
+
         Structural navigation landmark rules:
         - Store visible navigable structures even when they do not contain readable text.
         - Useful structural landmarks include:
@@ -149,9 +157,13 @@ class NavigationMemory:
         - Create separate landmarks for distinct useful structures visible in LEFT, FRONT, and RIGHT.
         - Do not return only one "best" structure. Return all clearly visible, navigation-relevant structures.
         - If the same camera view contains both a doorway and a corridor, store both when they represent different possible routes.
+        - For doorways and passages, set extra.doorway_state to "open", "closed", "blocked", or "unknown".
+        - For doorways and passages, set extra.threshold_state to "before", "at", "passed", or "unknown".
+        
         For every landmark, set extra.landmark_type:
         - "semantic" for signs, labelled doors, directories, reception, stairs, elevators, and target observations.
         - "structural" for corridors, bends, junctions, doorways, passages, frontiers, and dead ends.
+        
         For structural landmarks, set:
         - extra.navigation_role: "continue_route | turn_point | branch | entrance | exit | exploration | dead_end"
         - extra.traversable: true, false, or null when uncertain
@@ -214,6 +226,11 @@ class NavigationMemory:
                 "floor": null,
                 "zone": null,
                 "source_view": "LEFT | FRONT | RIGHT | STITCHED_UNKNOWN | NONE",
+                "horizontal_position": "left | center | right | unknown",
+                "proximity": "far | medium | near | reached | unknown",
+                "path_clear_visual": true,
+                "doorway_state": "open | closed | blocked | unknown",
+                "threshold_state": "before | at | passed | unknown",
                 "landmark_type": "semantic | structural",
                 "navigation_role": "continue_route | turn_point | branch | entrance | exit | exploration | dead_end | none",
                 "traversable": true,
@@ -602,6 +619,11 @@ class NavigationMemory:
                 "evidence_score": round(float(lm.evidence_score), 3),
                 "observation_count": lm.observation_count,
                 "source_view": extra.get("source_view", "NONE"),
+                "horizontal_position": extra.get("horizontal_position", "unknown"),
+                "proximity": extra.get("proximity", "unknown"),
+                "path_clear_visual": extra.get("path_clear_visual"),
+                "doorway_state": extra.get("doorway_state", "unknown"),
+                "threshold_state": extra.get("threshold_state", "unknown"),
                 "direction": extra.get("direction"),
                 "arrow": extra.get("arrow"),
                 "target_direction": extra.get("target_direction"),
@@ -709,6 +731,19 @@ class NavigationMemory:
         extra = raw_lm.get("extra", {}) if isinstance(raw_lm.get("extra", {}), dict) else {}
         extra = dict(extra)
         extra["source_image_index"] = self.image_count
+        extra["source_view"] = _normalise_source_view(extra.get("source_view"))
+        extra["horizontal_position"] = _normalise_horizontal_position(extra.get("horizontal_position"))
+        extra["proximity"] = _normalise_proximity(extra.get("proximity"))
+        extra["doorway_state"] = _normalise_doorway_state(extra.get("doorway_state"))
+        extra["threshold_state"] = _normalise_threshold_state(extra.get("threshold_state"))
+
+        if extra.get("path_clear_visual") not in {
+            True,
+            False,
+            None,
+        }:
+            extra["path_clear_visual"] = None
+
         pose = raw_lm.get("pose", {}) if isinstance(raw_lm.get("pose", {}), dict) else {}
 
         category = self._normalise_category(category, description, text)
@@ -1007,6 +1042,80 @@ class NavigationMemory:
         self.hypotheses = self.hypotheses[-self.max_hypotheses:]
         self.failed_actions = self.failed_actions[-self.max_failed_actions:]
 
+def _normalise_source_view(value: Any) -> str:
+    text = str(value or "").strip().upper()
+    if text in {
+        "LEFT",
+        "FRONT",
+        "RIGHT",
+        "STITCHED_UNKNOWN",
+        "NONE",
+    }:
+        return text
+
+    return "NONE"
+
+def _normalise_horizontal_position(
+    value: Any,
+) -> str:
+    text = str(value or "").strip().lower()
+
+    if text in {
+        "left",
+        "center",
+        "right",
+        "unknown",
+    }:
+        return text
+
+    if text == "centre":
+        return "center"
+
+    return "unknown"
+
+def _normalise_proximity(value: Any) -> str:
+    text = str(value or "").strip().lower()
+
+    if text in {
+        "far",
+        "medium",
+        "near",
+        "reached",
+        "unknown",
+    }:
+        return text
+
+    return "unknown"
+
+def _normalise_doorway_state(
+    value: Any,
+) -> str:
+    text = str(value or "").strip().lower()
+
+    if text in {
+        "open",
+        "closed",
+        "blocked",
+        "unknown",
+    }:
+        return text
+
+    return "unknown"
+
+def _normalise_threshold_state(
+    value: Any,
+) -> str:
+    text = str(value or "").strip().lower()
+
+    if text in {
+        "before",
+        "at",
+        "passed",
+        "unknown",
+    }:
+        return text
+
+    return "unknown"
 
 def _score_landmark(
     category: str,

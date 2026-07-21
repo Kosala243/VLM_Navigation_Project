@@ -12,6 +12,7 @@ import shutil
 from datetime import datetime
 from pathlib import Path
 from robot_executor import SafeCmdVelExecutor
+from robot_safety import RobotSafetyMonitor
 
 def run(cmd, check=True, verbose=True):
     if verbose:
@@ -693,7 +694,6 @@ def _make_no_progress_stop_response(
 
     return guarded
 
-
 def apply_no_progress_guard(
     args,
     response,
@@ -783,30 +783,288 @@ def apply_no_progress_guard(
 
     return guarded, repeat_count, True
 
-def maybe_execute_robot_action(args, response):
-    """
-    Optionally execute the VLM action using /cmd_vel.
+retry_limit_blocked = False
 
-    --execute false   = no movement
-    --execute confirm = ask before movement
-    --execute true    = move directly
-    """
+if not no_progress_blocked:
+    (
+        response,
+        retry_limit_blocked,
+    ) = apply_action_retry_guard(
+        args=args,
+        response=response,
+        last_executed_state=(
+            last_executed_state
+        ),
+    )
+
+_REPEAT_LIMIT_ACTIONS = {
+    "ALIGN_WITH_LANDMARK",
+    "APPROACH_LANDMARK",
+    "PASS_THROUGH_DOORWAY",
+    "SEARCH_FOR_CUE",
+}
+
+def _repeat_limit_for_action(
+    args,
+    action_name,
+):
+    limits = {
+        "ALIGN_WITH_LANDMARK": (
+            args.max_alignment_pulses
+        ),
+        "APPROACH_LANDMARK": (
+            args.max_approach_pulses
+        ),
+        "PASS_THROUGH_DOORWAY": (
+            args.max_doorway_pulses
+        ),
+        "SEARCH_FOR_CUE": (
+            args.max_search_pulses
+        ),
+    }
+
+    return int(
+        limits.get(
+            action_name,
+            0,
+        )
+    )
+
+def _make_retry_limit_stop_response(
+    response,
+    action_name,
+    action_signature,
+    attempted_count,
+    allowed_count,
+):
+    guarded = dict(response)
+
+    reason = (
+        "{} exceeded its pulse limit: attempted {}, "
+        "allowed {}. Robot remains stopped."
+    ).format(
+        action_name,
+        attempted_count,
+        allowed_count,
+    )
+
+    safety_guard = guarded.get(
+        "safety_guard",
+        {},
+    )
+
+    if not isinstance(
+        safety_guard,
+        dict,
+    ):
+        safety_guard = {}
+
+    safety_guard.update({
+        "action_retry_limit_reached": True,
+        "action_name": action_name,
+        "action_signature": action_signature,
+        "attempted_count": attempted_count,
+        "allowed_count": allowed_count,
+        "reason": reason,
+    })
+
+    guarded["safety_guard"] = (
+        safety_guard
+    )
+
+    guarded["done"] = False
+
+    guarded["action"] = {
+        "name": "WAIT_OR_RECOVER",
+        "params": {
+            "landmark_id": None,
+            "direction": None,
+            "target": None,
+            "target_description": None,
+            "stop_condition": (
+                "robot remains stopped"
+            ),
+            "capture_after": False,
+            "evidence_view": "NONE",
+        },
+        "reason": reason,
+        "confidence": "high",
+        "evidence_score": 0.0,
+        "evidence_breakdown": {
+            "action_retry_limit": 1.0,
+            "final_score": 0.0,
+        },
+        "goal_reached": False,
+        "needs_verification": False,
+        "raw": {},
+        "is_valid": True,
+        "invalid_reason": "",
+    }
+
+    guarded["action_display"] = (
+        "WAIT_OR_RECOVER({'evidence_view': 'NONE'}) "
+        "[high, score=0.00] valid - "
+        + reason
+    )
+
+    return guarded
+
+
+def apply_action_retry_guard(
+    args,
+    response,
+    last_executed_state,
+):
+    current_signature = (
+        _action_signature(response)
+    )
+
+    action = response.get(
+        "action",
+        {},
+    )
+
+    if not isinstance(action, dict):
+        return response, False
+
+    action_name = str(
+        action.get("name", "")
+    ).strip().upper()
+
+    if action_name not in _REPEAT_LIMIT_ACTIONS:
+        return response, False
+
+    if (
+        not current_signature
+        or last_executed_state is None
+    ):
+        return response, False
+
+    previous_signature = (
+        last_executed_state.get(
+            "action_signature",
+            "",
+        )
+    )
+
+    if current_signature != previous_signature:
+        return response, False
+
+    previous_count = int(
+        last_executed_state.get(
+            "same_action_count",
+            1,
+        )
+        or 1
+    )
+
+    attempted_count = (
+        previous_count + 1
+    )
+
+    allowed_count = (
+        _repeat_limit_for_action(
+            args,
+            action_name,
+        )
+    )
+
+    if (
+        allowed_count > 0
+        and attempted_count
+        > allowed_count
+    ):
+        guarded = (
+            _make_retry_limit_stop_response(
+                response=response,
+                action_name=action_name,
+                action_signature=(
+                    current_signature
+                ),
+                attempted_count=(
+                    attempted_count
+                ),
+                allowed_count=(
+                    allowed_count
+                ),
+            )
+        )
+
+        return guarded, True
+
+    return response, False
+
+def maybe_execute_robot_action(
+    args,
+    response,
+):
     if args.execute == "false":
-        print("[EXECUTE] Dry run only. Robot will not move.")
-        return False
+        print(
+            "[EXECUTE] Dry run only. "
+            "Robot will not move."
+        )
+
+        return (
+            False,
+            {
+                "executed": False,
+                "status": "dry_run",
+                "reason": (
+                    "Execution disabled."
+                ),
+                "command": None,
+                "safety": None,
+            },
+        )
+
+    safety_monitor = RobotSafetyMonitor(
+        sensor_mode=args.safety_mode,
+        allow_without_sensor=(
+            args.allow_motion_without_safety_sensor
+        ),
+    )
 
     executor = SafeCmdVelExecutor(
         topic=args.cmd_vel_topic,
         forward_speed=args.forward_speed,
         turn_speed=args.turn_speed,
         duration=args.move_duration,
+        forward_pulse_duration=(
+            args.forward_pulse_duration
+        ),
+        turn_pulse_duration=(
+            args.turn_pulse_duration
+        ),
+        approach_pulse_duration=(
+            args.approach_pulse_duration
+        ),
+        doorway_pulse_duration=(
+            args.doorway_pulse_duration
+        ),
+        search_pulse_duration=(
+            args.search_pulse_duration
+        ),
         invert_turn=args.invert_turn,
         execute_mode=args.execute,
-        min_evidence_score=args.min_evidence_score,
-        allow_low_confidence=args.allow_low_confidence,
+        min_evidence_score=(
+            args.min_evidence_score
+        ),
+        allow_low_confidence=(
+            args.allow_low_confidence
+        ),
+        safety_monitor=safety_monitor,
     )
 
-    return executor.execute_action_response(response)
+    executed = (
+        executor.execute_action_response(
+            response
+        )
+    )
+
+    return (
+        executed,
+        dict(executor.last_result),
+    )
 
 def safe_goal_name(goal):
     return (
@@ -847,6 +1105,17 @@ def create_run_dir(args):
         "forward_speed": args.forward_speed,
         "turn_speed": args.turn_speed,
         "move_duration": args.move_duration,
+        "forward_pulse_duration": (args.forward_pulse_duration),
+        "turn_pulse_duration": (args.turn_pulse_duration),
+        "approach_pulse_duration": (args.approach_pulse_duration),
+        "doorway_pulse_duration": (args.doorway_pulse_duration),
+        "search_pulse_duration": (args.search_pulse_duration),
+        "max_alignment_pulses": (args.max_alignment_pulses),
+        "max_approach_pulses": (args.max_approach_pulses),
+        "max_doorway_pulses": (args.max_doorway_pulses),
+        "max_search_pulses": (args.max_search_pulses),
+        "safety_mode": args.safety_mode,
+        "allow_motion_without_safety_sensor": (args.allow_motion_without_safety_sensor),
         "invert_turn": args.invert_turn,
         "memory": args.memory,
         "interval": args.interval,
@@ -874,6 +1143,7 @@ def save_step_log(
     executed,
     run_config=None,
     step_metric=None,
+    execution_result=None
 ):
     step_result = {
         "run_settings": run_config or {},
@@ -886,6 +1156,7 @@ def save_step_log(
         "step_metric": step_metric or {},
         "evidence_view": (step_metric or {}).get("evidence_view", "UNKNOWN"),
         "response": response,
+        "execution_result": execution_result or {},
     }
 
     result_path = run_dir / "step_{:03d}_result.json".format(step_index)
@@ -910,7 +1181,7 @@ def save_final_summary(run_dir, goal, steps, success, run_config=None, metrics=N
     print("[LOG] Final summary saved:", summary_path)
     return summary_path
 
-def extract_step_metric(response, executed):
+def extract_step_metric(response, executed, execution_result=None):
     action = response.get("action", {})
     if not isinstance(action, dict):
         action = {}
@@ -926,6 +1197,11 @@ def extract_step_metric(response, executed):
     if not isinstance(safety_guard, dict):
         safety_guard = {}
 
+    if not isinstance(
+        execution_result,
+        dict,
+    ):
+        execution_result = {}
     try:
         evidence_score = float(action.get("evidence_score", 0.0) or 0.0)
     except Exception:
@@ -944,6 +1220,11 @@ def extract_step_metric(response, executed):
         "no_progress_detected": bool(safety_guard.get("no_progress_detected", False)),
         "duplicate_observation": bool(safety_guard.get("exact_duplicate_observation", False)),
         "no_progress_repeat_count": int(safety_guard.get("repeat_count", 0) or 0),
+        "execution_status": execution_result.get("status"),
+        "execution_reason": execution_result.get("reason"),
+        "movement_command": execution_result.get("command"),
+        "safety_result": execution_result.get("safety"),
+        "action_retry_limit_reached": bool(safety_guard.get("action_retry_limit_reached", False)),
     }
 
 def compute_run_metrics(step_metrics, success):
@@ -1010,10 +1291,10 @@ def run_single_step(args):
     )
 
     print_action_result(response)
-    executed = maybe_execute_robot_action(args, response)
+    executed, execution_result = maybe_execute_robot_action(args, response)
 
     run_config = getattr(args, "run_config", {})
-    step_metric = extract_step_metric(response, executed)
+    step_metric = extract_step_metric(response, executed, execution_result)
     step_metrics = [step_metric]
     success = bool(response.get("done"))
     metrics = compute_run_metrics(step_metrics, success)
@@ -1026,6 +1307,7 @@ def run_single_step(args):
         executed=executed,
         run_config=run_config,
         step_metric=step_metric,
+        execution_result=execution_result,
     )
 
     save_final_summary(
@@ -1087,11 +1369,48 @@ def run_auto_mode(args):
             repeat_count=no_progress_repeat_count,
         )
         print_action_result(response)
-        executed = maybe_execute_robot_action(
+        executed, execution_result = maybe_execute_robot_action(
             args,
             response,
         )
-        if executed and not no_progress_blocked:
+        if (
+            executed
+            and not no_progress_blocked
+            and not retry_limit_blocked
+        ):
+            current_signature = (
+                _action_signature(response)
+            )
+
+            previous_signature = ""
+
+            previous_count = 0
+
+            if last_executed_state is not None:
+                previous_signature = (
+                    last_executed_state.get(
+                        "action_signature",
+                        "",
+                    )
+                )
+
+                previous_count = int(
+                    last_executed_state.get(
+                        "same_action_count",
+                        0,
+                    )
+                    or 0
+                )
+
+            same_action_count = (
+                previous_count + 1
+                if (
+                    current_signature
+                    == previous_signature
+                )
+                else 1
+            )
+
             last_executed_state = {
                 "observation_hash": (
                     _observation_bundle_hash(
@@ -1099,16 +1418,21 @@ def run_auto_mode(args):
                     )
                 ),
                 "action_signature": (
-                    _action_signature(response)
+                    current_signature
+                ),
+                "same_action_count": (
+                    same_action_count
                 ),
             }
-        elif not no_progress_blocked:
-            # The user rejected the movement, the action was not mapped,
-            # or execution was otherwise unsuccessful.
+
+        elif (
+            not no_progress_blocked
+            and not retry_limit_blocked
+        ):
             last_executed_state = None
             no_progress_repeat_count = 0
 
-        step_metric = extract_step_metric(response, executed)
+        step_metric = extract_step_metric(response, executed, execution_result)
         step_metrics.append(step_metric)
 
         save_step_log(
@@ -1119,6 +1443,7 @@ def run_auto_mode(args):
             executed=executed,
             run_config=run_config,
             step_metric=step_metric,
+            execution_result=execution_result
         )
 
         if no_progress_blocked:
@@ -1126,6 +1451,14 @@ def run_auto_mode(args):
                 "[STOPPED] Autonomous loop stopped because "
                 "the observation did not change after repeated "
                 "movement attempts."
+            )
+            break
+        
+        if retry_limit_blocked:
+            print(
+                "[STOPPED] Autonomous loop stopped "
+                "because an action exceeded its "
+                "maximum pulse count."
             )
             break
 
@@ -1280,10 +1613,81 @@ def parse_args():
     parser.add_argument(
         "--move-duration",
         type=float,
-        default=5.0,
+        default=0.40,
         help="Duration in seconds for each tiny movement",
     )
 
+    parser.add_argument(
+        "--forward-pulse-duration",
+        type=float,
+        default=0.40,
+    )
+
+    parser.add_argument(
+        "--turn-pulse-duration",
+        type=float,
+        default=0.35,
+    )
+
+    parser.add_argument(
+        "--approach-pulse-duration",
+        type=float,
+        default=0.30,
+    )
+
+    parser.add_argument(
+        "--doorway-pulse-duration",
+        type=float,
+        default=0.25,
+    )
+
+    parser.add_argument(
+        "--search-pulse-duration",
+        type=float,
+        default=0.25,
+    )
+
+    parser.add_argument(
+        "--max-alignment-pulses",
+        type=int,
+        default=8,
+    )
+
+    parser.add_argument(
+        "--max-approach-pulses",
+        type=int,
+        default=12,
+    )
+
+    parser.add_argument(
+        "--max-doorway-pulses",
+        type=int,
+        default=8,
+    )
+
+    parser.add_argument(
+        "--max-search-pulses",
+        type=int,
+        default=6,
+    )
+
+    parser.add_argument(
+        "--safety-mode",
+        choices=[
+            "placeholder",
+            "disabled",
+        ],
+        default="placeholder",
+    )
+
+    parser.add_argument(
+        "--allow-motion-without-safety-sensor",
+        action="store_true",
+        help=(
+            "Explicitly bypass the unavailable "
+            "LiDAR safety check."
+        ),
+    )
     parser.add_argument(
         "--invert-turn",
         action="store_true",
@@ -1318,42 +1722,77 @@ def parse_args():
 
     return parser.parse_args()
 
+def send_emergency_stop(args):
+    if args.execute == "false":
+        return
+
+    try:
+        executor = SafeCmdVelExecutor(
+            topic=args.cmd_vel_topic,
+            execute_mode="true",
+            safety_monitor=RobotSafetyMonitor(
+                sensor_mode="disabled",
+                allow_without_sensor=True,
+            ),
+        )
+
+        executor.stop()
+
+    except Exception as exc:
+        print(
+            "[EMERGENCY STOP ERROR]",
+            exc,
+        )
+
 def main():
     args = parse_args()
 
-    print("[INFO] Mode:", args.mode)
-    print("[INFO] Camera mode:", args.camera_mode)
-    print("[INFO] Memory:", args.memory)
-    print("[INFO] Goal:", args.goal)
-    print("[INFO] AMD API:", args.api)
-    print("[INFO] Robot:", "{}@{}".format(args.robot_user, args.robot_ip))
-
-    if args.camera_mode == "single":
-        print("[INFO] Single camera device:", args.camera_device)
-    else:
-        print("[INFO] Front camera:", args.front_device)
-        print("[INFO] Left camera:", args.left_device)
-        print("[INFO] Right camera:", args.right_device)
-
-    if args.mode == "single":
-        run_single_step(args)
-    elif args.mode == "auto":
-        run_auto_mode(args)
-    else:
-        raise ValueError("Unsupported mode: {}".format(args.mode))
-
-if __name__ == "__main__":
     try:
-        main()
-    except subprocess.CalledProcessError as e:
-        print("\n[COMMAND FAILED]")
-        print("Return code:", e.returncode)
-        print("STDOUT:", e.output)
-        print("STDERR:", e.stderr)
-        sys.exit(e.returncode)
-    except KeyboardInterrupt:
-        print("\n[STOPPED] User interrupted with Ctrl+C")
-        sys.exit(130)
-    except Exception as e:
-        print("\n[ERROR]", e)
-        sys.exit(1)
+        print("[INFO] Mode:", args.mode)
+        print("[INFO] Camera mode:", args.camera_mode)
+        print("[INFO] Memory:", args.memory)
+        print("[INFO] Goal:", args.goal)
+        print("[INFO] AMD API:", args.api)
+        print(
+            "[INFO] Robot:",
+            "{}@{}".format(
+                args.robot_user,
+                args.robot_ip,
+            ),
+        )
+
+        if args.camera_mode == "single":
+            print(
+                "[INFO] Single camera device:",
+                args.camera_device,
+            )
+        else:
+            print(
+                "[INFO] Front camera:",
+                args.front_device,
+            )
+            print(
+                "[INFO] Left camera:",
+                args.left_device,
+            )
+            print(
+                "[INFO] Right camera:",
+                args.right_device,
+            )
+
+        if args.mode == "single":
+            run_single_step(args)
+
+        elif args.mode == "auto":
+            run_auto_mode(args)
+
+        else:
+            raise ValueError(
+                "Unsupported mode: {}".format(
+                    args.mode
+                )
+            )
+
+    except BaseException:
+        send_emergency_stop(args)
+        raise

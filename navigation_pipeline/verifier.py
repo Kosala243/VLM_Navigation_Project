@@ -116,6 +116,13 @@ class TargetVerifier:
     - A nearby/adjacent room label is NOT reached.
     - Old memory from previous frames is NOT enough. Use only the current image and current-frame memory shown above.
     - If the text is too small/unclear, return target_reached=false with evidence_type="unclear".
+    - FRONT visibility alone is not arrival.
+    - target_reached=true requires:
+        1. exact target label;
+        2. source_view=FRONT;
+        3. horizontal_position=center;
+        4. proximity=reached.
+    - If the exact target is centred but proximity is far, medium, near, or unknown, return target_visible=true and target_reached=false.
 
     Return ONLY valid JSON:
     {
@@ -226,7 +233,7 @@ class TargetVerifier:
                     visual_confidence=getattr(lm, "confidence", "high"),
                 )
 
-                if source_view == "FRONT":
+                if _landmark_ready_for_stop(lm):
                     return VerificationResult(
                         target_visible=True,
                         target_reached=score >= 0.85,
@@ -253,10 +260,10 @@ class TargetVerifier:
                     confidence=_confidence_from_score(side_score),
                     evidence_score=side_score,
                     evidence_breakdown=breakdown,
-                    reason=(
-                        f"Target door label '{matched}' is visible in "
-                        f"{source_view}, but the robot must align with "
-                        "the door before confirming arrival."
+                    reason=_target_not_ready_reason(
+                        lm,
+                        matched,
+                        "target door",
                     ),
                     landmark_id=str(
                         getattr(lm, "id", "")
@@ -283,7 +290,7 @@ class TargetVerifier:
                     is_stop_candidate=True,
                     visual_confidence=getattr(lm, "confidence", "medium",),
                 )
-                if source_view == "FRONT":
+                if _landmark_ready_for_stop(lm):
                     return VerificationResult(
                         target_visible=True,
                         target_reached=score >= 0.85,
@@ -292,9 +299,10 @@ class TargetVerifier:
                         confidence=_confidence_from_score(score),
                         evidence_score=score,
                         evidence_breakdown=breakdown,
-                        reason=(
-                            "Target verified in current FRONT image: "
-                            f"entrance label '{matched}' matches the goal."
+                        reason=_target_not_ready_reason(
+                            lm,
+                            matched,
+                            "target entrance",
                         ),
                         landmark_id=str(
                             getattr(lm, "id", "")
@@ -726,6 +734,109 @@ _NON_STOP_EVIDENCE_PRIORITY = {
     "none": 0,
 }
 
+def _landmark_horizontal_position(
+    landmark: "Landmark",
+) -> str:
+    extra = (
+        landmark.extra
+        if isinstance(
+            getattr(landmark, "extra", {}),
+            dict,
+        )
+        else {}
+    )
+
+    value = str(
+        extra.get(
+            "horizontal_position",
+            "unknown",
+        )
+        or "unknown"
+    ).strip().lower()
+
+    if value == "centre":
+        value = "center"
+
+    return value
+
+
+def _landmark_proximity(
+    landmark: "Landmark",
+) -> str:
+    extra = (
+        landmark.extra
+        if isinstance(
+            getattr(landmark, "extra", {}),
+            dict,
+        )
+        else {}
+    )
+
+    return str(
+        extra.get(
+            "proximity",
+            "unknown",
+        )
+        or "unknown"
+    ).strip().lower()
+
+
+def _landmark_ready_for_stop(
+    landmark: "Landmark",
+) -> bool:
+    """
+    Visual-only arrival requirement.
+
+    Tomorrow this will additionally require sensor/robot-state
+    confirmation when that feedback reaches the AMD pipeline.
+    """
+    if _landmark_source_view(
+        landmark
+    ) != "FRONT":
+        return False
+
+    if _landmark_horizontal_position(
+        landmark
+    ) != "center":
+        return False
+
+    return (
+        _landmark_proximity(landmark)
+        == "reached"
+    )
+
+
+def _target_not_ready_reason(
+    landmark: "Landmark",
+    matched_label: str,
+    target_kind: str,
+) -> str:
+    view = _landmark_source_view(
+        landmark
+    )
+
+    horizontal = (
+        _landmark_horizontal_position(
+            landmark
+        )
+    )
+
+    proximity = _landmark_proximity(
+        landmark
+    )
+
+    return (
+        "Exact {} '{}' is visible, but arrival is not "
+        "confirmed: source_view={}, horizontal_position={}, "
+        "proximity={}."
+    ).format(
+        target_kind,
+        matched_label,
+        view,
+        horizontal,
+        proximity,
+    )
+
 def _choose_better_non_stop(
     current: VerificationResult,
     candidate: VerificationResult,
@@ -851,12 +962,17 @@ def _current_memory_supports_stop(
             continue
    
         if (evidence_type == "target_door_label" and category == "door"):
-            if _landmark_source_view(lm) == "FRONT":
+            if _landmark_ready_for_stop(lm):
                 return True
             continue
 
         if (evidence_type == "target_entrance" and category in {"sign", "observation"}):
-            if (_landmark_source_view(lm) == "FRONT" and _looks_like_actual_entrance(combined)):
+            if (
+                _landmark_ready_for_stop(lm)
+                and _looks_like_actual_entrance(
+                    combined
+                )
+            ):
                 return True
             continue
 
