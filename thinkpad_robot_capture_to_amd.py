@@ -783,19 +783,6 @@ def apply_no_progress_guard(
 
     return guarded, repeat_count, True
 
-retry_limit_blocked = False
-
-if not no_progress_blocked:
-    (
-        response,
-        retry_limit_blocked,
-    ) = apply_action_retry_guard(
-        args=args,
-        response=response,
-        last_executed_state=(
-            last_executed_state
-        ),
-    )
 
 _REPEAT_LIMIT_ACTIONS = {
     "ALIGN_WITH_LANDMARK",
@@ -1368,6 +1355,20 @@ def run_auto_mode(args):
             last_executed_state=last_executed_state,
             repeat_count=no_progress_repeat_count,
         )
+
+        retry_limit_blocked = False
+        if not no_progress_blocked:
+            (
+                response,
+                retry_limit_blocked,
+            ) = apply_action_retry_guard(
+                args=args,
+                response=response,
+                last_executed_state=(
+                    last_executed_state
+                ),
+            )
+            
         print_action_result(response)
         executed, execution_result = maybe_execute_robot_action(
             args,
