@@ -12,7 +12,6 @@ from datetime import datetime
 from pathlib import Path
 from robot_executor import SafeCmdVelExecutor
 
-
 def run(cmd, check=True, verbose=True):
     if verbose:
         print("[CMD]", " ".join(cmd))
@@ -41,14 +40,12 @@ def run(cmd, check=True, verbose=True):
 
     return result
 
-
 def ssh_run(robot_user, robot_ip, remote_cmd):
     return run([
         "ssh",
         "{}@{}".format(robot_user, robot_ip),
         remote_cmd,
     ])
-
 
 def scp_from_robot(robot_user, robot_ip, remote_path, local_path):
     local_path = Path(local_path)
@@ -61,7 +58,6 @@ def scp_from_robot(robot_user, robot_ip, remote_path, local_path):
     ])
 
     return local_path
-
 
 def ffmpeg_capture_command(device, output_path, capture_size, timeout_s):
     return (
@@ -78,7 +74,6 @@ def ffmpeg_capture_command(device, output_path, capture_size, timeout_s):
         device=shlex.quote(device),
         output_path=shlex.quote(output_path),
     )
-
 
 def capture_single_camera(args, local_step_dir):
     local_step_dir.mkdir(parents=True, exist_ok=True)
@@ -178,7 +173,6 @@ def capture_three_camera_files(args, local_step_dir):
 
     return image_paths
 
-
 def capture_three_cameras_stitched(args, local_step_dir):
     image_paths = capture_three_camera_files(args, local_step_dir)
 
@@ -190,7 +184,6 @@ def capture_three_cameras_stitched(args, local_step_dir):
         width=args.stitch_width,
         height=args.stitch_height,
     )
-
     return stitched, image_paths
 
 def load_font(size):
@@ -207,7 +200,6 @@ def load_font(size):
         except Exception:
             return None
 
-
 def draw_label(img, label):
     from PIL import ImageDraw
 
@@ -218,7 +210,6 @@ def draw_label(img, label):
     draw.text((12, 8), label, fill=(0, 0, 0), font=font)
 
     return img
-
 
 def stitch_three_images(left_path, front_path, right_path, output_path, width, height):
     try:
@@ -560,7 +551,6 @@ def safe_goal_name(goal):
         .replace(":", "_")
     )
 
-
 def create_run_dir(args):
     if args.run_dir:
         run_dir = Path(args.run_dir)
@@ -608,7 +598,6 @@ def create_run_dir(args):
     print("[LOG] Run directory:", run_dir)
     return run_dir
 
-
 def save_step_log(
     run_dir,
     step_index,
@@ -636,7 +625,6 @@ def save_step_log(
 
     print("[LOG] Step result saved:", result_path)
     return result_path
-
 
 def save_final_summary(run_dir, goal, steps, success, run_config=None, metrics=None):
     summary = {
@@ -679,7 +667,6 @@ def extract_step_metric(response, executed):
         "is_valid": bool(action.get("is_valid", True)),
         "evidence_view": params.get("evidence_view"),
     }
-
 
 def compute_run_metrics(step_metrics, success):
     total_steps = len(step_metrics)
@@ -1002,7 +989,6 @@ def parse_args():
 
     return parser.parse_args()
 
- 
 def main():
     args = parse_args()
 
@@ -1026,7 +1012,6 @@ def main():
         run_auto_mode(args)
     else:
         raise ValueError("Unsupported mode: {}".format(args.mode))
-
 
 if __name__ == "__main__":
     try:

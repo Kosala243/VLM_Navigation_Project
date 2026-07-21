@@ -164,6 +164,8 @@ class ActionGenerator:
         - Use "RIGHT" if the strongest cue is in the right camera/panel.
         - Use "STITCHED_UNKNOWN" if the image is stitched but the panel/source is unclear.
         - Use "NONE" if no useful visual cue is visible.
+        - If the exact target door or target entrance is visible only in LEFT or RIGHT, choose ALIGN_WITH_LANDMARK first. Do not claim that the target has been reached.
+        - Confirm the target only after a new observation shows the target in FRONT.
 
         When using a remembered structural landmark:
         - Choose NAVIGATE_TO_LANDMARK.
@@ -245,9 +247,7 @@ class ActionGenerator:
                 if isinstance(getattr(semantic_lm, "extra", {}), dict)
                 else {}
             )
-            semantic_direction = _normalise_direction(
-                extra.get("arrow") or extra.get("direction")
-            )
+            semantic_direction = _semantic_landmark_direction(semantic_lm)
             selected_lm_id = _clean_param(
                 validated.params.get("landmark_id")
             )
@@ -345,6 +345,7 @@ class ActionGenerator:
         if not action.is_valid:
             return action
         if action.name not in {
+            "CHECK_DOOR_LABEL",
             "NAVIGATE_TO_LANDMARK",
             "APPROACH_LANDMARK",
             "PASS_THROUGH_DOORWAY",
@@ -368,9 +369,13 @@ class ActionGenerator:
             params={
                 "landmark_id": lm_id,
                 "direction": view.lower(),
-                "target_description": action.params.get(
-                    "target_description",
-                    lm.description,
+                "target_description": (
+                    _clean_param(
+                        action.params.get("target_description")
+                    )
+                    or str(
+                        getattr(lm, "description", "")
+                    ).strip()
                 ),
                 "stop_condition": (
                     "landmark centred in FRONT camera"
@@ -663,30 +668,22 @@ class ActionGenerator:
             lm = None
 
             if not lm_id:
-                supporting_lm = _best_current_semantic_direction_landmark(
-                    memory
+                supporting_lm = (
+                    _best_current_semantic_direction_landmark(memory)
                 )
 
-                if supporting_lm is not None:
-                    supporting_extra = (
-                        supporting_lm.extra
-                        if isinstance(
-                            getattr(supporting_lm, "extra", {}),
-                            dict,
-                        )
-                        else {}
+                if (
+                    supporting_lm is not None
+                    and _landmark_supports_direction(
+                        supporting_lm,
+                        direction,
                     )
-                    supporting_direction = _normalise_direction(
-                        supporting_extra.get("arrow")
-                        or supporting_extra.get("direction")
+                ):
+                    lm_id = str(
+                        getattr(supporting_lm, "id", "")
                     )
-
-                    if supporting_direction == direction:
-                        lm_id = str(
-                            getattr(supporting_lm, "id", "")
-                        )
-                        action.params["landmark_id"] = lm_id
-                        lm = supporting_lm
+                    action.params["landmark_id"] = lm_id
+                    lm = supporting_lm
 
             if not lm_id:
                 action.is_valid = False
@@ -697,34 +694,23 @@ class ActionGenerator:
                 return action
 
             if not _landmark_exists(memory, lm_id):
-                supporting_lm = _best_current_semantic_direction_landmark(
-                    memory
+                supporting_lm = (
+                    _best_current_semantic_direction_landmark(memory)
                 )
 
-                if supporting_lm is not None:
-                    supporting_extra = (
-                        supporting_lm.extra
-                        if isinstance(
-                            getattr(supporting_lm, "extra", {}),
-                            dict,
-                        )
-                        else {}
+                if (
+                    supporting_lm is not None
+                    and _landmark_supports_direction(
+                        supporting_lm,
+                        direction,
                     )
-                    supporting_direction = _normalise_direction(
-                        supporting_extra.get("arrow")
-                        or supporting_extra.get("direction")
+                ):
+                    lm_id = str(
+                        getattr(supporting_lm, "id", "")
                     )
-
-                    if supporting_direction == direction:
-                        lm_id = str(
-                            getattr(supporting_lm, "id", "")
-                        )
-                        action.params["landmark_id"] = lm_id
-                        lm = supporting_lm
-                    else:
-                        supporting_lm = None
-
-                if supporting_lm is None:
+                    action.params["landmark_id"] = lm_id
+                    lm = supporting_lm
+                else:
                     action.is_valid = False
                     action.invalid_reason = (
                         "The supplied direction landmark ID is unknown, "
@@ -751,14 +737,14 @@ class ActionGenerator:
                 )
                 return action
 
-            if not _has_recent_direction_evidence(
-                recent,
-                landmark_id=lm_id,
+            if not _landmark_supports_direction(
+                lm,
+                direction,
             ):
                 action.is_valid = False
                 action.invalid_reason = (
                     f"FOLLOW_DIRECTION landmark {lm_id} does not "
-                    "contain current direction evidence."
+                    f"support requested direction={direction}."
                 )
                 return action
         if action.name == "USE_ELEVATOR_OR_STAIRS":
@@ -1099,12 +1085,10 @@ def _validate_structural_route_landmark(
                 "the active goal or route.",
             )
     
-    current_semantic = _best_current_semantic_direction_landmark(memory)
+    current_semantic = (_best_current_semantic_direction_landmark(memory))
+
     if current_semantic is not None:
-        semantic_direction = _normalise_direction(
-            current_semantic.extra.get("arrow")
-            or current_semantic.extra.get("direction")
-        )
+        semantic_direction = (_semantic_landmark_direction(current_semantic))
 
         if semantic_direction:
             return (
@@ -1159,9 +1143,7 @@ def _latest_semantic_direction(
         if category not in {"stairs", "elevator"}:
             if target_relevance not in {"high", "medium"}:
                 continue
-        direction = _normalise_direction(
-            extra.get("arrow") or extra.get("direction")
-        )
+        direction = _semantic_landmark_direction(lm)
         if direction:
             return direction
 
@@ -1196,9 +1178,7 @@ def _best_current_semantic_direction_landmark(
             extra.get("target_relevance", "none")
         ).lower()
 
-        direction = _normalise_direction(
-            extra.get("arrow") or extra.get("direction")
-        )
+        direction = _semantic_landmark_direction(lm)
 
         if relevance not in {"high", "medium"} or not direction:
             continue
@@ -1213,26 +1193,10 @@ def _best_current_semantic_direction_landmark(
 
     return best
 
-def _has_explicit_direction_metadata(extra: dict[str, Any]) -> bool:
-    for key in ("direction", "arrow"):
-        value = _clean_param(extra.get(key)).lower()
-
-        if value in {
-            "left",
-            "right",
-            "forward",
-            "front",
-            "straight",
-            "go straight",
-            "turn left",
-            "turn right",
-            "←",
-            "→",
-            "↑",
-        }:
-            return True
-
-    return False
+def _has_explicit_direction_metadata(
+    extra: dict[str, Any],
+) -> bool:
+    return bool(_semantic_direction_from_extra(extra))
 
 def _clean_param(value: Any) -> str:
     if value is None:
@@ -1250,15 +1214,132 @@ _ALLOWED_EVIDENCE_VIEWS = {
 
 def _normalise_direction(value: Any) -> str:
     text = _clean_param(value).lower()
+
     if not text:
         return ""
-    if text in {"left", "turn left"} or text.startswith("←"):
+
+    # Supported explicit compound forms.
+    if text in {
+        "left",
+        "turn left",
+        "left_forward",
+        "forward_left",
+    }:
         return "left"
-    if text in {"right", "turn right"} or text.startswith("→"):
+
+    if text in {
+        "right",
+        "turn right",
+        "right_forward",
+        "forward_right",
+    }:
         return "right"
-    if text in {"forward", "front", "straight", "go straight"}:
+
+    if text in {
+        "forward",
+        "front",
+        "straight",
+        "go straight",
+        "ahead",
+        "continue",
+    }:
         return "forward"
+
+    normalized = re.sub(r"[_-]+", " ", text)
+
+    detected: set[str] = set()
+
+    if (
+        re.search(r"\bleft\b", normalized)
+        or "←" in normalized
+    ):
+        detected.add("left")
+
+    if (
+        re.search(r"\bright\b", normalized)
+        or "→" in normalized
+    ):
+        detected.add("right")
+
+    if (
+        re.search(
+            r"\b(forward|front|straight|ahead|continue)\b",
+            normalized,
+        )
+        or "↑" in normalized
+    ):
+        detected.add("forward")
+
+    # Reject ambiguous values such as "left, right" or "← →".
+    if len(detected) != 1:
+        return ""
+
+    return next(iter(detected))
+
+def _semantic_direction_from_extra(extra: dict[str, Any]) -> str:
+    if not isinstance(extra, dict):
+        return ""
+
+    for key in (
+        "target_direction",
+        "arrow",
+        "continuation_direction",
+        "direction",
+    ):
+        direction = _normalise_direction(extra.get(key))
+        if direction:
+            return direction
+
     return ""
+
+def _semantic_landmark_direction(
+    landmark: "Landmark | None",
+) -> str:
+    if landmark is None:
+        return ""
+
+    extra = (
+        landmark.extra
+        if isinstance(getattr(landmark, "extra", {}), dict)
+        else {}
+    )
+
+    return _semantic_direction_from_extra(extra)
+
+def _landmark_supports_direction(
+    landmark: "Landmark | None",
+    requested_direction: str,
+) -> bool:
+    requested = _normalise_direction(requested_direction)
+    if not requested or landmark is None:
+        return False
+
+    metadata_direction = _semantic_landmark_direction(landmark)
+    if metadata_direction:
+        return metadata_direction == requested
+
+    # Conservative fallback for older landmarks with missing metadata.
+    # Accept text only when it contains one unambiguous direction.
+    text = _visible_landmark_content(landmark)
+
+    visible_directions: set[str] = set()
+
+    if re.search(r"\bleft\b", text) or "←" in text:
+        visible_directions.add("left")
+
+    if re.search(r"\bright\b", text) or "→" in text:
+        visible_directions.add("right")
+
+    if (
+        re.search(
+            r"\b(forward|straight|ahead)\b",
+            text,
+        )
+        or "↑" in text
+    ):
+        visible_directions.add("forward")
+
+    return visible_directions == {requested}
 
 def _normalise_evidence_view(value: Any) -> str:
     text = _clean_param(value).upper()

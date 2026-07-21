@@ -213,6 +213,7 @@ class TargetVerifier:
             combined = _landmark_combined_text(lm)
             matched = _find_stop_label(labels, combined)
             extra = getattr(lm, "extra", {}) if isinstance(getattr(lm, "extra", {}), dict) else {}
+            source_view = _landmark_source_view(lm)
             target_relevance = str(extra.get("target_relevance", "")).lower()
 
             if matched and category == "door":
@@ -225,41 +226,117 @@ class TargetVerifier:
                     visual_confidence=getattr(lm, "confidence", "high"),
                 )
 
-                return VerificationResult(
+                if source_view == "FRONT":
+                    return VerificationResult(
+                        target_visible=True,
+                        target_reached=score >= 0.85,
+                        matched_label=matched,
+                        evidence_type="target_door_label",
+                        confidence=_confidence_from_score(score),
+                        evidence_score=score,
+                        evidence_breakdown=breakdown,
+                        reason=f"Target verified in current FRONT image: door label '{matched}' matches the goal.",
+                        landmark_id=str(getattr(lm, "id", "")) or None,
+                        raw={"source": "current_memory", "landmark": _safe_asdict(lm)},
+                    )
+
+                # Exact target is visible, but it is still a side-view cue.
+                side_score = min(score, 0.80)
+                breakdown["side_view_alignment_required"] = 1.0
+                breakdown["final_score"] = side_score
+
+                candidate = VerificationResult(
                     target_visible=True,
-                    target_reached=score >= 0.85,
+                    target_reached=False,
                     matched_label=matched,
                     evidence_type="target_door_label",
-                    confidence=_confidence_from_score(score),
-                    evidence_score=score,
+                    confidence=_confidence_from_score(side_score),
+                    evidence_score=side_score,
                     evidence_breakdown=breakdown,
-                    reason=f"Target verified in current image: door label '{matched}' matches the goal.",
-                    landmark_id=str(getattr(lm, "id", "")) or None,
-                    raw={"source": "current_memory", "landmark": _safe_asdict(lm)},
+                    reason=(
+                        f"Target door label '{matched}' is visible in "
+                        f"{source_view}, but the robot must align with "
+                        "the door before confirming arrival."
+                    ),
+                    landmark_id=str(
+                        getattr(lm, "id", "")
+                    ) or None,
+                    raw={
+                        "source": "current_memory_side_view",
+                        "landmark": _safe_asdict(lm),
+                    },
                 )
 
-            if matched and category in {"sign", "observation"} and _looks_like_actual_entrance(combined):
+                best_non_stop = _choose_better_non_stop(
+                    best_non_stop,
+                    candidate,
+                )
+
+                continue
+
+            if (matched and category in {"sign", "observation"} and _looks_like_actual_entrance(combined)):
                 score, breakdown = _score_verification(
                     evidence_type="target_entrance",
                     matched_label=matched,
                     goal=goal,
                     current_frame=True,
                     is_stop_candidate=True,
-                    visual_confidence=getattr(lm, "confidence", "medium"),
+                    visual_confidence=getattr(lm, "confidence", "medium",),
                 )
+                if source_view == "FRONT":
+                    return VerificationResult(
+                        target_visible=True,
+                        target_reached=score >= 0.85,
+                        matched_label=matched,
+                        evidence_type="target_entrance",
+                        confidence=_confidence_from_score(score),
+                        evidence_score=score,
+                        evidence_breakdown=breakdown,
+                        reason=(
+                            "Target verified in current FRONT image: "
+                            f"entrance label '{matched}' matches the goal."
+                        ),
+                        landmark_id=str(
+                            getattr(lm, "id", "")
+                        ) or None,
+                        raw={
+                            "source": "current_memory",
+                            "landmark": _safe_asdict(lm),
+                        },
+                    )
 
-                return VerificationResult(
+                side_score = min(score, 0.80)
+                breakdown["side_view_alignment_required"] = 1.0
+                breakdown["final_score"] = side_score
+
+                candidate = VerificationResult(
                     target_visible=True,
-                    target_reached=score >= 0.85,
+                    target_reached=False,
                     matched_label=matched,
                     evidence_type="target_entrance",
-                    confidence=_confidence_from_score(score),
-                    evidence_score=score,
+                    confidence=_confidence_from_score(
+                        side_score
+                    ),
+                    evidence_score=side_score,
                     evidence_breakdown=breakdown,
-                    reason=f"Target verified in current image: entrance/sign label '{matched}' matches the goal.",
-                    landmark_id=str(getattr(lm, "id", "")) or None,
-                    raw={"source": "current_memory", "landmark": _safe_asdict(lm)},
+                    reason=(
+                        f"Target entrance '{matched}' is visible in "
+                        f"{source_view}, but the robot must align with "
+                        "the entrance before confirming arrival."
+                    ),
+                    landmark_id=str(
+                        getattr(lm, "id", "")
+                    ) or None,
+                    raw={
+                        "source": "current_memory_side_view",
+                        "landmark": _safe_asdict(lm),
+                    },
                 )
+                best_non_stop = _choose_better_non_stop(
+                    best_non_stop,
+                    candidate,
+                )
+                continue
 
             # Current-frame target-related evidence that is useful but cannot stop.
             if matched and category in {"sign", "directory", "observation"}:
@@ -272,7 +349,7 @@ class TargetVerifier:
                     is_stop_candidate=False,
                     visual_confidence=getattr(lm, "confidence", "medium"),
                 )
-                best_non_stop = VerificationResult(
+                candidate = VerificationResult(
                     target_visible=True,
                     target_reached=False,
                     matched_label=matched,
@@ -281,11 +358,21 @@ class TargetVerifier:
                     evidence_score=score,
                     evidence_breakdown=breakdown,
                     reason=(
-                        f"Current image contains target-related {e_type.replace('_', ' ')} for '{matched}', "
+                        f"Current image contains target-related "
+                        f"{e_type.replace('_', ' ')} for '{matched}', "
                         "but not an actual target door/entrance."
                     ),
-                    landmark_id=str(getattr(lm, "id", "")) or None,
-                    raw={"source": "current_memory_non_stop", "landmark": _safe_asdict(lm)},
+                    landmark_id=str(
+                        getattr(lm, "id", "")
+                    ) or None,
+                    raw={
+                        "source": "current_memory_non_stop",
+                        "landmark": _safe_asdict(lm),
+                    },
+                )
+                best_non_stop = _choose_better_non_stop(
+                    best_non_stop,
+                    candidate,
                 )
             elif _looks_like_zone_marker_for_goal(goal, combined):
                 matched_zone = _goal_building_or_zone(goal)
@@ -297,7 +384,7 @@ class TargetVerifier:
                     is_stop_candidate=False,
                     visual_confidence=getattr(lm, "confidence", "medium"),
                 )
-                best_non_stop = VerificationResult(
+                candidate = VerificationResult(
                     target_visible=True,
                     target_reached=False,
                     matched_label=matched_zone,
@@ -305,9 +392,22 @@ class TargetVerifier:
                     confidence=_confidence_from_score(score),
                     evidence_score=score,
                     evidence_breakdown=breakdown,
-                    reason="Current image shows only the building/tower/zone marker, not the target room label.",
-                    landmark_id=str(getattr(lm, "id", "")) or None,
-                    raw={"source": "current_memory_zone_marker", "landmark": _safe_asdict(lm)},
+                    reason=(
+                        "Current image shows only the building/tower/"
+                        "zone marker, not the target room label."
+                    ),
+                    landmark_id=str(
+                        getattr(lm, "id", "")
+                    ) or None,
+                    raw={
+                        "source": "current_memory_zone_marker",
+                        "landmark": _safe_asdict(lm),
+                    },
+                )
+
+                best_non_stop = _choose_better_non_stop(
+                    best_non_stop,
+                    candidate,
                 )
             elif target_relevance in {"high", "medium"} and category in {"sign", "directory"}:
                 e_type = _non_stop_evidence_type(category, combined)
@@ -319,7 +419,7 @@ class TargetVerifier:
                     is_stop_candidate=False,
                     visual_confidence=getattr(lm, "confidence", "medium"),
                 )
-                best_non_stop = VerificationResult(
+                candidate = VerificationResult(
                     target_visible=True,
                     target_reached=False,
                     matched_label="",
@@ -327,11 +427,23 @@ class TargetVerifier:
                     confidence=_confidence_from_score(score),
                     evidence_score=score,
                     evidence_breakdown=breakdown,
-                    reason="Current image contains target-relevant navigation evidence, but not the actual target door/entrance.",
-                    landmark_id=str(getattr(lm, "id", "")) or None,
-                    raw={"source": "current_memory_relevant_non_stop", "landmark": _safe_asdict(lm)},
+                    reason=(
+                        "Current image contains target-relevant navigation "
+                        "evidence, but not the actual target door/entrance."
+                    ),
+                    landmark_id=str(
+                        getattr(lm, "id", "")
+                    ) or None,
+                    raw={
+                        "source": "current_memory_relevant_non_stop",
+                        "landmark": _safe_asdict(lm),
+                    },
                 )
 
+                best_non_stop = _choose_better_non_stop(
+                    best_non_stop,
+                    candidate,
+                )
         return best_non_stop
 
     def _apply_strict_guards(
@@ -426,11 +538,11 @@ class TargetVerifier:
                 ).strip()
                 result.confidence = "low"
                 result.evidence_score = 0.0
-            result.evidence_breakdown = {
-                "landmark_not_current_frame": 1.0,
-                "final_score": 0.0,
-            }
-            return result
+                result.evidence_breakdown = {
+                    "landmark_not_current_frame": 1.0,
+                    "final_score": 0.0,
+                }
+                return result
 
         score, breakdown = _score_verification(
             evidence_type=result.evidence_type,
@@ -578,6 +690,73 @@ def _landmark_combined_text(lm: "Landmark") -> str:
         extra_text,
     ])
 
+def _landmark_source_view(
+    landmark: "Landmark",
+) -> str:
+    extra = (
+        landmark.extra
+        if isinstance(getattr(landmark, "extra", {}), dict)
+        else {}
+    )
+
+    view = str(
+        extra.get("source_view", "NONE")
+    ).strip().upper()
+
+    if view in {
+        "LEFT",
+        "FRONT",
+        "RIGHT",
+        "STITCHED_UNKNOWN",
+        "NONE",
+    }:
+        return view
+
+    return "NONE"
+
+_NON_STOP_EVIDENCE_PRIORITY = {
+    "target_door_label": 5,
+    "target_entrance": 4,
+    "room_range": 3,
+    "directory": 2,
+    "directional_sign": 2,
+    "nearby_room": 2,
+    "zone_marker": 1,
+    "unclear": 0,
+    "none": 0,
+}
+
+def _choose_better_non_stop(
+    current: VerificationResult,
+    candidate: VerificationResult,
+) -> VerificationResult:
+    """
+    Keep the strongest non-stop verification result.
+
+    Evidence type is considered before numerical score so that an exact
+    target door visible from the side cannot be overwritten by a generic
+    directional sign or zone marker.
+    """
+    current_priority = _NON_STOP_EVIDENCE_PRIORITY.get(
+        current.evidence_type,
+        0,
+    )
+    candidate_priority = _NON_STOP_EVIDENCE_PRIORITY.get(
+        candidate.evidence_type,
+        0,
+    )
+
+    if candidate_priority > current_priority:
+        return candidate
+
+    if candidate_priority < current_priority:
+        return current
+
+    if candidate.evidence_score > current.evidence_score:
+        return candidate
+
+    return current
+
 def _looks_like_actual_entrance(text: str) -> bool:
     t = text.lower()
     entrance_words = ["entrance", "door", "room plate", "door plate", "office", "suite", "lab", "reception", "gate"]
@@ -670,12 +849,16 @@ def _current_memory_supports_stop(
 
         if not _find_stop_label(labels, combined):
             continue
+   
+        if (evidence_type == "target_door_label" and category == "door"):
+            if _landmark_source_view(lm) == "FRONT":
+                return True
+            continue
 
-        if evidence_type == "target_door_label" and category == "door":
-            return True
-
-        if evidence_type == "target_entrance" and category in {"sign", "observation"}:
-            return _looks_like_actual_entrance(combined)
+        if (evidence_type == "target_entrance" and category in {"sign", "observation"}):
+            if (_landmark_source_view(lm) == "FRONT" and _looks_like_actual_entrance(combined)):
+                return True
+            continue
 
     return False
 

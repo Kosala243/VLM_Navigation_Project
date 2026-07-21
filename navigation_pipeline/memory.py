@@ -129,6 +129,11 @@ class NavigationMemory:
         - Such landmarks are useful because the robot can move closer to read them.
         - Prefer current visual evidence over old memory.
         - For every landmark, set extra.source_view to LEFT, FRONT, RIGHT, STITCHED_UNKNOWN, or NONE.
+        - For a sign containing multiple destinations or multiple arrows, identify the single direction associated with the active navigation goal.
+        - Store that goal-specific direction in extra.target_direction.
+        - extra.target_direction must be exactly left, right, forward, none, or unknown.
+        - Do not store combined values such as "left, right" in target_direction.
+        - extra.arrow may preserve the raw visible arrow information.
         Structural navigation landmark rules:
         - Store visible navigable structures even when they do not contain readable text.
         - Useful structural landmarks include:
@@ -209,13 +214,13 @@ class NavigationMemory:
                 "floor": null,
                 "zone": null,
                 "source_view": "LEFT | FRONT | RIGHT | STITCHED_UNKNOWN | NONE",
-
                 "landmark_type": "semantic | structural",
                 "navigation_role": "continue_route | turn_point | branch | entrance | exit | exploration | dead_end | none",
                 "traversable": true,
                 "continuation_direction": "left | right | forward | left_forward | right_forward | none | unknown",
                 "route_state": "visible_now | remembered | reached | passed | blocked",
-                "goal_support": "direct | indirect | none | unknown"
+                "goal_support": "direct | indirect | none | unknown",
+                "target_direction": "left | right | forward | none | unknown"
             }
             }
         ],
@@ -405,15 +410,13 @@ class NavigationMemory:
             # Current semantic directional evidence.
             if (
                 is_current
-                and category in {"sign", "directory", "reception"}
+                and category in {"sign", "directory", "observation"}
             ):
                 relevance = str(
                     extra.get("target_relevance", "none")
                 ).lower()
 
-                direction = _normalise_subgoal_direction(
-                    extra.get("arrow") or extra.get("direction")
-                )
+                direction = _semantic_direction_from_extra(extra)
                 if (
                     relevance in {"high", "medium"}
                     and direction
@@ -448,9 +451,7 @@ class NavigationMemory:
                 ),
             )
             extra = selected.extra
-            direction = _normalise_subgoal_direction(
-                extra.get("arrow") or extra.get("direction")
-            )
+            direction = _semantic_direction_from_extra(extra)
             self.current_subgoal = NavigationSubgoal(
                 description=str(selected.description),
                 landmark_id=str(selected.id),
@@ -502,25 +503,32 @@ class NavigationMemory:
                     if isinstance(previous.extra, dict)
                     else {}
                 )
-                previous_status = str(previous.status).lower()
-                previous_route_state = str(
-                    previous_extra.get(
-                        "route_state",
-                        "visible_now",
-                    )
+
+                previous_category = str(
+                    previous.category
                 ).lower()
+
+                previous_is_structural = (
+                    previous_category in structural_categories
+                    or str(
+                        previous_extra.get(
+                            "landmark_type",
+                            "",
+                        )
+                    ).lower() == "structural"
+                )
+
+                # Only retain a previous structural route anchor.
+                # Old semantic signs must not remain active after they
+                # disappear from the current observation.
                 if (
-                    previous_status not in {
-                        "visited",
-                        "used",
-                        "ignored",
-                    }
-                    and previous_route_state not in {
-                        "blocked",
-                        "passed",
-                    }
+                    previous_is_structural
+                    and self._structural_landmark_usable_for_planner(
+                        previous
+                    )
                 ):
                     return
+                
         if remembered_structural:
             selected = max(
                 remembered_structural,
@@ -550,7 +558,31 @@ class NavigationMemory:
     ) -> str:
         """Return compact navigation memory for the action planner."""
 
-        recent = self.landmarks[-n_recent:]
+        recent: list[Landmark] = []
+        structural_categories = {
+            "corridor",
+            "corridor_bend",
+            "junction",
+            "doorway",
+            "passage",
+            "frontier",
+            "dead_end",
+        }
+        for lm in reversed(self.landmarks):
+            extra = lm.extra if isinstance(lm.extra, dict) else {}
+            is_structural = (
+                lm.category in structural_categories
+                or extra.get("landmark_type") == "structural"
+            )
+            if (
+                is_structural
+                and not self._structural_landmark_usable_for_planner(lm)
+            ):
+                continue
+            recent.append(lm)
+            if len(recent) >= n_recent:
+                break
+        recent = list(reversed(recent))
         relevant = self._target_relevant_landmarks(n_relevant)
         structural = self._recent_structural_landmarks(limit=6)
 
@@ -572,6 +604,7 @@ class NavigationMemory:
                 "source_view": extra.get("source_view", "NONE"),
                 "direction": extra.get("direction"),
                 "arrow": extra.get("arrow"),
+                "target_direction": extra.get("target_direction"),
                 "room_range": extra.get("room_range"),
                 "target_relevance": extra.get("target_relevance"),
                 "floor": extra.get("floor"),
@@ -830,19 +863,111 @@ class NavigationMemory:
         elif all(d < 0 for d in diffs):
             self._add_hypothesis("Recently observed door numbers are decreasing along the travelled direction.")
 
-    def _target_relevant_landmarks(self, limit: int) -> list[Landmark]:
+    def _target_relevant_landmarks(
+        self,
+        limit: int,
+    ) -> list[Landmark]:
         relevant: list[Landmark] = []
+
+        structural_categories = {
+            "corridor",
+            "corridor_bend",
+            "junction",
+            "doorway",
+            "passage",
+            "frontier",
+            "dead_end",
+        }
         for lm in reversed(self.landmarks):
-            relevance = str(lm.extra.get("target_relevance", "")).lower()
+            extra = (
+                lm.extra
+                if isinstance(lm.extra, dict)
+                else {}
+            )
+            is_structural = (
+                lm.category in structural_categories
+                or str(
+                    extra.get("landmark_type", "")
+                ).lower() == "structural"
+            )
+            if (
+                is_structural
+                and not self._structural_landmark_usable_for_planner(
+                    lm
+                )
+            ):
+                continue
+            relevance = str(
+                extra.get("target_relevance", "")
+            ).lower()
             if relevance in {"high", "medium"}:
                 relevant.append(lm)
-            elif lm.category in {"directory", "sign", "door", "reception"} and lm.text:
+            elif (
+                lm.category
+                in {
+                    "directory",
+                    "sign",
+                    "door",
+                    "reception",
+                }
+                and lm.text
+            ):
                 relevant.append(lm)
             if len(relevant) >= limit:
                 break
-        return list(reversed(relevant))
 
-    def _recent_structural_landmarks(self, limit: int = 6) -> list[Landmark]:
+        return list(reversed(relevant))
+    
+    def _structural_landmark_usable_for_planner(
+        self,
+        landmark: Landmark,
+        max_age_images: int = 3,
+    ) -> bool:
+        extra = (
+            landmark.extra
+            if isinstance(landmark.extra, dict)
+            else {}
+        )
+
+        status = str(landmark.status).lower()
+        route_state = str(
+            extra.get("route_state", "visible_now")
+        ).lower()
+
+        source_index = extra.get("source_image_index")
+        is_current = source_index == self.image_count
+
+        # A landmark that is currently visible may be reused even when it
+        # previously had a used/visited status. A stale one may not.
+        if status == "ignored":
+            return False
+        if (
+            not is_current
+            and status in {"visited", "used"}
+        ):
+            return False
+
+        if route_state in {"passed", "blocked"}:
+            return False
+
+        if extra.get("traversable") is False:
+            return False
+
+        if source_index is not None:
+            try:
+                age = self.image_count - int(source_index)
+            except (TypeError, ValueError):
+                return False
+
+            if age > max_age_images:
+                return False
+
+        return True
+
+    def _recent_structural_landmarks(
+        self,
+        limit: int = 6,
+    ) -> list[Landmark]:
         structural_categories = {
             "corridor",
             "corridor_bend",
@@ -866,10 +991,7 @@ class NavigationMemory:
             if not is_structural:
                 continue
 
-            if lm.status == "ignored":
-                continue
-
-            if extra.get("route_state") in {"passed", "blocked"}:
+            if not self._structural_landmark_usable_for_planner(lm):
                 continue
 
             result.append(lm)
@@ -920,7 +1042,10 @@ def _score_landmark(
 
     target_relevance = str(extra.get("target_relevance", "")).lower() if isinstance(extra, dict) else ""
     target_bonus = 0.10 if target_relevance == "high" else 0.05 if target_relevance == "medium" else 0.0
-    direction_bonus = 0.05 if isinstance(extra, dict) and (extra.get("direction") or extra.get("arrow")) else 0.0
+    direction_bonus = 0.0 
+    if isinstance(extra, dict):
+        if _semantic_direction_from_extra(extra):
+            direction_bonus = 0.05
     traversable_bonus = 0.0
     if isinstance(extra, dict):
         if extra.get("traversable") is True:
@@ -977,15 +1102,69 @@ def _score_landmark(
     }
     return score, breakdown
 
-def _normalise_subgoal_direction(value: Any) -> str:
+def _normalise_subgoal_direction(
+    value: Any,
+) -> str:
     text = str(value or "").strip().lower()
-    if text in {"left", "turn left", "left_forward", "forward_left"}:
+
+    if not text:
+        return ""
+
+    if text in {
+        "left",
+        "turn left",
+        "left_forward",
+        "forward_left",
+    }:
         return "left"
-    if text in {"right", "turn right", "right_forward", "forward_right"}:
+
+    if text in {
+        "right",
+        "turn right",
+        "right_forward",
+        "forward_right",
+    }:
         return "right"
-    if text in {"forward", "front", "straight", "ahead", "continue"}:
+
+    if text in {
+        "forward",
+        "front",
+        "straight",
+        "ahead",
+        "continue",
+        "go straight",
+    }:
         return "forward"
-    return ""
+
+    normalized = re.sub(r"[_-]+", " ", text)
+
+    detected: set[str] = set()
+
+    if (
+        re.search(r"\bleft\b", normalized)
+        or "←" in normalized
+    ):
+        detected.add("left")
+
+    if (
+        re.search(r"\bright\b", normalized)
+        or "→" in normalized
+    ):
+        detected.add("right")
+
+    if (
+        re.search(
+            r"\b(forward|front|straight|ahead|continue)\b",
+            normalized,
+        )
+        or "↑" in normalized
+    ):
+        detected.add("forward")
+
+    if len(detected) != 1:
+        return ""
+
+    return next(iter(detected))
 
 def _structural_subgoal_score(lm: Landmark) -> float:
     extra = (
@@ -1088,7 +1267,25 @@ def _confidence_from_score(score: float) -> str:
         return "medium"
     return "low"
 
+def _semantic_direction_from_extra(extra: dict[str, Any]) -> str:
+    if not isinstance(extra, dict):
+        return ""
 
+    # target_direction is explicit and goal-specific.
+    # arrow is preferred for ordinary single-arrow signs.
+    # continuation_direction supports older saved outputs.
+    # direction is the final fallback.
+    for key in (
+        "target_direction",
+        "arrow",
+        "continuation_direction",
+        "direction",
+    ):
+        direction = _normalise_subgoal_direction(extra.get(key))
+        if direction:
+            return direction
+
+    return ""
 
 def _looks_like_official_help_source(text: str) -> bool:
     keywords = [
