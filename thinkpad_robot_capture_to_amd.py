@@ -253,9 +253,9 @@ def load_saved_three_camera_files(args, local_step_dir, step_index):
     )
 
     candidates = {
-        "LEFT": source_dir / "left.jpg",
-        "FRONT": source_dir / "front.jpg",
-        "RIGHT": source_dir / "right.jpg",
+        "LEFT": source_dir / "left.png",
+        "FRONT": source_dir / "front.png",
+        "RIGHT": source_dir / "right.png",
     }
 
     for label, path in candidates.items():

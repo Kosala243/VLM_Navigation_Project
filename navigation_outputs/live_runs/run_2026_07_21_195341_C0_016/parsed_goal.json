@@ -1,0 +1,42 @@
+{
+  "raw_goal": "C0.016",
+  "target_type": "room_or_location",
+  "known_tokens": [
+    "C0.016",
+    "C0-016",
+    "C0016",
+    "Room C0016"
+  ],
+  "aliases": [
+    "C0.016",
+    "C0-016",
+    "C0016",
+    "Room C0016"
+  ],
+  "possible_interpretations": [
+    {
+      "interpretation": "May mean Building/Zone C, Floor 0, Room 016.",
+      "evidence_needed": [
+        "building or zone sign for C",
+        "floor indicator 0",
+        "door label matching C0.016 or C0016"
+      ],
+      "confidence": "medium"
+    },
+    {
+      "interpretation": "May simply be the full room label/code 'C0.016' without separable building/floor meaning.",
+      "evidence_needed": [
+        "door label or directory entry exactly matching C0.016"
+      ],
+      "confidence": "medium"
+    }
+  ],
+  "constraints": {
+    "possible_building": "C",
+    "possible_floor": "0",
+    "possible_room": "016",
+    "possible_zone": null,
+    "target_name": null
+  },
+  "search_strategy": "Search for door labels, corridor range signs, directories, or floor/zone indicators matching ['C0.016', 'C0-016', 'C0016', 'Room C0016']; treat building/floor/room structure as a hypothesis until confirmed."
+}

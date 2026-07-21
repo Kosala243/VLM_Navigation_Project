@@ -1,0 +1,55 @@
+{
+  "run_settings": {
+    "started_at": "2026-07-21T19:18:48",
+    "goal": "C0.004",
+    "mode": "auto",
+    "camera_mode": "separate",
+    "api": "http://ernis-amd395:8001",
+    "robot_user": "unitree",
+    "robot_ip": "192.168.123.14",
+    "camera_device": "/dev/video3",
+    "front_device": "/dev/video2",
+    "left_device": "/dev/video4",
+    "right_device": "/dev/video3",
+    "capture_size": "960x720",
+    "execute": "false",
+    "cmd_vel_topic": "/cmd_vel",
+    "forward_speed": 0.12,
+    "turn_speed": 0.2,
+    "move_duration": 5.0,
+    "invert_turn": false,
+    "memory": "true",
+    "interval": 5.0,
+    "max_steps": 8,
+    "stitch_width": 960,
+    "stitch_height": 720,
+    "min_evidence_score": 0.3,
+    "allow_low_confidence": false
+  },
+  "ended_at": "2026-07-21T19:45:00",
+  "goal": "C0.004",
+  "steps": 5,
+  "success": true,
+  "metrics": {
+    "success": true,
+    "success_rate_single_run": 1.0,
+    "failure_rate_single_run": 0.0,
+    "total_steps": 5,
+    "steps_to_success": 5,
+    "executed_steps": 0,
+    "non_executed_steps": 5,
+    "low_confidence_actions": 1,
+    "invalid_actions": 0,
+    "average_action_evidence_score": 0.7619999999999999,
+    "action_counts": {
+      "FOLLOW_DIRECTION": 3,
+      "PASS_THROUGH_DOORWAY": 1,
+      "STOP_AND_VERIFY": 1
+    },
+    "evidence_view_counts": {
+      "FRONT": 5
+    },
+    "obstacle_avoided": null,
+    "obstacle_note": "Obstacle avoidance is not measured automatically yet. Add manual annotations or sensor-based obstacle logging later."
+  }
+}
