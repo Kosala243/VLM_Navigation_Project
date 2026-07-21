@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import argparse
+import hashlib
 import json
 import shlex
 import subprocess
@@ -516,6 +517,272 @@ def print_action_result(response):
     print("Saved:", response.get("saved_result"))
     print("===================================\n")
 
+_PROGRESS_ACTIONS = {
+    "FOLLOW_DIRECTION",
+    "NAVIGATE_TO_LANDMARK",
+    "NAVIGATE_TO_FRONTIER",
+    "ALIGN_WITH_LANDMARK",
+    "APPROACH_LANDMARK",
+    "PASS_THROUGH_DOORWAY",
+    "READ_SIGN",
+    "CHECK_DOOR_LABEL",
+    "SEARCH_FOR_CUE",
+}
+
+
+def _action_signature(response):
+    """
+    Return a compact identifier for a movement action.
+
+    This is used only for logging and retry diagnostics.
+    """
+    action = response.get("action", {})
+
+    if not isinstance(action, dict):
+        return ""
+
+    name = str(
+        action.get("name", "")
+    ).strip().upper()
+
+    if name not in _PROGRESS_ACTIONS:
+        return ""
+
+    params = action.get("params", {})
+
+    if not isinstance(params, dict):
+        params = {}
+
+    landmark_id = str(
+        params.get("landmark_id", "") or ""
+    ).strip()
+
+    direction = str(
+        params.get("direction", "") or ""
+    ).strip().lower()
+
+    evidence_view = str(
+        params.get("evidence_view", "") or ""
+    ).strip().upper()
+
+    return "|".join([
+        name,
+        landmark_id,
+        direction,
+        evidence_view,
+    ])
+
+
+def _observation_bundle_hash(observation):
+    """
+    Create one SHA-256 hash for all image files in an observation.
+
+    This detects exact repeated/stale image bundles.
+    It is not a substitute for LiDAR or odometry progress checking.
+    """
+    saved_files = observation.get(
+        "saved_files",
+        {},
+    )
+
+    if not isinstance(saved_files, dict):
+        saved_files = {}
+
+    if not saved_files:
+        primary_path = observation.get(
+            "primary_path"
+        )
+
+        if primary_path:
+            saved_files = {
+                "primary": str(primary_path),
+            }
+
+    if not saved_files:
+        return ""
+
+    digest = hashlib.sha256()
+
+    for label, path_value in sorted(
+        saved_files.items()
+    ):
+        path = Path(str(path_value))
+
+        if not path.is_file():
+            return ""
+
+        digest.update(
+            str(label).encode("utf-8")
+        )
+
+        with path.open("rb") as image_file:
+            while True:
+                chunk = image_file.read(
+                    1024 * 1024
+                )
+
+                if not chunk:
+                    break
+
+                digest.update(chunk)
+
+    return digest.hexdigest()
+
+
+def _make_no_progress_stop_response(
+    response,
+    repeat_count,
+    previous_signature,
+    current_signature,
+):
+    """
+    Replace a movement response with a local safety stop.
+    """
+    guarded = dict(response)
+
+    reason = (
+        "No visual progress was detected after robot movement: "
+        "the camera image bundle is exactly unchanged after "
+        f"{repeat_count} repeated attempt(s). Stop and inspect "
+        "robot control, camera capture, or physical obstruction."
+    )
+
+    guarded["done"] = False
+
+    guarded["safety_guard"] = {
+        "no_progress_detected": True,
+        "exact_duplicate_observation": True,
+        "repeat_count": repeat_count,
+        "previous_action_signature": previous_signature,
+        "current_action_signature": current_signature,
+        "reason": reason,
+    }
+
+    guarded["action"] = {
+        "name": "WAIT_OR_RECOVER",
+        "params": {
+            "landmark_id": None,
+            "direction": None,
+            "target": None,
+            "target_description": None,
+            "floor": None,
+            "search_for": "robot movement or camera failure",
+            "stop_condition": "robot remains stopped",
+            "capture_after": False,
+            "evidence_view": "NONE",
+        },
+        "reason": reason,
+        "confidence": "high",
+        "evidence_score": 0.0,
+        "evidence_breakdown": {
+            "no_progress_guard": 1.0,
+            "final_score": 0.0,
+        },
+        "goal_reached": False,
+        "needs_verification": False,
+        "raw": {},
+        "is_valid": True,
+        "invalid_reason": "",
+    }
+
+    guarded["action_display"] = (
+        "WAIT_OR_RECOVER({'evidence_view': 'NONE'}) "
+        "[high, score=0.00] valid - "
+        + reason
+    )
+
+    return guarded
+
+
+def apply_no_progress_guard(
+    args,
+    response,
+    observation,
+    last_executed_state,
+    repeat_count,
+):
+    """
+    Detect an exact repeated observation after an executed action.
+
+    One retry is allowed by default. The next exact duplicate
+    stops the autonomous loop.
+    """
+    if args.execute == "false":
+        return response, 0, False
+
+    current_hash = _observation_bundle_hash(
+        observation
+    )
+
+    current_signature = _action_signature(
+        response
+    )
+
+    if (
+        not current_hash
+        or not current_signature
+        or last_executed_state is None
+    ):
+        return response, 0, False
+
+    previous_hash = last_executed_state.get(
+        "observation_hash",
+        "",
+    )
+
+    previous_signature = last_executed_state.get(
+        "action_signature",
+        "",
+    )
+
+    if current_hash != previous_hash:
+        return response, 0, False
+
+    repeat_count += 1
+
+    if (
+        repeat_count
+        <= args.max_no_progress_retries
+    ):
+        warned = dict(response)
+
+        warned["safety_guard"] = {
+            "no_progress_detected": False,
+            "exact_duplicate_observation": True,
+            "retry_allowed": True,
+            "repeat_count": repeat_count,
+            "previous_action_signature": (
+                previous_signature
+            ),
+            "current_action_signature": (
+                current_signature
+            ),
+            "reason": (
+                "Exact duplicate observation received "
+                "after movement. One small retry is allowed."
+            ),
+        }
+
+        print(
+            "[WARNING] Exact duplicate camera observation "
+            "after executed movement. Retry {}/{} allowed."
+            .format(
+                repeat_count,
+                args.max_no_progress_retries,
+            )
+        )
+
+        return warned, repeat_count, False
+
+    guarded = _make_no_progress_stop_response(
+        response=response,
+        repeat_count=repeat_count,
+        previous_signature=previous_signature,
+        current_signature=current_signature,
+    )
+
+    return guarded, repeat_count, True
+
 def maybe_execute_robot_action(args, response):
     """
     Optionally execute the VLM action using /cmd_vel.
@@ -584,6 +851,7 @@ def create_run_dir(args):
         "memory": args.memory,
         "interval": args.interval,
         "max_steps": args.max_steps,
+        "max_no_progress_retries": args.max_no_progress_retries,
         "stitch_width": args.stitch_width,
         "stitch_height": args.stitch_height,
         "min_evidence_score": args.min_evidence_score,
@@ -650,6 +918,13 @@ def extract_step_metric(response, executed):
     params = action.get("params", {})
     if not isinstance(params, dict):
         params = {}
+    
+    safety_guard = response.get(
+        "safety_guard",
+        {},
+    )
+    if not isinstance(safety_guard, dict):
+        safety_guard = {}
 
     try:
         evidence_score = float(action.get("evidence_score", 0.0) or 0.0)
@@ -666,6 +941,9 @@ def extract_step_metric(response, executed):
         "evidence_score": evidence_score,
         "is_valid": bool(action.get("is_valid", True)),
         "evidence_view": params.get("evidence_view"),
+        "no_progress_detected": bool(safety_guard.get("no_progress_detected", False)),
+        "duplicate_observation": bool(safety_guard.get("exact_duplicate_observation", False)),
+        "no_progress_repeat_count": int(safety_guard.get("repeat_count", 0) or 0),
     }
 
 def compute_run_metrics(step_metrics, success):
@@ -775,6 +1053,9 @@ def run_auto_mode(args):
     completed_steps = 0
     step_metrics = []
 
+    last_executed_state = None
+    no_progress_repeat_count = 0
+
     for step in range(1, args.max_steps + 1):
         completed_steps = step
         print("\n========== AUTO STEP {} ==========".format(step))
@@ -794,9 +1075,38 @@ def run_auto_mode(args):
             observation=observation,
             goal=goal_for_request,
         )
-
+        (
+            response,
+            no_progress_repeat_count,
+            no_progress_blocked,
+        ) = apply_no_progress_guard(
+            args=args,
+            response=response,
+            observation=observation,
+            last_executed_state=last_executed_state,
+            repeat_count=no_progress_repeat_count,
+        )
         print_action_result(response)
-        executed = maybe_execute_robot_action(args, response)
+        executed = maybe_execute_robot_action(
+            args,
+            response,
+        )
+        if executed and not no_progress_blocked:
+            last_executed_state = {
+                "observation_hash": (
+                    _observation_bundle_hash(
+                        observation
+                    )
+                ),
+                "action_signature": (
+                    _action_signature(response)
+                ),
+            }
+        elif not no_progress_blocked:
+            # The user rejected the movement, the action was not mapped,
+            # or execution was otherwise unsuccessful.
+            last_executed_state = None
+            no_progress_repeat_count = 0
 
         step_metric = extract_step_metric(response, executed)
         step_metrics.append(step_metric)
@@ -810,6 +1120,14 @@ def run_auto_mode(args):
             run_config=run_config,
             step_metric=step_metric,
         )
+
+        if no_progress_blocked:
+            print(
+                "[STOPPED] Autonomous loop stopped because "
+                "the observation did not change after repeated "
+                "movement attempts."
+            )
+            break
 
         if response.get("done") is True:
             print("[DONE] Goal reached according to pipeline.")
@@ -920,6 +1238,17 @@ def parse_args():
 
     parser.add_argument("--interval", type=float, default=5.0)
     parser.add_argument("--max-steps", type=int, default=10)
+
+    parser.add_argument(
+        "--max-no-progress-retries",
+        type=int,
+        default=1,
+        help=(
+            "Number of small retries allowed when an exact "
+            "duplicate camera observation is received after "
+            "an executed movement."
+        ),
+    )
 
     parser.add_argument(
         "--execute",

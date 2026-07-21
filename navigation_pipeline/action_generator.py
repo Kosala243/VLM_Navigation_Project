@@ -240,7 +240,60 @@ class ActionGenerator:
             raw=data,
         )
         validated = self._validate(action, memory, goal)
-        semantic_lm = _best_current_semantic_direction_landmark(memory)
+        # An exact current target door visible in a side camera has
+        # higher priority than a directional sign pointing toward it.
+        side_target_lm = _best_current_side_target_landmark(memory, goal)
+        if side_target_lm is not None:
+            side_view = _infer_evidence_view_from_landmark(
+                side_target_lm
+            )
+            validated = Action(
+                name="ALIGN_WITH_LANDMARK",
+                params={
+                    "landmark_id": str(side_target_lm.id),
+                    "direction": side_view.lower(),
+                    "target": str(
+                        getattr(goal, "raw_goal", "")
+                    ),
+                    "target_description": (
+                        str(
+                            getattr(side_target_lm, "description","")
+                        ).strip()
+                        or (
+                            "Exact target door visible in "
+                            f"{side_view}"
+                        )
+                    ),
+                    "stop_condition": (
+                        "target landmark centred in FRONT camera"
+                    ),
+                    "capture_after": True,
+                    "evidence_view": side_view,
+                },
+                reason=(
+                    "The exact target door is visible in the "
+                    f"{side_view} view and must be centred in "
+                    "the FRONT camera before arrival is verified."
+                ),
+                confidence=str(
+                    getattr(
+                        side_target_lm,
+                        "confidence",
+                        "medium",
+                    )
+                ).lower(),
+                goal_reached=False,
+                needs_verification=True,
+            )
+
+        # Do not let a directional sign replace an exact side-view target.
+        semantic_lm = (
+            None
+            if side_target_lm is not None
+            else _best_current_semantic_direction_landmark(
+                memory
+            )
+        )
         if semantic_lm is not None:
             extra = (
                 semantic_lm.extra
@@ -1185,6 +1238,148 @@ def _best_current_semantic_direction_landmark(
 
         score = float(
             getattr(lm, "evidence_score", 0.0) or 0.0
+        )
+
+        if score > best_score:
+            best = lm
+            best_score = score
+
+    return best
+
+def _best_current_side_target_landmark(
+    memory: "NavigationMemory",
+    goal: "NavigationGoal",
+) -> "Landmark | None":
+    """
+    Return an exact current target door/entrance visible
+    in LEFT or RIGHT.
+
+    A side-view target must be aligned into FRONT before
+    the verifier is allowed to stop.
+    """
+    current_index = getattr(
+        memory,
+        "image_count",
+        None,
+    )
+
+    raw_goal = str(
+        getattr(goal, "raw_goal", "")
+    ).strip()
+
+    raw_goal_norm = _normalise_room_code(raw_goal)
+
+    goal_code_norms = _goal_room_code_norms(goal)
+
+    # Determine whether this is a room-code goal such as C0.004.
+    raw_goal_codes = {
+        _normalise_room_code(code)
+        for code in _extract_room_codes(raw_goal)
+        if _normalise_room_code(code)
+    }
+
+    best: "Landmark | None" = None
+    best_score = -1.0
+
+    for lm in getattr(memory, "landmarks", []):
+        extra = (
+            lm.extra
+            if isinstance(
+                getattr(lm, "extra", {}),
+                dict,
+            )
+            else {}
+        )
+
+        if (
+            extra.get("source_image_index")
+            != current_index
+        ):
+            continue
+
+        category = str(
+            getattr(lm, "category", "")
+        ).lower()
+
+        # Labelled doors should normally be category "door".
+        # A direct entrance observation is also accepted.
+        if category not in {"door", "observation"}:
+            continue
+
+        view = _infer_evidence_view_from_landmark(lm)
+
+        if view not in {"LEFT", "RIGHT"}:
+            continue
+
+        if category == "observation":
+            navigation_role = str(
+                extra.get("navigation_role", "")
+            ).lower()
+
+            goal_support = str(
+                extra.get("goal_support", "")
+            ).lower()
+
+            if (
+                navigation_role != "entrance"
+                or goal_support != "direct"
+            ):
+                continue
+
+        visible_label_source = (
+            str(getattr(lm, "text", "")).strip()
+            or str(
+                getattr(lm, "description", "")
+            ).strip()
+        )
+
+        exact_match = False
+
+        if raw_goal_codes:
+            visible_code_norms = {
+                _normalise_room_code(code)
+                for code in _extract_room_codes(
+                    visible_label_source
+                )
+                if _normalise_room_code(code)
+            }
+
+            # A target door should contain one exact room code,
+            # not merely a room-range sign.
+            exact_match = (
+                len(visible_code_norms) == 1
+                and bool(
+                    visible_code_norms
+                    & goal_code_norms
+                )
+            )
+
+        elif raw_goal_norm:
+            visible_norm = _normalise_room_code(
+                visible_label_source
+            )
+
+            exact_match = (
+                len(raw_goal_norm) >= 3
+                and raw_goal_norm in visible_norm
+                and str(
+                    extra.get(
+                        "target_relevance",
+                        "",
+                    )
+                ).lower() == "high"
+            )
+
+        if not exact_match:
+            continue
+
+        score = float(
+            getattr(
+                lm,
+                "evidence_score",
+                0.0,
+            )
+            or 0.0
         )
 
         if score > best_score:
