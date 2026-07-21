@@ -1368,7 +1368,7 @@ def run_auto_mode(args):
                     last_executed_state
                 ),
             )
-            
+
         print_action_result(response)
         executed, execution_result = maybe_execute_robot_action(
             args,
@@ -1797,3 +1797,19 @@ def main():
     except BaseException:
         send_emergency_stop(args)
         raise
+
+if __name__ == "__main__":
+    try:
+        main()
+    except subprocess.CalledProcessError as e:
+        print("\n[COMMAND FAILED]")
+        print("Return code:", e.returncode)
+        print("STDOUT:", e.output)
+        print("STDERR:", e.stderr)
+        sys.exit(e.returncode)
+    except KeyboardInterrupt:
+        print("\n[STOPPED] User interrupted with Ctrl+C")
+        sys.exit(130)
+    except Exception as e:
+        print("\n[ERROR]", e)
+        sys.exit(1)   
