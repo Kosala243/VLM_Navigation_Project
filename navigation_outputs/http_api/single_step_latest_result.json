@@ -1,42 +1,57 @@
 {
   "mode": "single_step",
-  "goal": "B0.004",
-  "image_path": "live_frames/current_frame.jpg",
+  "goal": "C0.004",
+  "observation_mode": "separate",
+  "image_path": "live_frames/frame_1784540436470_front.png",
+  "image_paths": {
+    "LEFT": "live_frames/frame_1784540436469_left.png",
+    "FRONT": "live_frames/frame_1784540436470_front.png",
+    "RIGHT": "live_frames/frame_1784540436471_right.png"
+  },
   "done": false,
   "action": {
-    "name": "SEARCH_FOR_CUE",
+    "name": "NAVIGATE_TO_LANDMARK",
     "params": {
-      "search_for": "door label or sign with 'B0.004'"
+      "landmark_id": "L001",
+      "direction": "forward",
+      "target": "L001",
+      "target_description": "A long hallway extending forward with light wood flooring, a white wall on the left, and a vertical wooden slat wall on the right.",
+      "floor": null,
+      "search_for": null,
+      "stop_condition": "capture when near the corridor bend or junction",
+      "capture_after": true,
+      "evidence_view": "RIGHT"
     },
-    "reason": "No visible signs or door labels confirming 'B0.004' are present in the current view; searching for cues is necessary to locate the target room.",
+    "reason": "The current view is sparse, but the recent right-view observation identified a long corridor (L001) as the primary navigable path, so the robot should navigate toward this remembered landmark to continue searching for the target room.",
     "confidence": "low",
-    "evidence_score": 0.35,
+    "evidence_score": 0.0,
     "evidence_breakdown": {
-      "action_base_score": 0.35,
-      "supporting_landmark_score": 0.0,
-      "supporting_landmark_bonus": 0.0,
-      "no_landmark_penalty": 0.0,
-      "partial_marker_penalty": 0.0,
-      "used_landmark_penalty": 0.0,
-      "invalid_penalty": 0.0,
-      "mismatched_room_code_penalty": 0.0,
-      "final_score": 0.35
+      "invalid_action": 1.0,
+      "final_score": 0.0
     },
     "goal_reached": false,
-    "needs_verification": true,
+    "needs_verification": false,
     "raw": {
-      "action": "SEARCH_FOR_CUE",
+      "action": "NAVIGATE_TO_LANDMARK",
       "params": {
-        "search_for": "door label or sign with 'B0.004'"
+        "landmark_id": "L001",
+        "direction": "forward",
+        "target": "L001",
+        "target_description": "A long hallway extending forward with light wood flooring, a white wall on the left, and a vertical wooden slat wall on the right.",
+        "floor": null,
+        "search_for": null,
+        "stop_condition": "capture when near the corridor bend or junction",
+        "capture_after": true,
+        "evidence_view": "RIGHT"
       },
-      "reason": "No visible signs or door labels confirming 'B0.004' are present in the current view; searching for cues is necessary to locate the target room.",
+      "reason": "The current view is sparse, but the recent right-view observation identified a long corridor (L001) as the primary navigable path, so the robot should navigate toward this remembered landmark to continue searching for the target room.",
       "confidence": "medium",
       "goal_reached": false,
-      "needs_verification": true
+      "needs_verification": false
     },
-    "is_valid": true,
-    "invalid_reason": ""
+    "is_valid": false,
+    "invalid_reason": "Structural landmark L001 points forward, but the latest semantic evidence points right."
   },
-  "action_display": "SEARCH_FOR_CUE({'search_for': \"door label or sign with 'B0.004'\"}) [low, score=0.35] valid - No visible signs or door labels confirming 'B0.004' are present in the current view; searching for cues is necessary to locate the target room.",
-  "status": "Goal=B0.004 | records=1 | memory_landmarks=0 | keep_memory=False"
+  "action_display": "NAVIGATE_TO_LANDMARK({'landmark_id': 'L001', 'direction': 'forward', 'target': 'L001', 'target_description': 'A long hallway extending forward with light wood flooring, a white wall on the left, and a vertical wooden slat wall on the right.', 'floor': None, 'search_for': None, 'stop_condition': 'capture when near the corridor bend or junction', 'capture_after': True, 'evidence_view': 'RIGHT'}) [low, score=0.00] INVALID: Structural landmark L001 points forward, but the latest semantic evidence points right. - The current view is sparse, but the recent right-view observation identified a long corridor (L001) as the primary navigable path, so the robot should navigate toward this remembered landmark to continue searching for the target room.",
+  "status": "Goal=C0.004 | records=1 | memory_landmarks=3 | session_memory_active=True | inherited_previous_memory=False"
 }
