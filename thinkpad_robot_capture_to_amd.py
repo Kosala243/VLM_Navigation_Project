@@ -440,6 +440,87 @@ def start_autonomous_session(api, goal):
     print(json.dumps(response, indent=2))
     return response
 
+def post_execution_ack(
+    api,
+    response,
+    executed,
+    execution_result,
+):
+    step_number = response.get(
+        "action_step"
+    )
+
+    if step_number is None:
+        return {
+            "accepted": False,
+            "reason": (
+                "AMD response did not contain action_step."
+            ),
+        }
+
+    execution_result = (
+        execution_result
+        if isinstance(
+            execution_result,
+            dict,
+        )
+        else {}
+    )
+
+    url = (
+        api.rstrip("/")
+        + "/autonomous/ack"
+    )
+
+    cmd = [
+        "curl",
+        "-sS",
+        "-X",
+        "POST",
+        url,
+        "-F",
+        "step_number={}".format(
+            step_number
+        ),
+        "-F",
+        "executed={}".format(
+            "true" if executed else "false"
+        ),
+        "-F",
+        "status={}".format(
+            execution_result.get(
+                "status",
+                "",
+            )
+        ),
+        "-F",
+        "reason={}".format(
+            execution_result.get(
+                "reason",
+                "",
+            )
+        ),
+    ]
+
+    result = run(
+        cmd,
+        verbose=False,
+    )
+
+    try:
+        return json.loads(
+            result.stdout
+        )
+    except Exception:
+        return {
+            "accepted": False,
+            "reason": (
+                "AMD acknowledgement response "
+                "was not valid JSON."
+            ),
+            "raw_response": result.stdout,
+        }
+
 def export_autonomous_session(api, run_dir):
     url = api.rstrip("/") + "/autonomous/export"
 
@@ -1374,6 +1455,41 @@ def run_auto_mode(args):
             args,
             response,
         )
+
+        ack_failed = False
+        if (
+            args.execute != "false"
+            and response.get(
+                "execution_ack_required",
+                False,
+            )
+        ):
+            ack_response = post_execution_ack(
+                api=args.api,
+                response=response,
+                executed=executed,
+                execution_result=execution_result,
+            )
+
+            execution_result[
+                "amd_ack"
+            ] = ack_response
+
+            if not ack_response.get(
+                "accepted",
+                False,
+            ):
+                ack_failed = True
+                print(
+                    "[ERROR] AMD execution acknowledgement failed:"
+                )
+                print(
+                    json.dumps(
+                        ack_response,
+                        indent=2,
+                    )
+                )
+
         if (
             executed
             and not no_progress_blocked
@@ -1446,6 +1562,14 @@ def run_auto_mode(args):
             step_metric=step_metric,
             execution_result=execution_result
         )
+
+        if ack_failed:
+            print(
+                "[STOPPED] Navigation stopped because "
+                "AMD and ThinkPad execution state could "
+                "not be synchronized."
+            )
+            break
 
         if no_progress_blocked:
             print(

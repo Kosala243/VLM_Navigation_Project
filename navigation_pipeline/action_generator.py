@@ -146,6 +146,10 @@ class ActionGenerator:
         - Treat building/zone-only markers such as "B" for goal "B0.004" as navigation cues, not strong target evidence.
         - Prefer navigating toward intermediate landmarks that lead closer to the goal (e.g., the correct tower entrance, corridor, doorway, or junction) before considering assistance from reception or staff.
         - FOLLOW_DIRECTION must include landmark_id of the sign/directory/reception/stairs/elevator evidence that supports the direction.
+        - landmark_id must be copied exactly from Structured memory.
+        - Valid generated landmark IDs look like L001, L002, L003, and so on.
+        - Never invent descriptive IDs such as "entrance_doorway", "directional_sign", or "target_door".
+        - If no compatible stored landmark_id exists, do not produce a landmark-based movement action. Use SEARCH_FOR_CUE or WAIT_OR_RECOVER instead.
         - FOLLOW_DIRECTION must use directional evidence visible in the current observation. Do not repeatedly issue FOLLOW_DIRECTION from an old sign that is no longer visible.
         - For FOLLOW_DIRECTION, direction must be exactly "left", "right", or "forward". Put landmark names in target or target_description, not in direction.
         - Prefer target-oriented actions over vague standalone direction commands when a useful visible landmark can serve as the next subgoal.

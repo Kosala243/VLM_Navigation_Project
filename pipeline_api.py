@@ -131,6 +131,11 @@ def action_response(
     nav: NavigationSystem,
     mode: str,
 ) -> dict[str, Any]:
+    last_record = (
+        nav.records[-1]
+        if nav.records
+        else None
+    )
     result = {
         "mode": mode,
         "goal": goal,
@@ -141,6 +146,10 @@ def action_response(
         "action": asdict(action),
         "action_display": action.display(),
         "status": nav.current_status(),
+        "action_step": (last_record.image_num if last_record else None),
+        "perception_ok": (last_record.memory_update.parse_ok if last_record else None),
+        "perception_error": (last_record.memory_update.error if last_record else None),
+        "execution_ack_required": (nav.pending_step_number is not None and last_record is not None and nav.pending_step_number == last_record.image_num),
     }
 
     output_path = OUTPUT_DIR / f"{mode}_latest_result.json"
@@ -268,6 +277,43 @@ async def autonomous_step(
         )
     )
 
+@app.post("/autonomous/ack")
+def autonomous_ack(
+    step_number: int = Form(...),
+    executed: bool = Form(...),
+    status: str = Form(default=""),
+    reason: str = Form(default=""),
+):
+    global NAV
+
+    if NAV is None:
+        raise HTTPException(
+            status_code=400,
+            detail="No active autonomous session.",
+        )
+
+    acknowledgement = (
+        NAV.acknowledge_execution(
+            step_number=step_number,
+            executed=executed,
+            reason=(
+                reason
+                or status
+            ),
+        )
+    )
+
+    if not acknowledgement.get(
+        "accepted",
+        False,
+    ):
+        raise HTTPException(
+            status_code=409,
+            detail=acknowledgement,
+        )
+
+    return acknowledgement
+
 @app.get("/autonomous/export")
 def autonomous_export():
     """
@@ -290,6 +336,10 @@ def autonomous_export():
         "observation_summaries": NAV.memory.observation_summaries,
         "hypotheses": NAV.memory.hypotheses,
         "failed_actions": NAV.memory.failed_actions,
+        "parse_ok": (record.memory_update.parse_ok),
+        "error": (record.memory_update.error),
+        "parse_attempts": (record.memory_update.parse_attempts),
+        "raw_response": (record.memory_update.raw_response),
     }
 
     navigation_log_data = {

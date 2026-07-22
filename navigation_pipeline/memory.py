@@ -56,6 +56,17 @@ class MemoryUpdate:
     landmarks: list[Landmark] = field(default_factory=list)
     hypotheses: list[str] = field(default_factory=list)
 
+    # True means the model response was successfully parsed and
+    # validated as a current-frame memory payload.
+    parse_ok: bool = True
+
+    # Populated only when current-frame perception failed.
+    error: str = ""
+    parse_attempts: int = 1
+
+    # Truncated diagnostic response. Do not use this for planning.
+    raw_response: str = ""
+
 @dataclass
 class NavigationSubgoal:
     description: str = ""
@@ -207,6 +218,11 @@ class NavigationMemory:
         - Do NOT create a landmark for students, visitors, pedestrians, or random people in corridors/classrooms/labs.
         - Only create category "reception" when there is clearly an official reception/front-desk/information/security/help-desk context.
 
+        - Return at most 8 landmarks.
+        - Keep every description under 30 words.
+        - Include only navigation-relevant landmarks.
+        - Do not include landmark IDs. Python assigns IDs after parsing.
+        - Return one JSON object only, with no markdown, explanation, or trailing text.
         Return ONLY valid JSON:
         {
         "useful": true/false,
@@ -279,50 +295,180 @@ class NavigationMemory:
         goal: "NavigationGoal",
         image_paths: dict[str, str] | None = None,
     ) -> MemoryUpdate:
-        self.image_count += 1
-        if not Path(image_path).exists():
-            return MemoryUpdate(False, f"Image not found: {image_path}")
+        """
+        Extract and store current-frame navigation memory.
 
-        prompt = self._PROMPT.replace("{goal_context}", goal.compact())
-        response = self.model.query(prompt, image_path=image_path, image_paths=image_paths, max_new_tokens=800)
-        data = _extract_json(response)
-        if not data:
-            return MemoryUpdate(False, "Could not parse memory JSON from model.")
+        A failed parse is explicitly reported through parse_ok=False.
+        The caller must not plan movement from stale memory when this occurs.
+        """
+        self.image_count += 1
+
+        if not Path(image_path).exists():
+            message = f"Image not found: {image_path}"
+
+            return MemoryUpdate(
+                useful=False,
+                summary=message,
+                parse_ok=False,
+                error=message,
+                parse_attempts=0,
+            )
+
+        prompt = self._PROMPT.replace(
+            "{goal_context}",
+            goal.compact(),
+        )
+
+        retry_suffix = """
+            IMPORTANT RETRY REQUIREMENTS:
+            - Return one complete, compact JSON object only.
+            - Return at most 6 landmarks.
+            - Keep descriptions short.
+            - Do not use markdown fences.
+            - Do not add commentary before or after the JSON.
+            - Ensure every opened brace, bracket, and quote is closed.
+        """
+
+        responses: list[str] = []
+        data: dict[str, Any] | None = None
+        parse_attempts = 0
+
+        # First perform the normal extraction. Retry once with stricter,
+        # shorter-output instructions if parsing or schema validation fails.
+        for extra_prompt in ("", retry_suffix):
+            parse_attempts += 1
+
+            response = self.model.query(
+                prompt + extra_prompt,
+                image_path=image_path,
+                image_paths=image_paths,
+                max_new_tokens=1600,
+            )
+
+            responses.append(str(response))
+
+            candidate = _extract_json(response)
+
+            if _valid_memory_payload(candidate):
+                data = candidate
+                break
+
+        if data is None:
+            last_response = (
+                responses[-1]
+                if responses
+                else ""
+            )
+
+            message = (
+                "Current-frame memory extraction failed after "
+                f"{parse_attempts} parse attempt(s)."
+            )
+
+            return MemoryUpdate(
+                useful=False,
+                summary=message,
+                parse_ok=False,
+                error=message,
+                parse_attempts=parse_attempts,
+                raw_response=last_response[:4000],
+            )
 
         useful = bool(data.get("useful", False))
-        summary = str(data.get("summary", "")).strip()
+        summary = str(
+            data.get("summary", "")
+        ).strip()
+
+        # New landmarks are appended to long-term memory.
         new_landmarks: list[Landmark] = []
 
-        for raw_lm in data.get("landmarks", []) or []:
-            landmark = self._build_landmark(raw_lm, image_path, goal)
+        # Observed landmarks includes both newly created landmarks and
+        # existing landmarks re-observed in this current frame.
+        observed_landmarks: list[Landmark] = []
+
+        raw_landmarks = data.get("landmarks", [])
+
+        if not isinstance(raw_landmarks, list):
+            raw_landmarks = []
+
+        for raw_lm in raw_landmarks[:8]:
+            if not isinstance(raw_lm, dict):
+                continue
+
+            landmark = self._build_landmark(
+                raw_lm,
+                image_path,
+                goal,
+            )
+
             if landmark is None:
                 continue
-            existing = self._find_duplicate_landmark(landmark)
+
+            existing = self._find_duplicate_landmark(
+                landmark
+            )
+
             if existing is not None:
                 existing.description = landmark.description
-                existing.text = landmark.text or existing.text
+                existing.text = (
+                    landmark.text
+                    or existing.text
+                )
                 existing.image_path = landmark.image_path
                 existing.confidence = landmark.confidence
-                existing.evidence_score = landmark.evidence_score
-                existing.evidence_breakdown = landmark.evidence_breakdown
-                existing.extra.update(landmark.extra)
+                existing.evidence_score = (
+                    landmark.evidence_score
+                )
+                existing.evidence_breakdown = dict(
+                    landmark.evidence_breakdown
+                )
+                existing.extra.update(
+                    landmark.extra
+                )
                 existing.observation_count += 1
+
+                # Important: the verifier must receive a re-observed
+                # existing landmark as current-frame evidence.
+                observed_landmarks.append(existing)
                 continue
+
             new_landmarks.append(landmark)
+            observed_landmarks.append(landmark)
+
+        raw_hypotheses = data.get(
+            "hypotheses",
+            [],
+        )
+
+        if not isinstance(raw_hypotheses, list):
+            raw_hypotheses = []
 
         new_hypotheses = [
-            str(h).strip()
-            for h in (data.get("hypotheses", []) or [])
-            if str(h).strip()
+            str(item).strip()
+            for item in raw_hypotheses
+            if str(item).strip()
         ]
 
-        if useful or new_landmarks or summary or new_hypotheses:
+        if (
+            useful
+            or observed_landmarks
+            or summary
+            or new_hypotheses
+        ):
             useful = True
+
             if summary:
-                self.observation_summaries.append(f"Image {self.image_count}: {summary}")
+                self.observation_summaries.append(
+                    f"Image {self.image_count}: {summary}"
+                )
+
             self.landmarks.extend(new_landmarks)
-            for h in new_hypotheses:
-                self._add_hypothesis(h)
+
+            for hypothesis in new_hypotheses:
+                self._add_hypothesis(
+                    hypothesis
+                )
+
             self._add_room_sequence_hypotheses()
             self._trim_memory()
 
@@ -331,8 +477,12 @@ class NavigationMemory:
         return MemoryUpdate(
             useful=useful,
             summary=summary,
-            landmarks=new_landmarks,
+            landmarks=observed_landmarks,
             hypotheses=new_hypotheses,
+            parse_ok=True,
+            error="",
+            parse_attempts=parse_attempts,
+            raw_response="",
         )
 
     def add_frontiers(self, frontiers: list[dict[str, Any]]) -> None:
@@ -370,15 +520,42 @@ class NavigationMemory:
                 self.landmarks.append(landmark)
         self._trim_memory()
 
-    def mark_landmark(self, landmark_id: str, status: str) -> None:
-        valid_status = {"unvisited", "visited", "used", "ignored"}
+    def record_landmark_selection(
+        self,
+        landmark_id: str,
+    ) -> None:
+        """
+        Record that the planner selected the landmark.
+
+        This does not mean the robot successfully acted on it.
+        """
+        for lm in self.landmarks:
+            if str(lm.id) == str(landmark_id):
+                lm.selection_count += 1
+                return
+
+
+    def mark_landmark(
+        self,
+        landmark_id: str,
+        status: str,
+    ) -> None:
+        """
+        Change route/use status only after confirmed execution.
+        """
+        valid_status = {
+            "unvisited",
+            "visited",
+            "used",
+            "ignored",
+        }
+
         if status not in valid_status:
             return
 
         for lm in self.landmarks:
-            if lm.id == landmark_id:
+            if str(lm.id) == str(landmark_id):
                 lm.status = status
-                lm.selection_count += 1
                 return
 
     def add_failed_action(self, reason: str) -> None:
@@ -1440,16 +1617,61 @@ def _landmark_key(landmark: Landmark) -> tuple[str, str, str, str]:
     return landmark.category, text, desc, pose_key
 
 
-def _extract_json(text: str) -> dict[str, Any] | None:
-    text = re.sub(r"```(?:json)?", "", text).replace("```", "").strip()
-    start = text.find("{")
-    end = text.rfind("}")
-    if start == -1 or end == -1 or end <= start:
-        return None
-    try:
-        return json.loads(text[start:end + 1])
-    except json.JSONDecodeError:
-        return None
+def _extract_json(
+    text: str,
+) -> dict[str, Any] | None:
+    """
+    Find and decode the first complete JSON object.
+
+    This tolerates markdown fences and accidental text before or
+    after the object, but it does not fabricate missing JSON.
+    """
+    cleaned = re.sub(
+        r"```(?:json)?",
+        "",
+        str(text),
+        flags=re.IGNORECASE,
+    ).replace("```", "").strip()
+
+    decoder = json.JSONDecoder()
+
+    for match in re.finditer(r"\{", cleaned):
+        candidate = cleaned[
+            match.start():
+        ]
+
+        try:
+            value, _ = decoder.raw_decode(
+                candidate
+            )
+        except json.JSONDecodeError:
+            continue
+
+        if isinstance(value, dict):
+            return value
+
+    return None
+
+
+def _valid_memory_payload(
+    data: Any,
+) -> bool:
+    if not isinstance(data, dict):
+        return False
+
+    landmarks = data.get(
+        "landmarks",
+        [],
+    )
+    hypotheses = data.get(
+        "hypotheses",
+        [],
+    )
+
+    return (
+        isinstance(landmarks, list)
+        and isinstance(hypotheses, list)
+    )
 
 def _normalise_label(text: str) -> str:
     return re.sub(r"[^a-z0-9]+", "", str(text).lower())
