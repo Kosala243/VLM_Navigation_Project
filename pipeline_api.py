@@ -318,9 +318,10 @@ def autonomous_ack(
 def autonomous_export():
     """
     Export the current live autonomous session:
-    - parsed goal
-    - full navigation memory
-    - complete step records
+    - parsed goal;
+    - full cumulative navigation memory;
+    - current perception status;
+    - complete step-by-step navigation records.
     """
     global NAV
 
@@ -330,45 +331,101 @@ def autonomous_export():
             detail="No active autonomous session.",
         )
 
+    last_record = (
+        NAV.records[-1]
+        if NAV.records
+        else None
+    )
+
+    latest_perception = {
+        "parse_ok": (
+            last_record.memory_update.parse_ok
+            if last_record
+            else None
+        ),
+        "error": (
+            last_record.memory_update.error
+            if last_record
+            else ""
+        ),
+        "parse_attempts": (
+            last_record.memory_update.parse_attempts
+            if last_record
+            else 0
+        ),
+        "raw_response": (
+            last_record.memory_update.raw_response
+            if last_record
+            else ""
+        ),
+    }
+
     memory_data = {
         "image_count": NAV.memory.image_count,
-        "landmarks": [asdict(lm) for lm in NAV.memory.landmarks],
-        "observation_summaries": NAV.memory.observation_summaries,
-        "hypotheses": NAV.memory.hypotheses,
-        "failed_actions": NAV.memory.failed_actions,
-        "parse_ok": (record.memory_update.parse_ok),
-        "error": (record.memory_update.error),
-        "parse_attempts": (record.memory_update.parse_attempts),
-        "raw_response": (record.memory_update.raw_response),
+        "landmarks": [
+            asdict(landmark)
+            for landmark in NAV.memory.landmarks
+        ],
+        "observation_summaries": list(
+            NAV.memory.observation_summaries
+        ),
+        "hypotheses": list(
+            NAV.memory.hypotheses
+        ),
+        "failed_actions": list(
+            NAV.memory.failed_actions
+        ),
+        "latest_perception": latest_perception,
     }
+
+    navigation_records = []
+
+    for record in NAV.records:
+        navigation_records.append({
+            "image_num": record.image_num,
+            "image_path": record.image_path,
+            "memory_update": {
+                "useful": (
+                    record.memory_update.useful
+                ),
+                "summary": (
+                    record.memory_update.summary
+                ),
+                "landmarks": [
+                    asdict(landmark)
+                    for landmark
+                    in record.memory_update.landmarks
+                ],
+                "hypotheses": list(
+                    record.memory_update.hypotheses
+                ),
+                "parse_ok": (
+                    record.memory_update.parse_ok
+                ),
+                "error": (
+                    record.memory_update.error
+                ),
+                "parse_attempts": (
+                    record.memory_update.parse_attempts
+                ),
+                "raw_response": (
+                    record.memory_update.raw_response
+                ),
+            },
+            "verification": (
+                record.verification.to_dict()
+                if record.verification
+                else None
+            ),
+            "action": asdict(record.action),
+            "executed": record.executed,
+        })
 
     navigation_log_data = {
         "goal": NAV.goal.to_dict(),
         "status": NAV.current_status(),
         "total_steps": len(NAV.records),
-        "records": [
-            {
-                "image_num": record.image_num,
-                "image_path": record.image_path,
-                "memory_update": {
-                    "useful": record.memory_update.useful,
-                    "summary": record.memory_update.summary,
-                    "landmarks": [
-                        asdict(lm)
-                        for lm in record.memory_update.landmarks
-                    ],
-                    "hypotheses": record.memory_update.hypotheses,
-                },
-                "verification": (
-                    record.verification.to_dict()
-                    if record.verification
-                    else None
-                ),
-                "action": asdict(record.action),
-                "executed": record.executed,
-            }
-            for record in NAV.records
-        ],
+        "records": navigation_records,
     }
 
     return {
