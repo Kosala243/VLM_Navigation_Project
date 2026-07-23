@@ -24,6 +24,7 @@ LIVE_DIR = Path("live_frames")
 OUTPUT_DIR = Path("navigation_outputs/http_api")
 LIVE_DIR.mkdir(parents=True, exist_ok=True)
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+EXTERNAL_EXECUTION_ENABLED = False
 
 
 def env_bool(name: str, default: bool = False) -> bool:
@@ -215,22 +216,23 @@ async def single_step(
 
 
 @app.post("/autonomous/start")
-def autonomous_start(goal: str = Form(default=None)):
+def autonomous_start(goal: str = Form(default=None), execution_enabled: bool = Form(default=False)):
     """
     Starts/reset a memory-preserving autonomous session.
     Movement is still disabled on AMD; ThinkPad handles movement separately.
     """
-    global NAV, CURRENT_GOAL
+    global NAV, CURRENT_GOAL, EXTERNAL_EXECUTION_ENABLED
 
     CURRENT_GOAL = goal or CURRENT_GOAL
+    EXTERNAL_EXECUTION_ENABLED = bool(execution_enabled)
     NAV = new_navigation_system(CURRENT_GOAL, keep_memory=False)
 
     return {
         "status": "started",
         "goal": CURRENT_GOAL,
         "movement_enabled": False,
+        "external_execution_enabled": EXTERNAL_EXECUTION_ENABLED,
     }
-
 
 @app.post("/autonomous/step")
 async def autonomous_step(
@@ -262,6 +264,7 @@ async def autonomous_step(
         str(primary_path),
         image_paths=image_paths,
         execute=False,
+        expect_external_execution=EXTERNAL_EXECUTION_ENABLED,
     )
 
     return JSONResponse(

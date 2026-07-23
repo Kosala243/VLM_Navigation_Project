@@ -413,7 +413,7 @@ def post_observation_to_amd(api, endpoint, observation, goal=None):
         print(result.stdout)
         raise
 
-def start_autonomous_session(api, goal):
+def start_autonomous_session(api, goal, execution_enabled):
     url = api.rstrip("/") + "/autonomous/start"
 
     result = run(
@@ -425,6 +425,8 @@ def start_autonomous_session(api, goal):
             url,
             "-F",
             "goal={}".format(goal),
+            "-F",
+            "execution_enabled={}".format("true" if execution_enabled else "false"),
         ],
         verbose=False
     
@@ -1395,7 +1397,7 @@ def run_auto_mode(args):
 
     if use_memory:
         print("[INFO] Memory enabled: using /autonomous/start and /autonomous/step")
-        start_autonomous_session(args.api, args.goal)
+        start_autonomous_session(args.api, args.goal, args.execute != "false")
     else:
         print("[INFO] Memory disabled: using fresh /single_step for every auto step")
 

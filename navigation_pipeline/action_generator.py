@@ -234,25 +234,157 @@ class ActionGenerator:
                 "\n".join(f"- {k}: {v}" for k, v in self.VALID_ACTIONS.items()),
             )
         )
-        response = self.model.query(prompt, image_path=image_path, image_paths=image_paths, max_new_tokens=500)
-        data = _extract_json(response) or {}
+        retry_suffix = """
+        IMPORTANT RETRY REQUIREMENTS:
+        - Return exactly one complete JSON object.
+        - Do not use markdown fences.
+        - Do not include commentary before or after the JSON.
+        - Include action, params, reason, confidence,
+        goal_reached, and needs_verification.
+        - Copy landmark IDs exactly from structured memory.
+        """
 
-        raw_action_name = str(data.get("action", "WAIT_OR_RECOVER")).strip().upper()
-        # Backward compatibility: if an older prompt/model returns ASK_PERSON, map it to
-        # the stricter action, then validation will allow it only with official-help evidence.
+        responses: list[str] = []
+        data: dict[str, Any] | None = None
+        parse_attempts = 0
+
+        for extra_prompt in ("", retry_suffix):
+            parse_attempts += 1
+
+            response = self.model.query(
+                prompt + extra_prompt,
+                image_path=image_path,
+                image_paths=image_paths,
+                max_new_tokens=700,
+            )
+
+            responses.append(str(response))
+
+            candidate = _extract_json(response)
+
+            if candidate is not None:
+                data = candidate
+                break
+
+        if data is None:
+            failed_action = Action(
+                name="WAIT_OR_RECOVER",
+                params={
+                    "landmark_id": None,
+                    "direction": None,
+                    "target": None,
+                    "target_description": None,
+                    "search_for": (
+                        "a fresh valid action-planning response"
+                    ),
+                    "stop_condition": (
+                        "robot remains stopped until action "
+                        "generation succeeds"
+                    ),
+                    "capture_after": True,
+                    "evidence_view": "NONE",
+                },
+                reason=(
+                    "Action generation failed after "
+                    f"{parse_attempts} JSON parse attempt(s); "
+                    "movement is blocked."
+                ),
+                confidence="low",
+                goal_reached=False,
+                needs_verification=True,
+                raw={
+                    "parse_ok": False,
+                    "parse_attempts": parse_attempts,
+                    "raw_response": (
+                        responses[-1][:4000]
+                        if responses
+                        else ""
+                    ),
+                },
+                is_valid=True,
+            )
+
+            self._attach_action_evidence_score(
+                failed_action,
+                memory,
+                goal,
+            )
+
+            self._ensure_evidence_view(
+                failed_action,
+                memory,
+            )
+
+            return failed_action
+
+        raw_action_name = str(
+            data.get(
+                "action",
+                "WAIT_OR_RECOVER",
+            )
+        ).strip().upper()
+
         if raw_action_name == "ASK_PERSON":
-            raw_action_name = "ASK_RECEPTION_OR_STAFF"
+            raw_action_name = (
+                "ASK_RECEPTION_OR_STAFF"
+            )
+
+        params = (
+            data.get("params", {})
+            if isinstance(
+                data.get("params", {}),
+                dict,
+            )
+            else {}
+        )
+
+        reason = str(
+            data.get("reason", "")
+        ).strip()
+
+        if not reason:
+            reason = _fallback_action_reason(
+                action_name=raw_action_name,
+                params=params,
+                memory=memory,
+            )
+
+        raw_data = dict(data)
+        raw_data["_parse_ok"] = True
+        raw_data["_parse_attempts"] = (
+            parse_attempts
+        )
 
         action = Action(
             name=raw_action_name,
-            params=data.get("params", {}) if isinstance(data.get("params", {}), dict) else {},
-            reason=str(data.get("reason", "No parseable reason returned.")),
-            confidence=str(data.get("confidence", "low")).lower(),
-            goal_reached=bool(data.get("goal_reached", False)),
-            needs_verification=bool(data.get("needs_verification", False)),
-            raw=data,
+            params=params,
+            reason=reason,
+            confidence=str(
+                data.get(
+                    "confidence",
+                    "low",
+                )
+            ).lower(),
+            goal_reached=bool(
+                data.get(
+                    "goal_reached",
+                    False,
+                )
+            ),
+            needs_verification=bool(
+                data.get(
+                    "needs_verification",
+                    False,
+                )
+            ),
+            raw=raw_data,
         )
-        validated = self._validate(action, memory, goal)
+
+        validated = self._validate(
+            action,
+            memory,
+            goal,
+        )
         # Phase 3.2/3.3:
         # exact target control has priority over direction signs.
         exact_target_lm = (
@@ -452,36 +584,73 @@ class ActionGenerator:
                 memory
             )
         )
-        if semantic_lm is not None:
+
+        planner_direction_is_grounded = (
+            _current_follow_direction_is_grounded(
+                validated,
+                memory,
+            )
+        )
+
+        if (
+            semantic_lm is not None
+            and not planner_direction_is_grounded
+        ):
             extra = (
                 semantic_lm.extra
-                if isinstance(getattr(semantic_lm, "extra", {}), dict)
+                if isinstance(
+                    getattr(
+                        semantic_lm,
+                        "extra",
+                        {},
+                    ),
+                    dict,
+                )
                 else {}
             )
-            semantic_direction = _semantic_landmark_direction(semantic_lm)
-            selected_lm_id = _clean_param(
-                validated.params.get("landmark_id")
+
+            semantic_direction = (
+                _semantic_landmark_direction(
+                    semantic_lm
+                )
             )
-            selected_direction = _normalise_direction(
-                validated.params.get("direction")
-            )
-            already_using_current_semantic = (
-                validated.name == "FOLLOW_DIRECTION"
-                and selected_lm_id == str(semantic_lm.id)
-                and selected_direction == semantic_direction
-            )
-            if semantic_direction and not already_using_current_semantic:
+
+            if semantic_direction:
+                previous_raw = (
+                    dict(validated.raw)
+                    if isinstance(
+                        validated.raw,
+                        dict,
+                    )
+                    else {}
+                )
+
                 validated = Action(
                     name="FOLLOW_DIRECTION",
                     params={
-                        "landmark_id": str(semantic_lm.id),
-                        "direction": semantic_direction,
-                        "target": str(getattr(goal, "raw_goal", "")),
+                        "landmark_id": str(
+                            semantic_lm.id
+                        ),
+                        "direction": (
+                            semantic_direction
+                        ),
+                        "target": str(
+                            getattr(
+                                goal,
+                                "raw_goal",
+                                "",
+                            )
+                        ),
                         "target_description": str(
-                            getattr(semantic_lm, "description", "")
+                            getattr(
+                                semantic_lm,
+                                "description",
+                                "",
+                            )
                         ),
                         "stop_condition": (
-                            f"robot aligned with the {semantic_direction} route "
+                            "robot aligned with the "
+                            f"{semantic_direction} route "
                             "indicated by the current sign"
                         ),
                         "capture_after": True,
@@ -490,11 +659,31 @@ class ActionGenerator:
                             "NONE",
                         ),
                     },
-                    reason=(
-                        "Current target-relevant directional evidence has priority "
-                        "over structural or exploratory actions."
+                    reason=_semantic_override_reason(
+                        landmark=semantic_lm,
+                        direction=semantic_direction,
+                        goal=goal,
                     ),
-                    confidence="high",
+                    confidence=str(
+                        getattr(
+                            semantic_lm,
+                            "confidence",
+                            "medium",
+                        )
+                    ).lower(),
+                    goal_reached=False,
+                    needs_verification=True,
+                    raw={
+                        "source": (
+                            "semantic_priority_override"
+                        ),
+                        "planner_response": (
+                            previous_raw
+                        ),
+                        "supporting_landmark_id": (
+                            str(semantic_lm.id)
+                        ),
+                    },
                 )
 
                 validated = self._validate(
@@ -502,6 +691,16 @@ class ActionGenerator:
                     memory,
                     goal,
                 )
+
+        validated = self._promote_open_doorway_action(
+            validated,
+            memory,
+        )
+
+        validated = self._enforce_visual_alignment(
+            validated,
+            memory,
+        )
         validated = self._enforce_visual_alignment(validated, memory)
         validated = self._validate(validated, memory, goal)
         self._attach_action_evidence_score(
@@ -541,6 +740,207 @@ class ActionGenerator:
             inferred = _infer_evidence_view_from_action(action)
 
         action.params["evidence_view"] = inferred or "NONE"
+    
+        def _promote_open_doorway_action(
+            self,
+            action: Action,
+            memory: "NavigationMemory",
+        ) -> Action:
+            """
+            Convert generic navigation toward a currently visible,
+            centred, open, traversable doorway into the dedicated
+            doorway traversal skill.
+
+            This does not override semantic FOLLOW_DIRECTION actions.
+            """
+            if (
+                not action.is_valid
+                or action.name
+                != "NAVIGATE_TO_LANDMARK"
+            ):
+                return action
+
+            landmark_id = _clean_param(
+                action.params.get(
+                    "landmark_id"
+                )
+            )
+
+            if not landmark_id:
+                return action
+
+            landmark = _get_landmark(
+                memory,
+                landmark_id,
+            )
+
+            if (
+                landmark is None
+                or not _landmark_is_current(
+                    memory,
+                    landmark,
+                )
+            ):
+                return action
+
+            category = str(
+                getattr(
+                    landmark,
+                    "category",
+                    "",
+                )
+            ).lower()
+
+            if category not in {
+                "doorway",
+                "passage",
+                "door",
+            }:
+                return action
+
+            extra = (
+                landmark.extra
+                if isinstance(
+                    getattr(
+                        landmark,
+                        "extra",
+                        {},
+                    ),
+                    dict,
+                )
+                else {}
+            )
+
+            view = (
+                _infer_evidence_view_from_landmark(
+                    landmark
+                )
+            )
+
+            horizontal = (
+                _landmark_horizontal_position(
+                    landmark
+                )
+            )
+
+            doorway_state = str(
+                extra.get(
+                    "doorway_state",
+                    "unknown",
+                )
+            ).lower()
+
+            threshold_state = str(
+                extra.get(
+                    "threshold_state",
+                    "unknown",
+                )
+            ).lower()
+
+            route_state = str(
+                extra.get(
+                    "route_state",
+                    "visible_now",
+                )
+            ).lower()
+
+            if view != "FRONT":
+                return action
+
+            if horizontal != "center":
+                return action
+
+            if doorway_state != "open":
+                return action
+
+            if extra.get("traversable") is not True:
+                return action
+
+            if extra.get(
+                "path_clear_visual"
+            ) is False:
+                return action
+
+            if threshold_state not in {
+                "before",
+                "at",
+            }:
+                return action
+
+            if route_state in {
+                "blocked",
+                "passed",
+            }:
+                return action
+
+            return Action(
+                name="PASS_THROUGH_DOORWAY",
+                params={
+                    "landmark_id": (
+                        landmark_id
+                    ),
+                    "direction": "forward",
+                    "target": action.params.get(
+                        "target"
+                    ),
+                    "target_description": (
+                        _clean_param(
+                            action.params.get(
+                                "target_description"
+                            )
+                        )
+                        or str(
+                            getattr(
+                                landmark,
+                                "description",
+                                "",
+                            )
+                        ).strip()
+                    ),
+                    "stop_condition": (
+                        "capture immediately after crossing "
+                        "the doorway threshold"
+                    ),
+                    "capture_after": True,
+                    "evidence_view": "FRONT",
+                    "horizontal_position": (
+                        horizontal
+                    ),
+                    "proximity": (
+                        _landmark_proximity(
+                            landmark
+                        )
+                    ),
+                    "doorway_state": (
+                        doorway_state
+                    ),
+                    "threshold_state": (
+                        threshold_state
+                    ),
+                    "traversable": True,
+                },
+                reason=(
+                    f"Current doorway {landmark_id} is open, "
+                    "centred in FRONT, and traversable, so the "
+                    "dedicated doorway traversal skill is used."
+                ),
+                confidence=action.confidence,
+                goal_reached=False,
+                needs_verification=True,
+                raw={
+                    "source": (
+                        "deterministic_doorway_promotion"
+                    ),
+                    "planner_response": (
+                        dict(action.raw)
+                        if isinstance(
+                            action.raw,
+                            dict,
+                        )
+                        else {}
+                    ),
+                },
+            )
 
     def _enforce_visual_alignment(
         self,
@@ -1191,16 +1591,53 @@ class ActionGenerator:
                 )
                 return action
 
-            if not _landmark_supports_direction(
-                lm,
-                direction,
+            metadata_supports_direction = (
+                _landmark_supports_direction(
+                    lm,
+                    direction,
+                )
+            )
+
+            planner_supports_direction = (
+                _planner_follow_direction_is_grounded(
+                    action,
+                    lm,
+                    direction,
+                )
+            )
+
+            if (
+                not metadata_supports_direction
+                and not planner_supports_direction
             ):
                 action.is_valid = False
                 action.invalid_reason = (
-                    f"FOLLOW_DIRECTION landmark {lm_id} does not "
-                    f"support requested direction={direction}."
+                    f"FOLLOW_DIRECTION landmark {lm_id} "
+                    "does not provide grounded support for "
+                    f"direction={direction}."
                 )
                 return action
+
+            if (
+                planner_supports_direction
+                and not metadata_supports_direction
+            ):
+                action.raw = (
+                    dict(action.raw)
+                    if isinstance(
+                        action.raw,
+                        dict,
+                    )
+                    else {}
+                )
+
+                action.raw[
+                    "_direction_resolution"
+                ] = (
+                    "current-image planner evidence was "
+                    "used because memory direction metadata "
+                    "was missing or contradictory"
+                )
         if action.name == "USE_ELEVATOR_OR_STAIRS":
             if not _has_vertical_transition_evidence(recent):
                 action.is_valid = False
@@ -1261,7 +1698,7 @@ class ActionGenerator:
             if lm is not None:
                 extra = getattr(lm, "extra", {}) if isinstance(getattr(lm, "extra", {}), dict) else {}
 
-                if extra.get("partial_goal_marker"):
+                if (extra.get("partial_goal_marker") and action.name not in {"FOLLOW_DIRECTION", "READ_SIGN"}):
                     partial_marker_penalty = 0.25
 
                 if str(getattr(lm, "status", "")).lower() in {"used", "visited"}:
@@ -1606,43 +2043,97 @@ def _latest_semantic_direction(
 def _best_current_semantic_direction_landmark(
     memory: "NavigationMemory",
 ) -> "Landmark | None":
-    current_index = getattr(memory, "image_count", None)
+    current_index = getattr(
+        memory,
+        "image_count",
+        None,
+    )
 
     best = None
     best_score = -1.0
 
-    for lm in getattr(memory, "landmarks", []):
+    for landmark in getattr(
+        memory,
+        "landmarks",
+        [],
+    ):
         extra = (
-            lm.extra
-            if isinstance(getattr(lm, "extra", {}), dict)
+            landmark.extra
+            if isinstance(
+                getattr(
+                    landmark,
+                    "extra",
+                    {},
+                ),
+                dict,
+            )
             else {}
         )
 
-        if extra.get("source_image_index") != current_index:
+        if (
+            extra.get(
+                "source_image_index"
+            )
+            != current_index
+        ):
             continue
 
-        if str(getattr(lm, "category", "")).lower() not in {
+        category = str(
+            getattr(
+                landmark,
+                "category",
+                "",
+            )
+        ).lower()
+
+        if category not in {
             "sign",
             "directory",
-            "observation",
         }:
             continue
 
         relevance = str(
-            extra.get("target_relevance", "none")
+            extra.get(
+                "target_relevance",
+                "none",
+            )
         ).lower()
 
-        direction = _semantic_landmark_direction(lm)
+        if relevance not in {
+            "high",
+            "medium",
+        }:
+            continue
 
-        if relevance not in {"high", "medium"} or not direction:
+        direction = (
+            _semantic_landmark_direction(
+                landmark
+            )
+        )
+
+        if not direction:
+            continue
+
+        # Deterministic override requires at least two
+        # agreeing direction sources. A single uncertain
+        # metadata field must not replace the visual planner.
+        if not _has_strong_semantic_direction_evidence(
+            landmark,
+            direction,
+        ):
             continue
 
         score = float(
-            getattr(lm, "evidence_score", 0.0) or 0.0
+            getattr(
+                landmark,
+                "evidence_score",
+                0.0,
+            )
+            or 0.0
         )
 
         if score > best_score:
-            best = lm
+            best = landmark
             best_score = score
 
     return best
@@ -2005,54 +2496,402 @@ def _semantic_direction_from_extra(extra: dict[str, Any]) -> str:
 
     return ""
 
-def _semantic_landmark_direction(
-    landmark: "Landmark | None",
+def _directional_visible_text(
+    landmark: "Landmark",
 ) -> str:
+    """
+    Use exact sign text, plus descriptions only when the
+    description explicitly talks about arrows/directions.
+
+    This prevents phrases such as 'wall on the right side'
+    from being treated as route directions.
+    """
+    pieces = [
+        str(
+            getattr(
+                landmark,
+                "text",
+                "",
+            )
+        )
+    ]
+
+    description = str(
+        getattr(
+            landmark,
+            "description",
+            "",
+        )
+    )
+
+    description_lower = (
+        description.lower()
+    )
+
+    if any(
+        marker in description_lower
+        for marker in {
+            "arrow",
+            "pointing",
+            "points",
+            "indicates",
+            "direction",
+            "toward",
+            "towards",
+            "turn",
+            "straight",
+            "ahead",
+        }
+    ):
+        pieces.append(description)
+
+    return " ".join(pieces).lower()
+
+
+def _visible_direction_set(
+    landmark: "Landmark",
+) -> set[str]:
+    text = _directional_visible_text(
+        landmark
+    )
+
+    directions: set[str] = set()
+
+    if (
+        re.search(r"\bleft\b", text)
+        or "←" in text
+    ):
+        directions.add("left")
+
+    if (
+        re.search(r"\bright\b", text)
+        or "→" in text
+    ):
+        directions.add("right")
+
+    if (
+        re.search(
+            r"\b(forward|straight|ahead|continue|up|upward)\b",
+            text,
+        )
+        or "↑" in text
+    ):
+        directions.add("forward")
+
+    return directions
+
+
+def _semantic_direction_sources(
+    landmark: "Landmark | None",
+) -> dict[str, str]:
     if landmark is None:
-        return ""
+        return {}
 
     extra = (
         landmark.extra
-        if isinstance(getattr(landmark, "extra", {}), dict)
+        if isinstance(
+            getattr(
+                landmark,
+                "extra",
+                {},
+            ),
+            dict,
+        )
         else {}
     )
 
-    return _semantic_direction_from_extra(extra)
+    sources: dict[str, str] = {}
+
+    for key in (
+        "target_direction",
+        "arrow",
+        "direction",
+    ):
+        direction = _normalise_direction(
+            extra.get(key)
+        )
+
+        if direction:
+            sources[key] = direction
+
+    visible_directions = (
+        _visible_direction_set(
+            landmark
+        )
+    )
+
+    if len(visible_directions) == 1:
+        sources["visible_text"] = next(
+            iter(visible_directions)
+        )
+
+    return sources
+
+
+def _semantic_landmark_direction(
+    landmark: "Landmark | None",
+) -> str:
+    """
+    Return a direction only when all available direction
+    sources agree. Conflicting metadata becomes unknown.
+    """
+    sources = _semantic_direction_sources(
+        landmark
+    )
+
+    if not sources:
+        return ""
+
+    unique = set(sources.values())
+
+    if len(unique) != 1:
+        return ""
+
+    return next(iter(unique))
+
+
+def _has_strong_semantic_direction_evidence(
+    landmark: "Landmark | None",
+    direction: str,
+) -> bool:
+    requested = _normalise_direction(
+        direction
+    )
+
+    if not requested:
+        return False
+
+    sources = _semantic_direction_sources(
+        landmark
+    )
+
+    matching_sources = [
+        source
+        for source in sources.values()
+        if source == requested
+    ]
+
+    conflicting_sources = [
+        source
+        for source in sources.values()
+        if source != requested
+    ]
+
+    return (
+        len(matching_sources) >= 2
+        and not conflicting_sources
+    )
+
+
+def _planner_follow_direction_is_grounded(
+    action: Action,
+    landmark: "Landmark | None",
+    requested_direction: str,
+) -> bool:
+    if landmark is None:
+        return False
+
+    if str(
+        getattr(
+            landmark,
+            "category",
+            "",
+        )
+    ).lower() not in {
+        "sign",
+        "directory",
+    }:
+        return False
+
+    extra = (
+        landmark.extra
+        if isinstance(
+            getattr(
+                landmark,
+                "extra",
+                {},
+            ),
+            dict,
+        )
+        else {}
+    )
+
+    relevance = str(
+        extra.get(
+            "target_relevance",
+            "none",
+        )
+    ).lower()
+
+    if relevance not in {
+        "high",
+        "medium",
+    }:
+        return False
+
+    requested = _normalise_direction(
+        requested_direction
+    )
+
+    if not requested:
+        return False
+
+    combined = " ".join([
+        str(action.reason),
+        str(
+            action.params.get(
+                "target_description",
+                "",
+            )
+        ),
+    ]).lower()
+
+    markers = {
+        "left": (
+            "left",
+            "←",
+        ),
+        "right": (
+            "right",
+            "→",
+        ),
+        "forward": (
+            "forward",
+            "straight",
+            "ahead",
+            "continue",
+            "upward",
+            "↑",
+        ),
+    }
+
+    return any(
+        marker in combined
+        for marker in markers[
+            requested
+        ]
+    )
+
+
+def _current_follow_direction_is_grounded(
+    action: Action,
+    memory: "NavigationMemory",
+) -> bool:
+    if (
+        not action.is_valid
+        or action.name
+        != "FOLLOW_DIRECTION"
+    ):
+        return False
+
+    landmark_id = _clean_param(
+        action.params.get(
+            "landmark_id"
+        )
+    )
+
+    direction = _normalise_direction(
+        action.params.get(
+            "direction"
+        )
+    )
+
+    if not landmark_id or not direction:
+        return False
+
+    landmark = _get_landmark(
+        memory,
+        landmark_id,
+    )
+
+    if (
+        landmark is None
+        or not _landmark_is_current(
+            memory,
+            landmark,
+        )
+    ):
+        return False
+
+    return (
+        _landmark_supports_direction(
+            landmark,
+            direction,
+        )
+        or _planner_follow_direction_is_grounded(
+            action,
+            landmark,
+            direction,
+        )
+    )
+
 
 def _landmark_supports_direction(
     landmark: "Landmark | None",
     requested_direction: str,
 ) -> bool:
-    requested = _normalise_direction(requested_direction)
+    requested = _normalise_direction(
+        requested_direction
+    )
+
     if not requested or landmark is None:
         return False
 
-    metadata_direction = _semantic_landmark_direction(landmark)
-    if metadata_direction:
-        return metadata_direction == requested
-
-    # Conservative fallback for older landmarks with missing metadata.
-    # Accept text only when it contains one unambiguous direction.
-    text = _visible_landmark_content(landmark)
-
-    visible_directions: set[str] = set()
-
-    if re.search(r"\bleft\b", text) or "←" in text:
-        visible_directions.add("left")
-
-    if re.search(r"\bright\b", text) or "→" in text:
-        visible_directions.add("right")
-
-    if (
-        re.search(
-            r"\b(forward|straight|ahead)\b",
-            text,
+    confirmed = (
+        _semantic_landmark_direction(
+            landmark
         )
-        or "↑" in text
-    ):
-        visible_directions.add("forward")
+    )
 
-    return visible_directions == {requested}
+    if confirmed:
+        return confirmed == requested
+
+    visible_directions = (
+        _visible_direction_set(
+            landmark
+        )
+    )
+
+    return visible_directions == {
+        requested
+    }
+
+
+def _semantic_override_reason(
+    landmark: "Landmark",
+    direction: str,
+    goal: "NavigationGoal",
+) -> str:
+    cue = (
+        str(
+            getattr(
+                landmark,
+                "text",
+                "",
+            )
+        ).strip()
+        or str(
+            getattr(
+                landmark,
+                "description",
+                "",
+            )
+        ).strip()
+    )
+
+    goal_text = str(
+        getattr(
+            goal,
+            "raw_goal",
+            "",
+        )
+    ).strip()
+
+    return (
+        f"Current {landmark.category} "
+        f"{landmark.id} indicates {direction} "
+        f"toward {goal_text}: {cue}"
+    )
 
 def _normalise_evidence_view(value: Any) -> str:
     text = _clean_param(value).upper()
@@ -2413,15 +3252,81 @@ def _visible_landmark_content(lm: "Landmark") -> str:
         str(getattr(lm, "text", "")),
     ]).lower()
 
-# JSON parsing
+def _fallback_action_reason(
+    action_name: str,
+    params: dict[str, Any],
+    memory: "NavigationMemory",
+) -> str:
+    landmark_id = _clean_param(
+        params.get("landmark_id")
+    )
 
-def _extract_json(text: str) -> dict[str, Any] | None:
-    text = re.sub(r"```(?:json)?", "", text).replace("```", "").strip()
-    start = text.find("{")
-    end = text.rfind("}")
-    if start == -1 or end == -1 or end <= start:
-        return None
-    try:
-        return json.loads(text[start:end + 1])
-    except json.JSONDecodeError:
-        return None
+    if landmark_id:
+        landmark = _get_landmark(
+            memory,
+            landmark_id,
+        )
+
+        if landmark is not None:
+            return (
+                f"Selected {action_name} using current "
+                f"landmark {landmark_id}: "
+                f"{landmark.description}"
+            )
+
+    return (
+        f"Selected {action_name} using the current "
+        "observation and grounded navigation memory."
+    )
+
+# JSON parsing
+def _valid_action_payload(
+    data: Any,
+) -> bool:
+    if not isinstance(data, dict):
+        return False
+
+    action_name = data.get("action")
+
+    if not isinstance(action_name, str):
+        return False
+
+    if not action_name.strip():
+        return False
+
+    params = data.get("params", {})
+
+    return isinstance(params, dict)
+
+def _extract_json(
+    text: str,
+) -> dict[str, Any] | None:
+    """
+    Find the first complete JSON object that looks like an
+    action-generator payload.
+    """
+    cleaned = re.sub(
+        r"```(?:json)?",
+        "",
+        str(text),
+        flags=re.IGNORECASE,
+    ).replace("```", "").strip()
+
+    decoder = json.JSONDecoder()
+
+    for match in re.finditer(r"\{", cleaned):
+        candidate = cleaned[
+            match.start():
+        ]
+
+        try:
+            value, _ = decoder.raw_decode(
+                candidate
+            )
+        except json.JSONDecodeError:
+            continue
+
+        if _valid_action_payload(value):
+            return value
+
+    return None

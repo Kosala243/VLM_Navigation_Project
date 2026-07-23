@@ -127,11 +127,16 @@ class NavigationMemory:
         - RIGHT image shows what is on the robot's right side.
 
         Navigation interpretation rules:
-        - If the target room/sign/landmark is visible in the FRONT view, prefer moving forward or stopping to verify.
-        - If the target room/sign/landmark is visible in the LEFT view, prefer turning left.
-        - If the target room/sign/landmark is visible in the RIGHT view, prefer turning right.
-        - If useful navigation cues are visible only on one side, mention which side.
-        - If no target or useful cue is visible, choose SEARCH_FOR_CUE.
+        - Keep camera position and route direction strictly separate.
+        - extra.source_view and extra.horizontal_position describe where the landmark appears in the cameras. They do NOT determine the route direction.
+        - For an exact target door or entrance, source_view determines whether visual alignment is required.
+        - For a directional sign or directory, target_direction must come only from the arrow or directional text associated with the active navigation goal.
+        - A sign visible in FRONT may direct the robot left, right, or forward.
+        - A sign visible in LEFT or RIGHT may still contain an arrow pointing in a different route direction.
+        - Never set target_direction=forward merely because source_view=FRONT.
+        - Never set target_direction=left or right merely because the sign appears in the LEFT or RIGHT camera.
+        - If useful navigation cues are visible only on one side, record that side in source_view.
+        - If no useful navigation evidence is visible, return useful=false with no landmarks.
         - Do not guess room numbers or signs that are not clearly visible.
         - Be careful with blurry text, reflections, glass, and overexposed regions.
         - If a signboard, room-range sign, directory, or door label is visible but the text is too small/blurry/unclear to read, still create a landmark for it.
@@ -152,6 +157,13 @@ class NavigationMemory:
         - extra.target_direction must be exactly left, right, forward, none, or unknown.
         - Do not store combined values such as "left, right" in target_direction.
         - extra.arrow may preserve the raw visible arrow information.
+        - For a multi-destination sign, identify the arrow associated specifically with the active goal, room range, building, tower, zone, or floor.
+        - If the target-associated arrow cannot be identified confidently, set target_direction="unknown" or "none".
+        - extra.arrow should be normalized to left, right, forward, none, or unknown whenever possible.
+        - For semantic signs and directories, do not copy source_view into continuation_direction.
+        - continuation_direction is primarily for structural landmarks such as corridors, bends, junctions, doorways, and passages.
+        - A room range or destination name without a visible associated arrow does not establish a route direction.
+        - Do not create category="observation" for an ordinary wall, floor, corridor, doorway, passage, or decorative feature. Use the correct structural category or omit it.
 
         Structural navigation landmark rules:
         - Store visible navigable structures even when they do not contain readable text.
@@ -604,7 +616,7 @@ class NavigationMemory:
             # Current semantic directional evidence.
             if (
                 is_current
-                and category in {"sign", "directory", "observation"}
+                and category in {"sign", "directory"}
             ):
                 relevance = str(
                     extra.get("target_relevance", "none")
@@ -1553,25 +1565,42 @@ def _confidence_from_score(score: float) -> str:
         return "medium"
     return "low"
 
-def _semantic_direction_from_extra(extra: dict[str, Any]) -> str:
+def _semantic_direction_from_extra(
+    extra: dict[str, Any],
+) -> str:
+    """
+    Return a semantic route direction only when the explicit
+    semantic fields do not contradict one another.
+
+    continuation_direction is intentionally excluded because it
+    belongs primarily to structural route landmarks.
+    """
     if not isinstance(extra, dict):
         return ""
 
-    # target_direction is explicit and goal-specific.
-    # arrow is preferred for ordinary single-arrow signs.
-    # continuation_direction supports older saved outputs.
-    # direction is the final fallback.
+    directions = []
+
     for key in (
         "target_direction",
         "arrow",
-        "continuation_direction",
         "direction",
     ):
-        direction = _normalise_subgoal_direction(extra.get(key))
-        if direction:
-            return direction
+        direction = _normalise_subgoal_direction(
+            extra.get(key)
+        )
 
-    return ""
+        if direction:
+            directions.append(direction)
+
+    if not directions:
+        return ""
+
+    unique = set(directions)
+
+    if len(unique) != 1:
+        return ""
+
+    return directions[0]
 
 def _looks_like_official_help_source(text: str) -> bool:
     keywords = [

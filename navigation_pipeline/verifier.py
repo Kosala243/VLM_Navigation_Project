@@ -116,13 +116,16 @@ class TargetVerifier:
     - A nearby/adjacent room label is NOT reached.
     - Old memory from previous frames is NOT enough. Use only the current image and current-frame memory shown above.
     - If the text is too small/unclear, return target_reached=false with evidence_type="unclear".
-    - FRONT visibility alone is not arrival.
-    - target_reached=true requires:
-        1. exact target label;
-        2. source_view=FRONT;
-        3. horizontal_position=center;
-        4. proximity=reached.
-    - If the exact target is centred but proximity is far, medium, near, or unknown, return target_visible=true and target_reached=false.
+    - FRONT visibility alone is not enough unless the exact full target door or entrance label is readable.
+    - For an exact room-code goal, target_reached=true requires:
+        1. the full exact target label or accepted full alias;
+        2. evidence from the current frame;
+        3. source_view=FRONT;
+        4. horizontal_position=center;
+        5. evidence_type=target_door_label or target_entrance.
+    - proximity is advisory visual metadata. It must not block target verification once the exact full label is readable on the current centred FRONT target.
+    - If the target is only in LEFT or RIGHT, or is off-centre in FRONT, return target_visible=true and target_reached=false.
+    - LiDAR and robot-state safety determine whether additional physical forward movement is safe; the visual verifier does not require the robot to approach an already verified target door.
 
     Return ONLY valid JSON:
     {
@@ -780,31 +783,26 @@ def _landmark_proximity(
         or "unknown"
     ).strip().lower()
 
-
 def _landmark_ready_for_stop(
     landmark: "Landmark",
 ) -> bool:
     """
-    Visual-only arrival requirement.
+    Visual navigation-goal verification.
 
-    Tomorrow this will additionally require sensor/robot-state
-    confirmation when that feedback reaches the AMD pipeline.
+    Exact current target evidence must be in FRONT and
+    centred. Physical obstacle clearance and stand-off
+    distance are handled separately by robot safety/LiDAR.
     """
-    if _landmark_source_view(
-        landmark
-    ) != "FRONT":
-        return False
-
-    if _landmark_horizontal_position(
-        landmark
-    ) != "center":
-        return False
-
     return (
-        _landmark_proximity(landmark)
-        == "reached"
+        _landmark_source_view(
+            landmark
+        )
+        == "FRONT"
+        and _landmark_horizontal_position(
+            landmark
+        )
+        == "center"
     )
-
 
 def _target_not_ready_reason(
     landmark: "Landmark",
@@ -921,22 +919,42 @@ def _unique_strings(items: list[Any]) -> list[str]:
             seen.add(key)
     return out
 
+def _extract_json(
+    text: str,
+) -> dict[str, Any] | None:
+    cleaned = re.sub(
+        r"```(?:json)?",
+        "",
+        str(text),
+        flags=re.IGNORECASE,
+    ).replace("```", "").strip()
 
-def _extract_json(text: str) -> dict[str, Any] | None:
-    text = re.sub(r"```(?:json)?", "", text).replace("```", "").strip()
-    start = text.find("{")
-    end = text.rfind("}")
-    if start == -1 or end == -1 or end <= start:
-        return None
-    try:
-        return json.loads(text[start:end + 1])
-    except json.JSONDecodeError:
-        return None
+    decoder = json.JSONDecoder()
+
+    for match in re.finditer(
+        r"\{",
+        cleaned,
+    ):
+        candidate = cleaned[
+            match.start():
+        ]
+
+        try:
+            value, _ = decoder.raw_decode(
+                candidate
+            )
+        except json.JSONDecodeError:
+            continue
+
+        if isinstance(value, dict):
+            return value
+
+    return None
 
 def _confidence_from_score(score: float) -> str:
     if score >= 0.85:
         return "high"
-    if score >= 0.60:
+    if score >= 0.50:
         return "medium"
     return "low"
     

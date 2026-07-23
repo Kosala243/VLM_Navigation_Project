@@ -162,6 +162,7 @@ class NavigationSystem:
         image_paths: dict[str, str] | None = None,
         frontiers: list[dict[str, Any]] | None = None,
         execute: bool = False,
+        expect_external_execution: bool = False,
     ) -> tuple[Action, bool]:
 
         if self.goal is None:
@@ -294,7 +295,8 @@ class NavigationSystem:
         )
         self.records.append(rec)
         if (
-            action.is_valid
+            expect_external_execution
+            and action.is_valid
             and not executed
             and action.name not in {
                 "STOP_AND_VERIFY",
