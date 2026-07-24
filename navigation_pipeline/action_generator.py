@@ -740,207 +740,207 @@ class ActionGenerator:
             inferred = _infer_evidence_view_from_action(action)
 
         action.params["evidence_view"] = inferred or "NONE"
-    
-        def _promote_open_doorway_action(
-            self,
-            action: Action,
-            memory: "NavigationMemory",
-        ) -> Action:
-            """
-            Convert generic navigation toward a currently visible,
-            centred, open, traversable doorway into the dedicated
-            doorway traversal skill.
 
-            This does not override semantic FOLLOW_DIRECTION actions.
-            """
-            if (
-                not action.is_valid
-                or action.name
-                != "NAVIGATE_TO_LANDMARK"
-            ):
-                return action
+    def _promote_open_doorway_action(
+        self,
+        action: Action,
+        memory: "NavigationMemory",
+    ) -> Action:
+        """
+        Convert generic navigation toward a currently visible,
+        centred, open, traversable doorway into the dedicated
+        doorway traversal skill.
 
-            landmark_id = _clean_param(
-                action.params.get(
-                    "landmark_id"
-                )
+        This does not override semantic FOLLOW_DIRECTION actions.
+        """
+        if (
+            not action.is_valid
+            or action.name
+            != "NAVIGATE_TO_LANDMARK"
+        ):
+            return action
+
+        landmark_id = _clean_param(
+            action.params.get(
+                "landmark_id"
             )
+        )
 
-            if not landmark_id:
-                return action
+        if not landmark_id:
+            return action
 
-            landmark = _get_landmark(
+        landmark = _get_landmark(
+            memory,
+            landmark_id,
+        )
+
+        if (
+            landmark is None
+            or not _landmark_is_current(
                 memory,
-                landmark_id,
+                landmark,
             )
+        ):
+            return action
 
-            if (
-                landmark is None
-                or not _landmark_is_current(
-                    memory,
-                    landmark,
-                )
-            ):
-                return action
+        category = str(
+            getattr(
+                landmark,
+                "category",
+                "",
+            )
+        ).lower()
 
-            category = str(
+        if category not in {
+            "doorway",
+            "passage",
+            "door",
+        }:
+            return action
+
+        extra = (
+            landmark.extra
+            if isinstance(
                 getattr(
                     landmark,
-                    "category",
-                    "",
-                )
-            ).lower()
-
-            if category not in {
-                "doorway",
-                "passage",
-                "door",
-            }:
-                return action
-
-            extra = (
-                landmark.extra
-                if isinstance(
-                    getattr(
-                        landmark,
-                        "extra",
-                        {},
-                    ),
-                    dict,
-                )
-                else {}
-            )
-
-            view = (
-                _infer_evidence_view_from_landmark(
-                    landmark
-                )
-            )
-
-            horizontal = (
-                _landmark_horizontal_position(
-                    landmark
-                )
-            )
-
-            doorway_state = str(
-                extra.get(
-                    "doorway_state",
-                    "unknown",
-                )
-            ).lower()
-
-            threshold_state = str(
-                extra.get(
-                    "threshold_state",
-                    "unknown",
-                )
-            ).lower()
-
-            route_state = str(
-                extra.get(
-                    "route_state",
-                    "visible_now",
-                )
-            ).lower()
-
-            if view != "FRONT":
-                return action
-
-            if horizontal != "center":
-                return action
-
-            if doorway_state != "open":
-                return action
-
-            if extra.get("traversable") is not True:
-                return action
-
-            if extra.get(
-                "path_clear_visual"
-            ) is False:
-                return action
-
-            if threshold_state not in {
-                "before",
-                "at",
-            }:
-                return action
-
-            if route_state in {
-                "blocked",
-                "passed",
-            }:
-                return action
-
-            return Action(
-                name="PASS_THROUGH_DOORWAY",
-                params={
-                    "landmark_id": (
-                        landmark_id
-                    ),
-                    "direction": "forward",
-                    "target": action.params.get(
-                        "target"
-                    ),
-                    "target_description": (
-                        _clean_param(
-                            action.params.get(
-                                "target_description"
-                            )
-                        )
-                        or str(
-                            getattr(
-                                landmark,
-                                "description",
-                                "",
-                            )
-                        ).strip()
-                    ),
-                    "stop_condition": (
-                        "capture immediately after crossing "
-                        "the doorway threshold"
-                    ),
-                    "capture_after": True,
-                    "evidence_view": "FRONT",
-                    "horizontal_position": (
-                        horizontal
-                    ),
-                    "proximity": (
-                        _landmark_proximity(
-                            landmark
-                        )
-                    ),
-                    "doorway_state": (
-                        doorway_state
-                    ),
-                    "threshold_state": (
-                        threshold_state
-                    ),
-                    "traversable": True,
-                },
-                reason=(
-                    f"Current doorway {landmark_id} is open, "
-                    "centred in FRONT, and traversable, so the "
-                    "dedicated doorway traversal skill is used."
+                    "extra",
+                    {},
                 ),
-                confidence=action.confidence,
-                goal_reached=False,
-                needs_verification=True,
-                raw={
-                    "source": (
-                        "deterministic_doorway_promotion"
-                    ),
-                    "planner_response": (
-                        dict(action.raw)
-                        if isinstance(
-                            action.raw,
-                            dict,
-                        )
-                        else {}
-                    ),
-                },
+                dict,
             )
+            else {}
+        )
+
+        view = (
+            _infer_evidence_view_from_landmark(
+                landmark
+            )
+        )
+
+        horizontal = (
+            _landmark_horizontal_position(
+                landmark
+            )
+        )
+
+        doorway_state = str(
+            extra.get(
+                "doorway_state",
+                "unknown",
+            )
+        ).lower()
+
+        threshold_state = str(
+            extra.get(
+                "threshold_state",
+                "unknown",
+            )
+        ).lower()
+
+        route_state = str(
+            extra.get(
+                "route_state",
+                "visible_now",
+            )
+        ).lower()
+
+        if view != "FRONT":
+            return action
+
+        if horizontal != "center":
+            return action
+
+        if doorway_state != "open":
+            return action
+
+        if extra.get("traversable") is not True:
+            return action
+
+        if extra.get(
+            "path_clear_visual"
+        ) is False:
+            return action
+
+        if threshold_state not in {
+            "before",
+            "at",
+        }:
+            return action
+
+        if route_state in {
+            "blocked",
+            "passed",
+        }:
+            return action
+
+        return Action(
+            name="PASS_THROUGH_DOORWAY",
+            params={
+                "landmark_id": (
+                    landmark_id
+                ),
+                "direction": "forward",
+                "target": action.params.get(
+                    "target"
+                ),
+                "target_description": (
+                    _clean_param(
+                        action.params.get(
+                            "target_description"
+                        )
+                    )
+                    or str(
+                        getattr(
+                            landmark,
+                            "description",
+                            "",
+                        )
+                    ).strip()
+                ),
+                "stop_condition": (
+                    "capture immediately after crossing "
+                    "the doorway threshold"
+                ),
+                "capture_after": True,
+                "evidence_view": "FRONT",
+                "horizontal_position": (
+                    horizontal
+                ),
+                "proximity": (
+                    _landmark_proximity(
+                        landmark
+                    )
+                ),
+                "doorway_state": (
+                    doorway_state
+                ),
+                "threshold_state": (
+                    threshold_state
+                ),
+                "traversable": True,
+            },
+            reason=(
+                f"Current doorway {landmark_id} is open, "
+                "centred in FRONT, and traversable, so the "
+                "dedicated doorway traversal skill is used."
+            ),
+            confidence=action.confidence,
+            goal_reached=False,
+            needs_verification=True,
+            raw={
+                "source": (
+                    "deterministic_doorway_promotion"
+                ),
+                "planner_response": (
+                    dict(action.raw)
+                    if isinstance(
+                        action.raw,
+                        dict,
+                    )
+                    else {}
+                ),
+            },
+        )
 
     def _enforce_visual_alignment(
         self,

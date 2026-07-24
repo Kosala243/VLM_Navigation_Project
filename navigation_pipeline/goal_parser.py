@@ -103,7 +103,13 @@ class GoalParser:
             return rule_goal
 
         prompt = self._PROMPT.replace("{goal}", goal)
-        response = self.model.query(prompt, max_new_tokens=700)
+        try:
+            response = self.model.query(prompt, max_new_tokens=700)
+        except Exception:
+            # A model/network failure during optional VLM refinement is not
+            # a malformed field; fall back to the deterministic rule output
+            # instead of crashing goal parsing entirely.
+            return rule_goal
         data = _extract_json(response)
         if not data:
             return rule_goal

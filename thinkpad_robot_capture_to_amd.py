@@ -14,15 +14,33 @@ from pathlib import Path
 from robot_executor import SafeCmdVelExecutor
 from robot_safety import RobotSafetyMonitor
 
-def run(cmd, check=True, verbose=True):
+def run(cmd, check=True, verbose=True, timeout=60):
+    """Run a subprocess with a hard wall-clock timeout.
+
+    Without a timeout, a hung ssh/scp/curl call blocks this process
+    forever: subprocess.run() never returns, no exception is ever
+    raised, and main()'s `except BaseException: send_emergency_stop()`
+    handler never fires. A finite timeout turns a hang into a
+    subprocess.TimeoutExpired, which main() does catch, so the robot
+    gets an emergency stop instead of being left mid-command forever.
+    """
     if verbose:
         print("[CMD]", " ".join(cmd))
-    result = subprocess.run(
-        cmd,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        universal_newlines=True,
-    )
+    try:
+        result = subprocess.run(
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            universal_newlines=True,
+            timeout=timeout,
+        )
+    except subprocess.TimeoutExpired:
+        print(
+            "[ERROR] Command timed out after {}s: {}".format(
+                timeout, " ".join(cmd)
+            )
+        )
+        raise
 
     if verbose and result.stdout.strip():
         print("[STDOUT]")
@@ -42,22 +60,32 @@ def run(cmd, check=True, verbose=True):
 
     return result
 
-def ssh_run(robot_user, robot_ip, remote_cmd):
-    return run([
-        "ssh",
-        "{}@{}".format(robot_user, robot_ip),
-        remote_cmd,
-    ])
+def ssh_run(robot_user, robot_ip, remote_cmd, timeout=30):
+    return run(
+        [
+            "ssh",
+            "-o", "ConnectTimeout=10",
+            "-o", "BatchMode=yes",
+            "{}@{}".format(robot_user, robot_ip),
+            remote_cmd,
+        ],
+        timeout=timeout,
+    )
 
-def scp_from_robot(robot_user, robot_ip, remote_path, local_path):
+def scp_from_robot(robot_user, robot_ip, remote_path, local_path, timeout=30):
     local_path = Path(local_path)
     local_path.parent.mkdir(parents=True, exist_ok=True)
 
-    run([
-        "scp",
-        "{}@{}:{}".format(robot_user, robot_ip, remote_path),
-        str(local_path),
-    ])
+    run(
+        [
+            "scp",
+            "-o", "ConnectTimeout=10",
+            "-o", "BatchMode=yes",
+            "{}@{}:{}".format(robot_user, robot_ip, remote_path),
+            str(local_path),
+        ],
+        timeout=timeout,
+    )
 
     return local_path
 
@@ -90,8 +118,19 @@ def capture_single_camera(args, local_step_dir):
         timeout_s=args.capture_timeout,
     )
 
-    ssh_run(args.robot_user, args.robot_ip, cmd)
-    scp_from_robot(args.robot_user, args.robot_ip, remote_image, local_image)
+    ssh_run(
+        args.robot_user,
+        args.robot_ip,
+        cmd,
+        timeout=args.capture_timeout + args.ssh_timeout,
+    )
+    scp_from_robot(
+        args.robot_user,
+        args.robot_ip,
+        remote_image,
+        local_image,
+        timeout=args.scp_timeout,
+    )
 
     print("[OK] Single camera image:", local_image)
     return local_image
@@ -140,10 +179,21 @@ def capture_three_camera_files(args, local_step_dir):
         remote_tar=shlex.quote(remote_tar),
     )
 
-    ssh_run(args.robot_user, args.robot_ip, remote_cmd)
+    ssh_run(
+        args.robot_user,
+        args.robot_ip,
+        remote_cmd,
+        timeout=(3 * args.capture_timeout) + args.ssh_timeout,
+    )
 
     local_tar = local_step_dir / "vlm_three_cameras.tar"
-    scp_from_robot(args.robot_user, args.robot_ip, remote_tar, local_tar)
+    scp_from_robot(
+        args.robot_user,
+        args.robot_ip,
+        remote_tar,
+        local_tar,
+        timeout=args.scp_timeout,
+    )
 
     with tarfile.open(str(local_tar), "r") as tar:
         tar.extractall(str(local_step_dir))
@@ -347,12 +397,14 @@ def get_observation(args, step_index=None):
 
     raise ValueError("Unknown camera mode: {}".format(args.camera_mode))
 
-def post_to_amd(api, endpoint, image_path, goal=None):
+def post_to_amd(api, endpoint, image_path, goal=None, connect_timeout=10, max_time=900):
     url = api.rstrip("/") + "/" + endpoint.lstrip("/")
 
     cmd = [
         "curl",
         "-sS",
+        "--connect-timeout", str(connect_timeout),
+        "--max-time", str(max_time),
         "-X",
         "POST",
         url,
@@ -363,7 +415,7 @@ def post_to_amd(api, endpoint, image_path, goal=None):
 
     cmd.extend(["-F", "image=@{}".format(str(image_path))])
 
-    result = run(cmd)
+    result = run(cmd, timeout=max_time + 10)
 
     try:
         return json.loads(result.stdout)
@@ -372,17 +424,24 @@ def post_to_amd(api, endpoint, image_path, goal=None):
         print(result.stdout)
         raise
 
-def post_observation_to_amd(api, endpoint, observation, goal=None):
+def post_observation_to_amd(api, endpoint, observation, goal=None, connect_timeout=10, max_time=900):
     """
     Send either:
     - one image field for single/stitched mode
     - left_image/front_image/right_image fields for separate mode
+
+    max_time bounds the whole request, including AMD-side VLM inference
+    (single_step/autonomous/step); it should stay comfortably above the
+    server's own MODEL_TIMEOUT_S so a slow-but-alive request isn't cut
+    off before the server's own safety timeout would give up.
     """
     url = api.rstrip("/") + "/" + endpoint.lstrip("/")
 
     cmd = [
         "curl",
         "-sS",
+        "--connect-timeout", str(connect_timeout),
+        "--max-time", str(max_time),
         "-X",
         "POST",
         url,
@@ -404,7 +463,7 @@ def post_observation_to_amd(api, endpoint, observation, goal=None):
     else:
         cmd.extend(["-F", "image=@{}".format(observation["primary_path"])])
 
-    result = run(cmd, verbose=False)
+    result = run(cmd, verbose=False, timeout=max_time + 10)
 
     try:
         return json.loads(result.stdout)
@@ -413,13 +472,15 @@ def post_observation_to_amd(api, endpoint, observation, goal=None):
         print(result.stdout)
         raise
 
-def start_autonomous_session(api, goal, execution_enabled):
+def start_autonomous_session(api, goal, execution_enabled, connect_timeout=10, max_time=60):
     url = api.rstrip("/") + "/autonomous/start"
 
     result = run(
         [
             "curl",
             "-sS",
+            "--connect-timeout", str(connect_timeout),
+            "--max-time", str(max_time),
             "-X",
             "POST",
             url,
@@ -428,8 +489,8 @@ def start_autonomous_session(api, goal, execution_enabled):
             "-F",
             "execution_enabled={}".format("true" if execution_enabled else "false"),
         ],
-        verbose=False
-    
+        verbose=False,
+        timeout=max_time + 10,
     )
 
     try:
@@ -447,6 +508,8 @@ def post_execution_ack(
     response,
     executed,
     execution_result,
+    connect_timeout=10,
+    max_time=60,
 ):
     step_number = response.get(
         "action_step"
@@ -477,6 +540,8 @@ def post_execution_ack(
     cmd = [
         "curl",
         "-sS",
+        "--connect-timeout", str(connect_timeout),
+        "--max-time", str(max_time),
         "-X",
         "POST",
         url,
@@ -507,6 +572,7 @@ def post_execution_ack(
     result = run(
         cmd,
         verbose=False,
+        timeout=max_time + 10,
     )
 
     try:
@@ -523,18 +589,21 @@ def post_execution_ack(
             "raw_response": result.stdout,
         }
 
-def export_autonomous_session(api, run_dir):
+def export_autonomous_session(api, run_dir, connect_timeout=10, max_time=60):
     url = api.rstrip("/") + "/autonomous/export"
 
     result = run(
         [
             "curl",
             "-sS",
+            "--connect-timeout", str(connect_timeout),
+            "--max-time", str(max_time),
             "-X",
             "GET",
             url,
         ],
         verbose=False,
+        timeout=max_time + 10,
     )
 
     try:
@@ -1358,6 +1427,8 @@ def run_single_step(args):
         endpoint="/single_step",
         observation=observation,
         goal=args.goal,
+        connect_timeout=args.api_connect_timeout,
+        max_time=args.api_step_timeout,
     )
 
     print_action_result(response)
@@ -1397,7 +1468,13 @@ def run_auto_mode(args):
 
     if use_memory:
         print("[INFO] Memory enabled: using /autonomous/start and /autonomous/step")
-        start_autonomous_session(args.api, args.goal, args.execute != "false")
+        start_autonomous_session(
+            args.api,
+            args.goal,
+            args.execute != "false",
+            connect_timeout=args.api_connect_timeout,
+            max_time=args.api_timeout,
+        )
     else:
         print("[INFO] Memory disabled: using fresh /single_step for every auto step")
 
@@ -1426,6 +1503,8 @@ def run_auto_mode(args):
             endpoint=endpoint,
             observation=observation,
             goal=goal_for_request,
+            connect_timeout=args.api_connect_timeout,
+            max_time=args.api_step_timeout,
         )
         (
             response,
@@ -1471,6 +1550,8 @@ def run_auto_mode(args):
                 response=response,
                 executed=executed,
                 execution_result=execution_result,
+                connect_timeout=args.api_connect_timeout,
+                max_time=args.api_timeout,
             )
 
             execution_result[
@@ -1608,7 +1689,12 @@ def run_auto_mode(args):
     )
 
     if use_memory:
-        export_autonomous_session(args.api, run_dir)
+        export_autonomous_session(
+            args.api,
+            run_dir,
+            connect_timeout=args.api_connect_timeout,
+            max_time=args.api_timeout,
+        )
 
 def parse_args():
     parser = argparse.ArgumentParser(
@@ -1679,6 +1765,41 @@ def parse_args():
         type=int,
         default=8,
         help="Timeout in seconds for each ffmpeg capture",
+    )
+
+    parser.add_argument(
+        "--ssh-timeout",
+        type=int,
+        default=20,
+        help="Extra seconds allowed for SSH overhead on top of the capture timeout",
+    )
+    parser.add_argument(
+        "--scp-timeout",
+        type=int,
+        default=20,
+        help="Timeout in seconds for each scp file transfer from the robot",
+    )
+    parser.add_argument(
+        "--api-connect-timeout",
+        type=int,
+        default=10,
+        help="Max seconds to establish a connection to the AMD API",
+    )
+    parser.add_argument(
+        "--api-timeout",
+        type=int,
+        default=60,
+        help="Max seconds for lightweight AMD API calls (start/ack/export)",
+    )
+    parser.add_argument(
+        "--api-step-timeout",
+        type=int,
+        default=900,
+        help=(
+            "Max seconds for AMD API calls that run VLM inference "
+            "(single_step/autonomous/step). Keep this comfortably above "
+            "the server's own MODEL_TIMEOUT_S."
+        ),
     )
 
     parser.add_argument(
@@ -1927,6 +2048,11 @@ def main():
 if __name__ == "__main__":
     try:
         main()
+    except subprocess.TimeoutExpired as e:
+        print("\n[COMMAND TIMED OUT]")
+        print("Command:", e.cmd)
+        print("Timeout:", e.timeout, "seconds")
+        sys.exit(124)
     except subprocess.CalledProcessError as e:
         print("\n[COMMAND FAILED]")
         print("Return code:", e.returncode)

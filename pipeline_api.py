@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import json
 import os
 import shutil
@@ -11,7 +12,7 @@ from typing import Any, Optional
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.responses import JSONResponse
 
-from navigation_pipeline import ModelWrapper, NavigationSystem, GoalParser
+from navigation_pipeline import Action, ModelWrapper, NavigationSystem, GoalParser
 
 
 app = FastAPI(title="VLM Navigation Pipeline API")
@@ -25,6 +26,53 @@ OUTPUT_DIR = Path("navigation_outputs/http_api")
 LIVE_DIR.mkdir(parents=True, exist_ok=True)
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 EXTERNAL_EXECUTION_ENABLED = False
+
+# Serializes all reads/writes of the global NAV session so a
+# /autonomous/start cannot race an in-flight /autonomous/step or
+# /autonomous/ack and corrupt session state.
+NAV_LOCK = asyncio.Lock()
+
+
+def _safe_step(
+    nav: NavigationSystem,
+    image_path,
+    image_paths: dict[str, str] | None = None,
+    execute: bool = False,
+    expect_external_execution: bool = False,
+):
+    """Run one navigation step, converting a pipeline/model exception into a
+    safe WAIT_OR_RECOVER action instead of letting it crash the request and
+    leave the caller with a bare 500 and no safe fallback action."""
+    try:
+        return nav.step(
+            str(image_path),
+            image_paths=image_paths,
+            execute=execute,
+            expect_external_execution=expect_external_execution,
+        )
+    except Exception as exc:
+        print(f"[API] nav.step() failed: {exc}")
+        fallback = Action(
+            name="WAIT_OR_RECOVER",
+            params={
+                "landmark_id": None,
+                "direction": None,
+                "target": None,
+                "target_description": None,
+                "search_for": "a fresh valid observation after a pipeline error",
+                "stop_condition": "robot remains stopped until the pipeline recovers",
+                "capture_after": True,
+                "evidence_view": "NONE",
+            },
+            reason=f"Navigation step failed: {exc}",
+            confidence="low",
+            evidence_score=0.0,
+            goal_reached=False,
+            needs_verification=True,
+            raw={"pipeline_error": str(exc)},
+            is_valid=True,
+        )
+        return fallback, False
 
 
 def env_bool(name: str, default: bool = False) -> bool:
@@ -195,8 +243,9 @@ async def single_step(
     )
 
     nav = new_navigation_system(use_goal, keep_memory=False)
-    action, done = nav.step(
-        str(primary_path),
+    action, done = _safe_step(
+        nav,
+        primary_path,
         image_paths=image_paths,
         execute=False,
     )
@@ -216,23 +265,24 @@ async def single_step(
 
 
 @app.post("/autonomous/start")
-def autonomous_start(goal: str = Form(default=None), execution_enabled: bool = Form(default=False)):
+async def autonomous_start(goal: str = Form(default=None), execution_enabled: bool = Form(default=False)):
     """
     Starts/reset a memory-preserving autonomous session.
     Movement is still disabled on AMD; ThinkPad handles movement separately.
     """
     global NAV, CURRENT_GOAL, EXTERNAL_EXECUTION_ENABLED
 
-    CURRENT_GOAL = goal or CURRENT_GOAL
-    EXTERNAL_EXECUTION_ENABLED = bool(execution_enabled)
-    NAV = new_navigation_system(CURRENT_GOAL, keep_memory=False)
+    async with NAV_LOCK:
+        CURRENT_GOAL = goal or CURRENT_GOAL
+        EXTERNAL_EXECUTION_ENABLED = bool(execution_enabled)
+        NAV = new_navigation_system(CURRENT_GOAL, keep_memory=False)
 
-    return {
-        "status": "started",
-        "goal": CURRENT_GOAL,
-        "movement_enabled": False,
-        "external_execution_enabled": EXTERNAL_EXECUTION_ENABLED,
-    }
+        return {
+            "status": "started",
+            "goal": CURRENT_GOAL,
+            "movement_enabled": False,
+            "external_execution_enabled": EXTERNAL_EXECUTION_ENABLED,
+        }
 
 @app.post("/autonomous/step")
 async def autonomous_step(
@@ -250,9 +300,6 @@ async def autonomous_step(
     """
     global NAV
 
-    if NAV is None:
-        NAV = new_navigation_system(CURRENT_GOAL, keep_memory=False)
-
     primary_path, image_paths, observation_mode = await prepare_observation(
         image=image,
         left_image=left_image,
@@ -260,15 +307,19 @@ async def autonomous_step(
         right_image=right_image,
     )
 
-    action, done = NAV.step(
-        str(primary_path),
-        image_paths=image_paths,
-        execute=False,
-        expect_external_execution=EXTERNAL_EXECUTION_ENABLED,
-    )
+    async with NAV_LOCK:
+        if NAV is None:
+            NAV = new_navigation_system(CURRENT_GOAL, keep_memory=False)
 
-    return JSONResponse(
-        action_response(
+        action, done = _safe_step(
+            NAV,
+            primary_path,
+            image_paths=image_paths,
+            execute=False,
+            expect_external_execution=EXTERNAL_EXECUTION_ENABLED,
+        )
+
+        result = action_response(
             goal=CURRENT_GOAL,
             image_path=primary_path,
             image_paths=image_paths,
@@ -278,10 +329,11 @@ async def autonomous_step(
             nav=NAV,
             mode="autonomous_step",
         )
-    )
+
+    return JSONResponse(result)
 
 @app.post("/autonomous/ack")
-def autonomous_ack(
+async def autonomous_ack(
     step_number: int = Form(...),
     executed: bool = Form(...),
     status: str = Form(default=""),
@@ -289,22 +341,23 @@ def autonomous_ack(
 ):
     global NAV
 
-    if NAV is None:
-        raise HTTPException(
-            status_code=400,
-            detail="No active autonomous session.",
-        )
+    async with NAV_LOCK:
+        if NAV is None:
+            raise HTTPException(
+                status_code=400,
+                detail="No active autonomous session.",
+            )
 
-    acknowledgement = (
-        NAV.acknowledge_execution(
-            step_number=step_number,
-            executed=executed,
-            reason=(
-                reason
-                or status
-            ),
+        acknowledgement = (
+            NAV.acknowledge_execution(
+                step_number=step_number,
+                executed=executed,
+                reason=(
+                    reason
+                    or status
+                ),
+            )
         )
-    )
 
     if not acknowledgement.get(
         "accepted",

@@ -302,10 +302,9 @@ class TargetVerifier:
                         confidence=_confidence_from_score(score),
                         evidence_score=score,
                         evidence_breakdown=breakdown,
-                        reason=_target_not_ready_reason(
-                            lm,
-                            matched,
-                            "target entrance",
+                        reason=(
+                            f"Target verified in current FRONT image: "
+                            f"entrance label '{matched}' matches the goal."
                         ),
                         landmark_id=str(
                             getattr(lm, "id", "")
@@ -789,9 +788,12 @@ def _landmark_ready_for_stop(
     """
     Visual navigation-goal verification.
 
-    Exact current target evidence must be in FRONT and
-    centred. Physical obstacle clearance and stand-off
-    distance are handled separately by robot safety/LiDAR.
+    Exact current target evidence must be in FRONT, centred,
+    and not visually reported as "far". Fine-grained stand-off
+    distance and obstacle clearance are handled separately by
+    robot safety/LiDAR, but a "far" proximity reading means the
+    target label is merely readable from a distance, not reached,
+    and must not be treated as arrival.
     """
     return (
         _landmark_source_view(
@@ -802,6 +804,10 @@ def _landmark_ready_for_stop(
             landmark
         )
         == "center"
+        and _landmark_proximity(
+            landmark
+        )
+        != "far"
     )
 
 def _target_not_ready_reason(

@@ -26,6 +26,28 @@ from robot_safety import RobotSafetyMonitor
 
 VALID_EXECUTE_MODES = {"false", "confirm", "true"}
 
+
+def _coerce_bool(value, default=True):
+    """Coerce a possibly-string action field into a real bool.
+
+    Actions should carry real JSON booleans, but a malformed or
+    partially string-coerced action must not let a string like "false"
+    evaluate to True via a bare bool(value) call.
+    """
+    if isinstance(value, bool):
+        return value
+    if value is None:
+        return default
+    if isinstance(value, str):
+        s = value.strip().lower()
+        if s in {"false", "no", "0", ""}:
+            return False
+        if s in {"true", "yes", "1"}:
+            return True
+        return default
+    return bool(value)
+
+
 class SafeCmdVelExecutor(object):
     """
     Map one high-level action to one small motion pulse.
@@ -125,25 +147,48 @@ class SafeCmdVelExecutor(object):
         return bool(executed)
 
     def stop(self):
+        """Publish a zero-velocity command and report whether it succeeded."""
         print("[EXECUTOR] STOP")
 
         return_code = self._publish_once(
             0.0,
             0.0,
         )
-        if return_code not in {0, 124}:
+        stop_ok = return_code in {0, 124}
+        if not stop_ok:
             print(
-                "[EXECUTOR] Warning: stop command returned "
-                "code {}.".format(return_code)
+                "[EXECUTOR] CRITICAL: stop command returned code {}; "
+                "the robot may still be moving.".format(return_code)
             )
+        return stop_ok
+
+    def _abort(self, status, reason, command=None, safety=None):
+        """Stop the robot and report an abort result.
+
+        If the stop command itself fails to confirm a halt, the reported
+        status/reason is escalated so callers cannot mistake this for a
+        normal, safely-stopped rejection.
+        """
+        stop_ok = self.stop()
+        if not stop_ok:
+            status = "stop_command_failed"
+            reason = (
+                "{} STOP command also failed to confirm a halt; the "
+                "robot may still be executing its last motion command."
+            ).format(reason)
+        return self._set_result(
+            False,
+            status,
+            reason,
+            command=command,
+            safety=safety,
+        )
 
     def execute_action_response(self, response):
         action = response.get("action", {})
 
         if not isinstance(action, dict):
-            self.stop()
-            return self._set_result(
-                False,
+            return self._abort(
                 "invalid_response",
                 "No valid action dictionary in API response.",
             )
@@ -163,6 +208,10 @@ class SafeCmdVelExecutor(object):
         confidence = str(
             action.get("confidence", "low")
         ).strip().lower()
+        if confidence not in {"high", "medium", "low"}:
+            # Fail closed: an unrecognised/garbled confidence value must
+            # not be treated as sufficiently confident to move.
+            confidence = "low"
         try:
             evidence_score = float(
                 action.get("evidence_score", 0.0)
@@ -171,13 +220,12 @@ class SafeCmdVelExecutor(object):
         except (TypeError, ValueError):
             evidence_score = 0.0
 
-        is_valid = bool(
-            action.get("is_valid", True)
+        is_valid = _coerce_bool(
+            action.get("is_valid", True),
+            default=True,
         )
         if not is_valid:
-            self.stop()
-            return self._set_result(
-                False,
+            return self._abort(
                 "invalid_action",
                 "Action was marked invalid.",
             )
@@ -187,9 +235,7 @@ class SafeCmdVelExecutor(object):
             confidence == "low"
             and not self.allow_low_confidence
         ):
-            self.stop()
-            return self._set_result(
-                False,
+            return self._abort(
                 "low_confidence_blocked",
                 (
                     "Low-confidence action blocked. Use "
@@ -199,9 +245,7 @@ class SafeCmdVelExecutor(object):
             )
 
         if evidence_score < self.min_evidence_score:
-            self.stop()
-            return self._set_result(
-                False,
+            return self._abort(
                 "evidence_score_blocked",
                 (
                     "Evidence score {:.3f} is below "
@@ -226,9 +270,7 @@ class SafeCmdVelExecutor(object):
         print("=======================================\n")
 
         if command is None:
-            self.stop()
-            return self._set_result(
-                False,
+            return self._abort(
                 "no_motion_mapping",
                 (
                     "Action has no safe movement mapping "
@@ -248,9 +290,7 @@ class SafeCmdVelExecutor(object):
             ).strip().lower()
 
             if answer not in {"y", "yes"}:
-                self.stop()
-                return self._set_result(
-                    False,
+                return self._abort(
                     "user_rejected",
                     "User rejected movement.",
                     command=command,
@@ -260,9 +300,7 @@ class SafeCmdVelExecutor(object):
         )
 
         if not preflight_ok:
-            self.stop()
-            return self._set_result(
-                False,
+            return self._abort(
                 "ros_preflight_failed",
                 preflight_reason,
                 command=command,
@@ -286,9 +324,7 @@ class SafeCmdVelExecutor(object):
             ),
         )
         if not safety.get("allowed", False):
-            self.stop()
-            return self._set_result(
-                False,
+            return self._abort(
                 "safety_blocked",
                 safety.get(
                     "reason",
@@ -304,9 +340,7 @@ class SafeCmdVelExecutor(object):
                 pulse_duration,
             )
         except Exception as exc:
-            self.stop()
-            return self._set_result(
-                False,
+            return self._abort(
                 "movement_exception",
                 str(exc),
                 command=command,
@@ -593,6 +627,8 @@ class SafeCmdVelExecutor(object):
             angular_z,
             rate=10,
         )
+        pulse_ok = False
+        pulse_exc = None
         try:
             return_code = subprocess.call(
                 [
@@ -603,9 +639,26 @@ class SafeCmdVelExecutor(object):
             )
             # timeout normally returns 124 because rostopic pub -r
             # is intentionally terminated after the pulse duration.
-            return return_code in {0, 124}
+            pulse_ok = return_code in {0, 124}
+        except Exception as exc:
+            pulse_exc = exc
         finally:
-            self.stop()
+            # This stop() is the actual mechanism that halts the robot:
+            # the rate-limited "rostopic pub -r" pulse does not zero the
+            # velocity on its own when killed by `timeout`. If this stop
+            # publish fails, the robot may still be executing the last
+            # nonzero /cmd_vel, so that must not be treated as a normal
+            # successful pulse.
+            stop_ok = self.stop()
+
+        if not stop_ok:
+            raise RuntimeError(
+                "STOP command failed to confirm halt after the movement "
+                "pulse; the robot may still be moving."
+            )
+        if pulse_exc is not None:
+            raise pulse_exc
+        return pulse_ok
 
     def _publish_once(
         self,
