@@ -11,3 +11,4 @@ robot_live_frames/
 qwen36_27b_llm_debug.log
 qwen36_27b_pipeline_debug.log
 scripts/
+terminal_logs/
