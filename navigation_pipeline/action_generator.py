@@ -590,6 +590,10 @@ class ActionGenerator:
                 validated,
                 memory,
             )
+            or _planner_action_is_independently_grounded(
+                validated,
+                memory,
+            )
         )
 
         if (
@@ -1975,19 +1979,17 @@ def _validate_structural_route_landmark(
                 f"Doorway landmark {landmark_id} is not linked to "
                 "the active goal or route.",
             )
-    
-    current_semantic = (_best_current_semantic_direction_landmark(memory))
 
-    if current_semantic is not None:
-        semantic_direction = (_semantic_landmark_direction(current_semantic))
-
-        if semantic_direction:
-            return (
-                False,
-                f"Current semantic landmark {current_semantic.id} "
-                f"must be handled before structural landmark "
-                f"{landmark_id}.",
-            )
+    # Note: this function intentionally does not reject a structural route
+    # just because some current sign/directory also has a resolved
+    # direction. Whether a sign should override an already-valid structural
+    # decision is decided once, in ActionGenerator.generate() via
+    # _planner_action_is_independently_grounded, using the direction
+    # conflict check above (action_direction vs landmark_direction) as the
+    # only structural-side veto. Duplicating a sign-vs-structural veto here
+    # too previously caused every structural continuation to be discarded
+    # whenever any sign was visible, regardless of whether the sign
+    # actually agreed or disagreed with the route.
 
     return True, ""
 
@@ -2824,6 +2826,65 @@ def _current_follow_direction_is_grounded(
             direction,
         )
     )
+
+
+_LANDMARK_GROUNDED_ACTION_NAMES = {
+    "NAVIGATE_TO_LANDMARK",
+    "APPROACH_LANDMARK",
+    "PASS_THROUGH_DOORWAY",
+    "ALIGN_WITH_LANDMARK",
+    "CHECK_DOOR_LABEL",
+    "STOP_AND_VERIFY",
+}
+
+
+def _planner_action_is_independently_grounded(
+    action: Action,
+    memory: "NavigationMemory",
+) -> bool:
+    """
+    True when the planner already produced a valid action anchored to a
+    real landmark on its own (structural or semantic), and did so with
+    reasonable confidence.
+
+    Only the planner sees the full scene (every landmark, the sign, the
+    corridor layout) in one shot; a single sign's resolved direction field
+    is a much narrower signal. A planner decision that already passed full
+    validation should not be discarded wholesale just because some current
+    sign also has a direction — the semantic-priority override exists to
+    rescue steps where the planner failed to commit to anything usable,
+    not to second-guess one that already did.
+
+    Deliberately does NOT also require _landmark_is_current: structural
+    continuations are routinely anchored to a "remembered route landmark"
+    a few frames old (this is exactly how _validate_structural_route_landmark
+    itself tolerates up to 3 frames of staleness), and action.is_valid
+    already reflects that the relevant per-action-type validation
+    (including recency/staleness for structural landmarks) has passed.
+    Re-imposing a stricter current-frame-only check here would silently
+    defeat this function for the common "corridor continues, matching a
+    remembered landmark" case.
+    """
+    if not action.is_valid:
+        return False
+
+    if action.name not in _LANDMARK_GROUNDED_ACTION_NAMES:
+        return False
+
+    if str(getattr(action, "confidence", "low")).lower() == "low":
+        return False
+
+    landmark_id = _clean_param(
+        action.params.get("landmark_id")
+    )
+
+    if not landmark_id:
+        return False
+
+    if _get_landmark(memory, landmark_id) is None:
+        return False
+
+    return True
 
 
 def _landmark_supports_direction(

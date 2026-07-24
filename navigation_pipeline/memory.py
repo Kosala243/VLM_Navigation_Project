@@ -21,9 +21,7 @@
 from __future__ import annotations
 
 import json
-import os
 import re
-import tempfile
 from dataclasses import dataclass, field, asdict
 from pathlib import Path
 from typing import Any, TYPE_CHECKING
@@ -161,13 +159,6 @@ class NavigationMemory:
         - extra.arrow may preserve the raw visible arrow information.
         - For a multi-destination sign, identify the arrow associated specifically with the active goal, room range, building, tower, zone, or floor.
         - If the target-associated arrow cannot be identified confidently, set target_direction="unknown" or "none".
-        - Many directional signs are laid out as multiple stacked rows, each with its own arrow and its own icons/text (for example one row for stairs/elevator, a different row for room ranges or restrooms).
-        - Treat each row as an independent (arrow, label) pair. Never apply one row's arrow to text or icons that belong to a different row.
-        - MANDATORY DECOMPOSITION STEP for any sign/directory with more than one arrow visible anywhere on it: before deciding target_direction, you must first fill extra.sign_rows with one entry per row, top to bottom, as it physically appears on the sign:
-            "sign_rows": [{"row_arrow": "left|right|forward|none|unknown", "row_content": "only the icons/text physically on this row"}]
-          Normalize an upward-pointing arrow to "forward". Do this row-by-row listing even if one arrow looks larger, redder, bolder, or otherwise more visually prominent than the others — visual prominence is not evidence of which row it belongs to.
-        - After sign_rows is filled in, set target_direction to the row_arrow of the one row whose row_content matches the active goal (room code, room range, building, tower, zone, or floor). Do not use any other row's arrow.
-        - If no row's content matches the goal, or the sign has only one row/arrow, set target_direction="unknown" or "none" (sign_rows may be left empty for single-row signs).
         - extra.arrow should be normalized to left, right, forward, none, or unknown whenever possible.
         - For semantic signs and directories, do not copy source_view into continuation_direction.
         - continuation_direction is primarily for structural landmarks such as corridors, bends, junctions, doorways, and passages.
@@ -274,8 +265,7 @@ class NavigationMemory:
                 "continuation_direction": "left | right | forward | left_forward | right_forward | none | unknown",
                 "route_state": "visible_now | remembered | reached | passed | blocked",
                 "goal_support": "direct | indirect | none | unknown",
-                "target_direction": "left | right | forward | none | unknown",
-                "sign_rows": [{"row_arrow": "left | right | forward | none | unknown", "row_content": "icons/text on this row only"}]
+                "target_direction": "left | right | forward | none | unknown"
             }
             }
         ],
@@ -287,55 +277,6 @@ class NavigationMemory:
 
         If no useful navigation evidence is visible, return exactly:
         {"useful": false, "summary": "", "landmarks": [], "hypotheses": []}
-        """
-
-    # Used only as a targeted follow-up when the first pass reports a sign
-    # with 2+ rows carrying different arrows (see _should_zoom_reread_sign).
-    # This localises just that one sign so it can be cropped and re-read in
-    # isolation, instead of asking the model to visually disentangle rows
-    # inside the full scene.
-    _SIGN_LOCALIZATION_PROMPT = """\
-        You are given a single navigation camera image.
-        Find this specific directional/wayfinding sign in the image:
-        Description: {description}
-        Visible text (if any): {text}
-
-        Return ONLY valid JSON, no markdown, no explanation:
-        {
-        "found": true/false,
-        "bbox": [x1, y1, x2, y2]
-        }
-        - bbox coordinates are fractions of the image width/height, each between 0.0 and 1.0.
-        - x1 < x2 and y1 < y2.
-        - bbox must tightly enclose only that one sign, not the whole wall or corridor.
-        - If this sign is not clearly visible in the image, return {"found": false}.
-        """
-
-    _SIGN_ZOOM_REREAD_PROMPT = """\
-        You are re-reading a single cropped close-up photo of ONE directional/wayfinding sign.
-        It has already been zoomed in for clarity.
-        The robot must navigate to this goal:
-        {goal_context}
-
-        This sign may be laid out as multiple stacked rows, each with its own arrow and its
-        own icons/text (for example one row for stairs/elevator, a different row for room
-        ranges or restrooms). Read it row by row, top to bottom, exactly as it appears.
-
-        Return ONLY valid JSON, no markdown, no explanation:
-        {
-        "sign_rows": [
-            {"row_arrow": "left | right | forward | none | unknown", "row_content": "icons/text on this row only"}
-        ],
-        "target_direction": "left | right | forward | none | unknown"
-        }
-
-        Rules:
-        - Normalize an upward-pointing arrow to "forward".
-        - target_direction must equal the row_arrow of the one row whose row_content matches
-          the active goal (room code, room range, building, tower, zone, or floor).
-        - Do not let a larger, redder, or otherwise more visually prominent arrow elsewhere on
-          the sign override the arrow that is actually on the same row as the goal-relevant text.
-        - If no row clearly matches the goal, set target_direction to "unknown".
         """
 
     def __init__(
@@ -474,35 +415,6 @@ class NavigationMemory:
 
             if landmark is None:
                 continue
-
-            # TEMPORARY diagnostic only, to be removed once the zoom fix is
-            # confirmed working end to end (no local console access to the
-            # server process this runs in).
-            try:
-                debug_dir = Path("navigation_outputs/http_api")
-                debug_dir.mkdir(parents=True, exist_ok=True)
-                (debug_dir / f"_firstpass_debug_{landmark.id}.json").write_text(
-                    json.dumps(
-                        {
-                            "category": landmark.category,
-                            "description": landmark.description,
-                            "text": landmark.text,
-                            "extra": landmark.extra,
-                            "would_zoom": self._should_zoom_reread_sign(landmark),
-                        },
-                        indent=2,
-                        default=str,
-                    )
-                )
-            except Exception:
-                pass
-
-            if self._should_zoom_reread_sign(landmark):
-                self._zoom_reread_sign(
-                    landmark,
-                    image_path,
-                    goal,
-                )
 
             existing = self._find_duplicate_landmark(
                 landmark
@@ -1090,167 +1002,6 @@ class NavigationMemory:
             image_path=str(image_path),
             extra=extra,
         )
-
-    def _should_zoom_reread_sign(self, landmark: "Landmark") -> bool:
-        """True only for a sign/directory the first pass already reported as
-        having 2+ rows with genuinely different arrows. This keeps the extra
-        VLM call rare and targeted: ordinary corridors, doorways, and
-        single-arrow signs never trigger it, so typical steps pay no extra
-        latency. Not tied to any specific building's sign layout.
-        """
-        if landmark.category not in {"sign", "directory"}:
-            return False
-
-        extra = landmark.extra if isinstance(landmark.extra, dict) else {}
-        rows = extra.get("sign_rows")
-
-        if not isinstance(rows, list) or len(rows) < 2:
-            return False
-
-        arrows = {
-            _clean_direction_value(row.get("row_arrow"))
-            for row in rows
-            if isinstance(row, dict)
-        }
-        arrows.discard("")
-
-        return len(arrows) >= 2
-
-    def _zoom_reread_sign(
-        self,
-        landmark: "Landmark",
-        image_path: str,
-        goal: "NavigationGoal",
-    ) -> None:
-        """Best-effort refinement for an ambiguous multi-arrow sign: localise
-        it, crop and upscale just that region, and re-read the isolated
-        close-up. This removes the need for the model to visually disentangle
-        adjacent rows inside the full scene, which plain prompt instructions
-        were not able to fix reliably.
-
-        Any failure at any step (bad localisation, degenerate crop, malformed
-        model output) silently leaves the landmark's original first-pass
-        reading untouched rather than raising.
-        """
-        crop_path: str | None = None
-        # TEMPORARY diagnostic only, to be removed once the zoom fix is
-        # confirmed working end to end (no local console access to the
-        # server process this runs in).
-        _debug: dict[str, Any] = {"landmark_id": landmark.id, "stage": "start"}
-
-        try:
-            loc_prompt = self._SIGN_LOCALIZATION_PROMPT.replace(
-                "{description}",
-                landmark.description[:200] or "directional sign",
-            ).replace(
-                "{text}",
-                landmark.text[:120],
-            )
-
-            loc_response = self.model.query(
-                loc_prompt,
-                image_path=image_path,
-                max_new_tokens=200,
-            )
-            _debug["loc_response"] = str(loc_response)[:800]
-
-            loc_data = _extract_json(str(loc_response))
-            _debug["loc_data"] = loc_data
-
-            if not isinstance(loc_data, dict) or not loc_data.get("found"):
-                _debug["stage"] = "loc_not_found"
-                return
-
-            bbox = loc_data.get("bbox")
-
-            if not isinstance(bbox, list) or len(bbox) != 4:
-                _debug["stage"] = "bad_bbox"
-                return
-
-            crop = _crop_and_upscale_region(image_path, bbox)
-
-            if crop is None:
-                _debug["stage"] = "crop_failed"
-                return
-
-            with tempfile.NamedTemporaryFile(
-                suffix=".png",
-                delete=False,
-            ) as tmp_file:
-                crop_path = tmp_file.name
-
-            crop.save(crop_path)
-            _debug["crop_size"] = list(crop.size)
-
-            reread_prompt = self._SIGN_ZOOM_REREAD_PROMPT.replace(
-                "{goal_context}",
-                goal.compact(),
-            )
-
-            reread_response = self.model.query(
-                reread_prompt,
-                image_path=crop_path,
-                max_new_tokens=500,
-            )
-            _debug["reread_response"] = str(reread_response)[:800]
-
-            reread_data = _extract_json(str(reread_response))
-            _debug["reread_data"] = reread_data
-
-            if not isinstance(reread_data, dict):
-                _debug["stage"] = "reread_parse_failed"
-                return
-
-            new_direction = _clean_direction_value(
-                reread_data.get("target_direction")
-            )
-            _debug["new_direction"] = new_direction
-
-            if new_direction:
-                landmark.extra["target_direction"] = new_direction
-                landmark.extra["arrow"] = new_direction
-
-            new_rows = reread_data.get("sign_rows")
-
-            if isinstance(new_rows, list):
-                landmark.extra["sign_rows"] = new_rows
-
-            landmark.extra["zoom_verified"] = True
-            _debug["stage"] = "done"
-
-            landmark.evidence_score, landmark.evidence_breakdown = _score_landmark(
-                category=landmark.category,
-                text=landmark.text,
-                confidence=landmark.confidence,
-                extra=landmark.extra,
-            )
-        except Exception as exc:
-            _debug["stage"] = "exception"
-            _debug["error"] = str(exc)
-            return
-        finally:
-            try:
-                debug_dir = Path(
-                    "navigation_outputs/http_api"
-                )
-                debug_dir.mkdir(
-                    parents=True,
-                    exist_ok=True,
-                )
-                (
-                    debug_dir
-                    / f"_zoom_debug_{landmark.id}.json"
-                ).write_text(
-                    json.dumps(_debug, indent=2, default=str)
-                )
-            except Exception:
-                pass
-
-            if crop_path:
-                try:
-                    os.remove(crop_path)
-                except OSError:
-                    pass
 
     def _normalise_category(self, category: str, description: str, text: str) -> str | None:
         combined = f"{category} {description} {text}".lower()
@@ -1950,86 +1701,6 @@ def _valid_memory_payload(
         isinstance(landmarks, list)
         and isinstance(hypotheses, list)
     )
-
-
-def _clean_direction_value(value: Any) -> str:
-    """Normalise a model-reported direction to left/right/forward, or "" if
-    it isn't one of those (including "none"/"unknown"/empty/garbage)."""
-    text = str(value or "").strip().lower()
-
-    if text in {"left", "right", "forward"}:
-        return text
-
-    if text in {"up", "straight", "ahead", "continue", "front"}:
-        return "forward"
-
-    return ""
-
-
-def _crop_and_upscale_region(
-    image_path: str,
-    bbox_fraction: list[Any],
-    pad_frac: float = 0.10,
-    min_dim: int = 900,
-    max_upscale: float = 6.0,
-) -> Any:
-    """Crop a normalised (0..1) bounding box out of image_path and upscale it.
-
-    Gives the model a clean, isolated close-up of a single sign instead of
-    asking it to visually disentangle a small, dense region inside a full
-    scene. Returns None on any invalid/degenerate box so callers fall back
-    gracefully to the original, unzoomed reading.
-    """
-    from PIL import Image
-
-    if not isinstance(bbox_fraction, list) or len(bbox_fraction) != 4:
-        return None
-
-    try:
-        x1, y1, x2, y2 = (float(v) for v in bbox_fraction)
-    except (TypeError, ValueError):
-        return None
-
-    try:
-        im = Image.open(image_path).convert("RGB")
-    except Exception:
-        return None
-
-    width, height = im.size
-    x1, x2 = sorted((min(max(x1, 0.0), 1.0), min(max(x2, 0.0), 1.0)))
-    y1, y2 = sorted((min(max(y1, 0.0), 1.0), min(max(y2, 0.0), 1.0)))
-
-    if (x2 - x1) < 0.01 or (y2 - y1) < 0.01:
-        return None
-
-    pad_x = (x2 - x1) * pad_frac
-    pad_y = (y2 - y1) * pad_frac
-    x1 = max(0.0, x1 - pad_x)
-    x2 = min(1.0, x2 + pad_x)
-    y1 = max(0.0, y1 - pad_y)
-    y2 = min(1.0, y2 + pad_y)
-
-    px1, py1 = int(x1 * width), int(y1 * height)
-    px2, py2 = int(x2 * width), int(y2 * height)
-
-    if px2 <= px1 or py2 <= py1:
-        return None
-
-    crop = im.crop((px1, py1, px2, py2))
-    short_side = min(crop.size)
-
-    if short_side <= 0:
-        return None
-
-    scale = min(min_dim / short_side, max_upscale)
-
-    if scale > 1.0:
-        crop = crop.resize(
-            (int(crop.width * scale), int(crop.height * scale)),
-            Image.LANCZOS,
-        )
-
-    return crop
 
 def _normalise_label(text: str) -> str:
     return re.sub(r"[^a-z0-9]+", "", str(text).lower())
