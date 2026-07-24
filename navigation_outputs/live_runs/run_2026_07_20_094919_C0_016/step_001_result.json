@@ -1,0 +1,109 @@
+{
+  "run_settings": {
+    "started_at": "2026-07-20T09:49:19",
+    "goal": "C0.016",
+    "mode": "auto",
+    "camera_mode": "separate",
+    "api": "http://ernis-amd395:8001",
+    "robot_user": "unitree",
+    "robot_ip": "192.168.123.14",
+    "camera_device": "/dev/video3",
+    "front_device": "/dev/video2",
+    "left_device": "/dev/video4",
+    "right_device": "/dev/video3",
+    "capture_size": "960x720",
+    "execute": "false",
+    "cmd_vel_topic": "/cmd_vel",
+    "forward_speed": 0.12,
+    "turn_speed": 0.2,
+    "move_duration": 5.0,
+    "invert_turn": false,
+    "memory": "true",
+    "interval": 5.0,
+    "max_steps": 20,
+    "stitch_width": 960,
+    "stitch_height": 720,
+    "min_evidence_score": 0.3,
+    "allow_low_confidence": false
+  },
+  "step": 1,
+  "timestamp": "2026-07-20T09:51:59",
+  "camera_mode": "separate",
+  "primary_path": "robot_live_frames/step_0001/front.png",
+  "saved_files": {
+    "left": "robot_live_frames/step_0001/left.png",
+    "front": "robot_live_frames/step_0001/front.png",
+    "right": "robot_live_frames/step_0001/right.png"
+  },
+  "executed": false,
+  "step_metric": {
+    "done": false,
+    "executed": false,
+    "mode": "autonomous_step",
+    "observation_mode": "separate",
+    "action_name": "NAVIGATE_TO_LANDMARK",
+    "confidence": "low",
+    "evidence_score": 0.0,
+    "is_valid": false,
+    "evidence_view": "RIGHT"
+  },
+  "evidence_view": "RIGHT",
+  "response": {
+    "mode": "autonomous_step",
+    "goal": "C0.016",
+    "observation_mode": "separate",
+    "image_path": "live_frames/frame_1784533763878_front.png",
+    "image_paths": {
+      "LEFT": "live_frames/frame_1784533763877_left.png",
+      "FRONT": "live_frames/frame_1784533763878_front.png",
+      "RIGHT": "live_frames/frame_1784533763879_right.png"
+    },
+    "done": false,
+    "action": {
+      "name": "NAVIGATE_TO_LANDMARK",
+      "params": {
+        "landmark_id": "reception_desk",
+        "direction": "forward",
+        "target": "reception_desk",
+        "target_description": "The reception desk with the 'RECEPTION' sign on the glass wall.",
+        "floor": null,
+        "search_for": null,
+        "stop_condition": "robot near reception desk",
+        "capture_after": true,
+        "evidence_view": "RIGHT"
+      },
+      "reason": "The goal 'C0.016' is a specific room code that is not visible in the current views; the reception desk is the most logical place to find a directory or staff to confirm the location of this room.",
+      "confidence": "low",
+      "evidence_score": 0.0,
+      "evidence_breakdown": {
+        "invalid_action": 1.0,
+        "final_score": 0.0
+      },
+      "goal_reached": false,
+      "needs_verification": true,
+      "raw": {
+        "action": "NAVIGATE_TO_LANDMARK",
+        "params": {
+          "landmark_id": "reception_desk",
+          "direction": "forward",
+          "target": "reception_desk",
+          "target_description": "The reception desk with the 'RECEPTION' sign on the glass wall.",
+          "floor": null,
+          "search_for": null,
+          "stop_condition": "robot near reception desk",
+          "capture_after": true,
+          "evidence_view": "RIGHT"
+        },
+        "reason": "The goal 'C0.016' is a specific room code that is not visible in the current views; the reception desk is the most logical place to find a directory or staff to confirm the location of this room.",
+        "confidence": "high",
+        "goal_reached": false,
+        "needs_verification": true
+      },
+      "is_valid": false,
+      "invalid_reason": "Unknown landmark_id: reception_desk"
+    },
+    "action_display": "NAVIGATE_TO_LANDMARK({'landmark_id': 'reception_desk', 'direction': 'forward', 'target': 'reception_desk', 'target_description': \"The reception desk with the 'RECEPTION' sign on the glass wall.\", 'floor': None, 'search_for': None, 'stop_condition': 'robot near reception desk', 'capture_after': True, 'evidence_view': 'RIGHT'}) [low, score=0.00] INVALID: Unknown landmark_id: reception_desk - The goal 'C0.016' is a specific room code that is not visible in the current views; the reception desk is the most logical place to find a directory or staff to confirm the location of this room.",
+    "status": "Goal=C0.016 | records=1 | memory_landmarks=0 | session_memory_active=True | inherited_previous_memory=False",
+    "saved_result": "navigation_outputs/http_api/autonomous_step_latest_result.json"
+  }
+}

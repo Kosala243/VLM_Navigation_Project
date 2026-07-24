@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import json
 import os
 import shutil
@@ -11,7 +12,7 @@ from typing import Any, Optional
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.responses import JSONResponse
 
-from navigation_pipeline import ModelWrapper, NavigationSystem, GoalParser
+from navigation_pipeline import Action, ModelWrapper, NavigationSystem, GoalParser
 
 
 app = FastAPI(title="VLM Navigation Pipeline API")
@@ -24,6 +25,54 @@ LIVE_DIR = Path("live_frames")
 OUTPUT_DIR = Path("navigation_outputs/http_api")
 LIVE_DIR.mkdir(parents=True, exist_ok=True)
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+EXTERNAL_EXECUTION_ENABLED = False
+
+# Serializes all reads/writes of the global NAV session so a
+# /autonomous/start cannot race an in-flight /autonomous/step or
+# /autonomous/ack and corrupt session state.
+NAV_LOCK = asyncio.Lock()
+
+
+def _safe_step(
+    nav: NavigationSystem,
+    image_path,
+    image_paths: dict[str, str] | None = None,
+    execute: bool = False,
+    expect_external_execution: bool = False,
+):
+    """Run one navigation step, converting a pipeline/model exception into a
+    safe WAIT_OR_RECOVER action instead of letting it crash the request and
+    leave the caller with a bare 500 and no safe fallback action."""
+    try:
+        return nav.step(
+            str(image_path),
+            image_paths=image_paths,
+            execute=execute,
+            expect_external_execution=expect_external_execution,
+        )
+    except Exception as exc:
+        print(f"[API] nav.step() failed: {exc}")
+        fallback = Action(
+            name="WAIT_OR_RECOVER",
+            params={
+                "landmark_id": None,
+                "direction": None,
+                "target": None,
+                "target_description": None,
+                "search_for": "a fresh valid observation after a pipeline error",
+                "stop_condition": "robot remains stopped until the pipeline recovers",
+                "capture_after": True,
+                "evidence_view": "NONE",
+            },
+            reason=f"Navigation step failed: {exc}",
+            confidence="low",
+            evidence_score=0.0,
+            goal_reached=False,
+            needs_verification=True,
+            raw={"pipeline_error": str(exc)},
+            is_valid=True,
+        )
+        return fallback, False
 
 
 def env_bool(name: str, default: bool = False) -> bool:
@@ -131,6 +180,11 @@ def action_response(
     nav: NavigationSystem,
     mode: str,
 ) -> dict[str, Any]:
+    last_record = (
+        nav.records[-1]
+        if nav.records
+        else None
+    )
     result = {
         "mode": mode,
         "goal": goal,
@@ -141,6 +195,10 @@ def action_response(
         "action": asdict(action),
         "action_display": action.display(),
         "status": nav.current_status(),
+        "action_step": (last_record.image_num if last_record else None),
+        "perception_ok": (last_record.memory_update.parse_ok if last_record else None),
+        "perception_error": (last_record.memory_update.error if last_record else None),
+        "execution_ack_required": (nav.pending_step_number is not None and last_record is not None and nav.pending_step_number == last_record.image_num),
     }
 
     output_path = OUTPUT_DIR / f"{mode}_latest_result.json"
@@ -185,8 +243,9 @@ async def single_step(
     )
 
     nav = new_navigation_system(use_goal, keep_memory=False)
-    action, done = nav.step(
-        str(primary_path),
+    action, done = _safe_step(
+        nav,
+        primary_path,
         image_paths=image_paths,
         execute=False,
     )
@@ -206,22 +265,24 @@ async def single_step(
 
 
 @app.post("/autonomous/start")
-def autonomous_start(goal: str = Form(default=None)):
+async def autonomous_start(goal: str = Form(default=None), execution_enabled: bool = Form(default=False)):
     """
     Starts/reset a memory-preserving autonomous session.
     Movement is still disabled on AMD; ThinkPad handles movement separately.
     """
-    global NAV, CURRENT_GOAL
+    global NAV, CURRENT_GOAL, EXTERNAL_EXECUTION_ENABLED
 
-    CURRENT_GOAL = goal or CURRENT_GOAL
-    NAV = new_navigation_system(CURRENT_GOAL, keep_memory=False)
+    async with NAV_LOCK:
+        CURRENT_GOAL = goal or CURRENT_GOAL
+        EXTERNAL_EXECUTION_ENABLED = bool(execution_enabled)
+        NAV = new_navigation_system(CURRENT_GOAL, keep_memory=False)
 
-    return {
-        "status": "started",
-        "goal": CURRENT_GOAL,
-        "movement_enabled": False,
-    }
-
+        return {
+            "status": "started",
+            "goal": CURRENT_GOAL,
+            "movement_enabled": False,
+            "external_execution_enabled": EXTERNAL_EXECUTION_ENABLED,
+        }
 
 @app.post("/autonomous/step")
 async def autonomous_step(
@@ -239,9 +300,6 @@ async def autonomous_step(
     """
     global NAV
 
-    if NAV is None:
-        NAV = new_navigation_system(CURRENT_GOAL, keep_memory=False)
-
     primary_path, image_paths, observation_mode = await prepare_observation(
         image=image,
         left_image=left_image,
@@ -249,14 +307,19 @@ async def autonomous_step(
         right_image=right_image,
     )
 
-    action, done = NAV.step(
-        str(primary_path),
-        image_paths=image_paths,
-        execute=False,
-    )
+    async with NAV_LOCK:
+        if NAV is None:
+            NAV = new_navigation_system(CURRENT_GOAL, keep_memory=False)
 
-    return JSONResponse(
-        action_response(
+        action, done = _safe_step(
+            NAV,
+            primary_path,
+            image_paths=image_paths,
+            execute=False,
+            expect_external_execution=EXTERNAL_EXECUTION_ENABLED,
+        )
+
+        result = action_response(
             goal=CURRENT_GOAL,
             image_path=primary_path,
             image_paths=image_paths,
@@ -266,15 +329,55 @@ async def autonomous_step(
             nav=NAV,
             mode="autonomous_step",
         )
-    )
+
+    return JSONResponse(result)
+
+@app.post("/autonomous/ack")
+async def autonomous_ack(
+    step_number: int = Form(...),
+    executed: bool = Form(...),
+    status: str = Form(default=""),
+    reason: str = Form(default=""),
+):
+    global NAV
+
+    async with NAV_LOCK:
+        if NAV is None:
+            raise HTTPException(
+                status_code=400,
+                detail="No active autonomous session.",
+            )
+
+        acknowledgement = (
+            NAV.acknowledge_execution(
+                step_number=step_number,
+                executed=executed,
+                reason=(
+                    reason
+                    or status
+                ),
+            )
+        )
+
+    if not acknowledgement.get(
+        "accepted",
+        False,
+    ):
+        raise HTTPException(
+            status_code=409,
+            detail=acknowledgement,
+        )
+
+    return acknowledgement
 
 @app.get("/autonomous/export")
 def autonomous_export():
     """
     Export the current live autonomous session:
-    - parsed goal
-    - full navigation memory
-    - complete step records
+    - parsed goal;
+    - full cumulative navigation memory;
+    - current perception status;
+    - complete step-by-step navigation records.
     """
     global NAV
 
@@ -284,41 +387,101 @@ def autonomous_export():
             detail="No active autonomous session.",
         )
 
+    last_record = (
+        NAV.records[-1]
+        if NAV.records
+        else None
+    )
+
+    latest_perception = {
+        "parse_ok": (
+            last_record.memory_update.parse_ok
+            if last_record
+            else None
+        ),
+        "error": (
+            last_record.memory_update.error
+            if last_record
+            else ""
+        ),
+        "parse_attempts": (
+            last_record.memory_update.parse_attempts
+            if last_record
+            else 0
+        ),
+        "raw_response": (
+            last_record.memory_update.raw_response
+            if last_record
+            else ""
+        ),
+    }
+
     memory_data = {
         "image_count": NAV.memory.image_count,
-        "landmarks": [asdict(lm) for lm in NAV.memory.landmarks],
-        "observation_summaries": NAV.memory.observation_summaries,
-        "hypotheses": NAV.memory.hypotheses,
-        "failed_actions": NAV.memory.failed_actions,
+        "landmarks": [
+            asdict(landmark)
+            for landmark in NAV.memory.landmarks
+        ],
+        "observation_summaries": list(
+            NAV.memory.observation_summaries
+        ),
+        "hypotheses": list(
+            NAV.memory.hypotheses
+        ),
+        "failed_actions": list(
+            NAV.memory.failed_actions
+        ),
+        "latest_perception": latest_perception,
     }
+
+    navigation_records = []
+
+    for record in NAV.records:
+        navigation_records.append({
+            "image_num": record.image_num,
+            "image_path": record.image_path,
+            "memory_update": {
+                "useful": (
+                    record.memory_update.useful
+                ),
+                "summary": (
+                    record.memory_update.summary
+                ),
+                "landmarks": [
+                    asdict(landmark)
+                    for landmark
+                    in record.memory_update.landmarks
+                ],
+                "hypotheses": list(
+                    record.memory_update.hypotheses
+                ),
+                "parse_ok": (
+                    record.memory_update.parse_ok
+                ),
+                "error": (
+                    record.memory_update.error
+                ),
+                "parse_attempts": (
+                    record.memory_update.parse_attempts
+                ),
+                "raw_response": (
+                    record.memory_update.raw_response
+                ),
+            },
+            "verification": (
+                record.verification.to_dict()
+                if record.verification
+                else None
+            ),
+            "action": asdict(record.action),
+            "executed": record.executed,
+        })
 
     navigation_log_data = {
         "goal": NAV.goal.to_dict(),
         "status": NAV.current_status(),
         "total_steps": len(NAV.records),
-        "records": [
-            {
-                "image_num": record.image_num,
-                "image_path": record.image_path,
-                "memory_update": {
-                    "useful": record.memory_update.useful,
-                    "summary": record.memory_update.summary,
-                    "landmarks": [
-                        asdict(lm)
-                        for lm in record.memory_update.landmarks
-                    ],
-                    "hypotheses": record.memory_update.hypotheses,
-                },
-                "verification": (
-                    record.verification.to_dict()
-                    if record.verification
-                    else None
-                ),
-                "action": asdict(record.action),
-                "executed": record.executed,
-            }
-            for record in NAV.records
-        ],
+        "records": navigation_records,
     }
 
     return {

@@ -17,7 +17,7 @@ def env_bool(name: str, default: bool = False) -> bool:
 
 def main() -> None:
     goal = os.getenv("NAV_GOAL", "B0.004")
-    image_path = os.getenv("LIVE_IMAGE_PATH", "live_frames/current_frame.jpg")
+    image_path = os.getenv("LIVE_IMAGE_PATH", "live_frames/current_frame.png")
     output_dir = Path(os.getenv("SINGLE_STEP_OUTPUT_DIR", "navigation_outputs/live_single_step"))
     keep_memory = env_bool("KEEP_MEMORY", False)
     use_rule_goal_parser = env_bool("USE_RULE_GOAL_PARSER", True)

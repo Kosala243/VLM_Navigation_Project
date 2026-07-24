@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import argparse
+import hashlib
 import json
 import shlex
 import subprocess
@@ -11,17 +12,35 @@ import shutil
 from datetime import datetime
 from pathlib import Path
 from robot_executor import SafeCmdVelExecutor
+from robot_safety import RobotSafetyMonitor
 
+def run(cmd, check=True, verbose=True, timeout=60):
+    """Run a subprocess with a hard wall-clock timeout.
 
-def run(cmd, check=True, verbose=True):
+    Without a timeout, a hung ssh/scp/curl call blocks this process
+    forever: subprocess.run() never returns, no exception is ever
+    raised, and main()'s `except BaseException: send_emergency_stop()`
+    handler never fires. A finite timeout turns a hang into a
+    subprocess.TimeoutExpired, which main() does catch, so the robot
+    gets an emergency stop instead of being left mid-command forever.
+    """
     if verbose:
         print("[CMD]", " ".join(cmd))
-    result = subprocess.run(
-        cmd,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        universal_newlines=True,
-    )
+    try:
+        result = subprocess.run(
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            universal_newlines=True,
+            timeout=timeout,
+        )
+    except subprocess.TimeoutExpired:
+        print(
+            "[ERROR] Command timed out after {}s: {}".format(
+                timeout, " ".join(cmd)
+            )
+        )
+        raise
 
     if verbose and result.stdout.strip():
         print("[STDOUT]")
@@ -41,27 +60,32 @@ def run(cmd, check=True, verbose=True):
 
     return result
 
+def ssh_run(robot_user, robot_ip, remote_cmd, timeout=30):
+    return run(
+        [
+            "ssh",
+            "-o", "ConnectTimeout=10",
+            "{}@{}".format(robot_user, robot_ip),
+            remote_cmd,
+        ],
+        timeout=timeout,
+    )
 
-def ssh_run(robot_user, robot_ip, remote_cmd):
-    return run([
-        "ssh",
-        "{}@{}".format(robot_user, robot_ip),
-        remote_cmd,
-    ])
-
-
-def scp_from_robot(robot_user, robot_ip, remote_path, local_path):
+def scp_from_robot(robot_user, robot_ip, remote_path, local_path, timeout=30):
     local_path = Path(local_path)
     local_path.parent.mkdir(parents=True, exist_ok=True)
 
-    run([
-        "scp",
-        "{}@{}:{}".format(robot_user, robot_ip, remote_path),
-        str(local_path),
-    ])
+    run(
+        [
+            "scp",
+            "-o", "ConnectTimeout=10",
+            "{}@{}:{}".format(robot_user, robot_ip, remote_path),
+            str(local_path),
+        ],
+        timeout=timeout,
+    )
 
     return local_path
-
 
 def ffmpeg_capture_command(device, output_path, capture_size, timeout_s):
     return (
@@ -79,7 +103,6 @@ def ffmpeg_capture_command(device, output_path, capture_size, timeout_s):
         output_path=shlex.quote(output_path),
     )
 
-
 def capture_single_camera(args, local_step_dir):
     local_step_dir.mkdir(parents=True, exist_ok=True)
 
@@ -93,8 +116,19 @@ def capture_single_camera(args, local_step_dir):
         timeout_s=args.capture_timeout,
     )
 
-    ssh_run(args.robot_user, args.robot_ip, cmd)
-    scp_from_robot(args.robot_user, args.robot_ip, remote_image, local_image)
+    ssh_run(
+        args.robot_user,
+        args.robot_ip,
+        cmd,
+        timeout=args.capture_timeout + args.ssh_timeout,
+    )
+    scp_from_robot(
+        args.robot_user,
+        args.robot_ip,
+        remote_image,
+        local_image,
+        timeout=args.scp_timeout,
+    )
 
     print("[OK] Single camera image:", local_image)
     return local_image
@@ -143,10 +177,21 @@ def capture_three_camera_files(args, local_step_dir):
         remote_tar=shlex.quote(remote_tar),
     )
 
-    ssh_run(args.robot_user, args.robot_ip, remote_cmd)
+    ssh_run(
+        args.robot_user,
+        args.robot_ip,
+        remote_cmd,
+        timeout=(3 * args.capture_timeout) + args.ssh_timeout,
+    )
 
     local_tar = local_step_dir / "vlm_three_cameras.tar"
-    scp_from_robot(args.robot_user, args.robot_ip, remote_tar, local_tar)
+    scp_from_robot(
+        args.robot_user,
+        args.robot_ip,
+        remote_tar,
+        local_tar,
+        timeout=args.scp_timeout,
+    )
 
     with tarfile.open(str(local_tar), "r") as tar:
         tar.extractall(str(local_step_dir))
@@ -178,7 +223,6 @@ def capture_three_camera_files(args, local_step_dir):
 
     return image_paths
 
-
 def capture_three_cameras_stitched(args, local_step_dir):
     image_paths = capture_three_camera_files(args, local_step_dir)
 
@@ -190,7 +234,6 @@ def capture_three_cameras_stitched(args, local_step_dir):
         width=args.stitch_width,
         height=args.stitch_height,
     )
-
     return stitched, image_paths
 
 def load_font(size):
@@ -207,7 +250,6 @@ def load_font(size):
         except Exception:
             return None
 
-
 def draw_label(img, label):
     from PIL import ImageDraw
 
@@ -218,7 +260,6 @@ def draw_label(img, label):
     draw.text((12, 8), label, fill=(0, 0, 0), font=font)
 
     return img
-
 
 def stitch_three_images(left_path, front_path, right_path, output_path, width, height):
     try:
@@ -262,9 +303,9 @@ def load_saved_three_camera_files(args, local_step_dir, step_index):
     )
 
     candidates = {
-        "LEFT": source_dir / "left.jpg",
-        "FRONT": source_dir / "front.jpg",
-        "RIGHT": source_dir / "right.jpg",
+        "LEFT": source_dir / "left.png",
+        "FRONT": source_dir / "front.png",
+        "RIGHT": source_dir / "right.png",
     }
 
     for label, path in candidates.items():
@@ -354,12 +395,14 @@ def get_observation(args, step_index=None):
 
     raise ValueError("Unknown camera mode: {}".format(args.camera_mode))
 
-def post_to_amd(api, endpoint, image_path, goal=None):
+def post_to_amd(api, endpoint, image_path, goal=None, connect_timeout=10, max_time=900):
     url = api.rstrip("/") + "/" + endpoint.lstrip("/")
 
     cmd = [
         "curl",
         "-sS",
+        "--connect-timeout", str(connect_timeout),
+        "--max-time", str(max_time),
         "-X",
         "POST",
         url,
@@ -370,7 +413,7 @@ def post_to_amd(api, endpoint, image_path, goal=None):
 
     cmd.extend(["-F", "image=@{}".format(str(image_path))])
 
-    result = run(cmd)
+    result = run(cmd, timeout=max_time + 10)
 
     try:
         return json.loads(result.stdout)
@@ -379,17 +422,24 @@ def post_to_amd(api, endpoint, image_path, goal=None):
         print(result.stdout)
         raise
 
-def post_observation_to_amd(api, endpoint, observation, goal=None):
+def post_observation_to_amd(api, endpoint, observation, goal=None, connect_timeout=10, max_time=900):
     """
     Send either:
     - one image field for single/stitched mode
     - left_image/front_image/right_image fields for separate mode
+
+    max_time bounds the whole request, including AMD-side VLM inference
+    (single_step/autonomous/step); it should stay comfortably above the
+    server's own MODEL_TIMEOUT_S so a slow-but-alive request isn't cut
+    off before the server's own safety timeout would give up.
     """
     url = api.rstrip("/") + "/" + endpoint.lstrip("/")
 
     cmd = [
         "curl",
         "-sS",
+        "--connect-timeout", str(connect_timeout),
+        "--max-time", str(max_time),
         "-X",
         "POST",
         url,
@@ -411,7 +461,7 @@ def post_observation_to_amd(api, endpoint, observation, goal=None):
     else:
         cmd.extend(["-F", "image=@{}".format(observation["primary_path"])])
 
-    result = run(cmd, verbose=False)
+    result = run(cmd, verbose=False, timeout=max_time + 10)
 
     try:
         return json.loads(result.stdout)
@@ -420,21 +470,25 @@ def post_observation_to_amd(api, endpoint, observation, goal=None):
         print(result.stdout)
         raise
 
-def start_autonomous_session(api, goal):
+def start_autonomous_session(api, goal, execution_enabled, connect_timeout=10, max_time=60):
     url = api.rstrip("/") + "/autonomous/start"
 
     result = run(
         [
             "curl",
             "-sS",
+            "--connect-timeout", str(connect_timeout),
+            "--max-time", str(max_time),
             "-X",
             "POST",
             url,
             "-F",
             "goal={}".format(goal),
+            "-F",
+            "execution_enabled={}".format("true" if execution_enabled else "false"),
         ],
-        verbose=False
-    
+        verbose=False,
+        timeout=max_time + 10,
     )
 
     try:
@@ -447,18 +501,107 @@ def start_autonomous_session(api, goal):
     print(json.dumps(response, indent=2))
     return response
 
-def export_autonomous_session(api, run_dir):
+def post_execution_ack(
+    api,
+    response,
+    executed,
+    execution_result,
+    connect_timeout=10,
+    max_time=60,
+):
+    step_number = response.get(
+        "action_step"
+    )
+
+    if step_number is None:
+        return {
+            "accepted": False,
+            "reason": (
+                "AMD response did not contain action_step."
+            ),
+        }
+
+    execution_result = (
+        execution_result
+        if isinstance(
+            execution_result,
+            dict,
+        )
+        else {}
+    )
+
+    url = (
+        api.rstrip("/")
+        + "/autonomous/ack"
+    )
+
+    cmd = [
+        "curl",
+        "-sS",
+        "--connect-timeout", str(connect_timeout),
+        "--max-time", str(max_time),
+        "-X",
+        "POST",
+        url,
+        "-F",
+        "step_number={}".format(
+            step_number
+        ),
+        "-F",
+        "executed={}".format(
+            "true" if executed else "false"
+        ),
+        "-F",
+        "status={}".format(
+            execution_result.get(
+                "status",
+                "",
+            )
+        ),
+        "-F",
+        "reason={}".format(
+            execution_result.get(
+                "reason",
+                "",
+            )
+        ),
+    ]
+
+    result = run(
+        cmd,
+        verbose=False,
+        timeout=max_time + 10,
+    )
+
+    try:
+        return json.loads(
+            result.stdout
+        )
+    except Exception:
+        return {
+            "accepted": False,
+            "reason": (
+                "AMD acknowledgement response "
+                "was not valid JSON."
+            ),
+            "raw_response": result.stdout,
+        }
+
+def export_autonomous_session(api, run_dir, connect_timeout=10, max_time=60):
     url = api.rstrip("/") + "/autonomous/export"
 
     result = run(
         [
             "curl",
             "-sS",
+            "--connect-timeout", str(connect_timeout),
+            "--max-time", str(max_time),
             "-X",
             "GET",
             url,
         ],
         verbose=False,
+        timeout=max_time + 10,
     )
 
     try:
@@ -525,30 +668,540 @@ def print_action_result(response):
     print("Saved:", response.get("saved_result"))
     print("===================================\n")
 
-def maybe_execute_robot_action(args, response):
-    """
-    Optionally execute the VLM action using /cmd_vel.
+_PROGRESS_ACTIONS = {
+    "FOLLOW_DIRECTION",
+    "NAVIGATE_TO_LANDMARK",
+    "NAVIGATE_TO_FRONTIER",
+    "ALIGN_WITH_LANDMARK",
+    "APPROACH_LANDMARK",
+    "PASS_THROUGH_DOORWAY",
+    "READ_SIGN",
+    "CHECK_DOOR_LABEL",
+    "SEARCH_FOR_CUE",
+}
 
-    --execute false   = no movement
-    --execute confirm = ask before movement
-    --execute true    = move directly
+
+def _action_signature(response):
+    """
+    Return a compact identifier for a movement action.
+
+    This is used only for logging and retry diagnostics.
+    """
+    action = response.get("action", {})
+
+    if not isinstance(action, dict):
+        return ""
+
+    name = str(
+        action.get("name", "")
+    ).strip().upper()
+
+    if name not in _PROGRESS_ACTIONS:
+        return ""
+
+    params = action.get("params", {})
+
+    if not isinstance(params, dict):
+        params = {}
+
+    landmark_id = str(
+        params.get("landmark_id", "") or ""
+    ).strip()
+
+    direction = str(
+        params.get("direction", "") or ""
+    ).strip().lower()
+
+    evidence_view = str(
+        params.get("evidence_view", "") or ""
+    ).strip().upper()
+
+    return "|".join([
+        name,
+        landmark_id,
+        direction,
+        evidence_view,
+    ])
+
+
+def _observation_bundle_hash(observation):
+    """
+    Create one SHA-256 hash for all image files in an observation.
+
+    This detects exact repeated/stale image bundles.
+    It is not a substitute for LiDAR or odometry progress checking.
+    """
+    saved_files = observation.get(
+        "saved_files",
+        {},
+    )
+
+    if not isinstance(saved_files, dict):
+        saved_files = {}
+
+    if not saved_files:
+        primary_path = observation.get(
+            "primary_path"
+        )
+
+        if primary_path:
+            saved_files = {
+                "primary": str(primary_path),
+            }
+
+    if not saved_files:
+        return ""
+
+    digest = hashlib.sha256()
+
+    for label, path_value in sorted(
+        saved_files.items()
+    ):
+        path = Path(str(path_value))
+
+        if not path.is_file():
+            return ""
+
+        digest.update(
+            str(label).encode("utf-8")
+        )
+
+        with path.open("rb") as image_file:
+            while True:
+                chunk = image_file.read(
+                    1024 * 1024
+                )
+
+                if not chunk:
+                    break
+
+                digest.update(chunk)
+
+    return digest.hexdigest()
+
+
+def _make_no_progress_stop_response(
+    response,
+    repeat_count,
+    previous_signature,
+    current_signature,
+):
+    """
+    Replace a movement response with a local safety stop.
+    """
+    guarded = dict(response)
+
+    reason = (
+        "No visual progress was detected after robot movement: "
+        "the camera image bundle is exactly unchanged after "
+        f"{repeat_count} repeated attempt(s). Stop and inspect "
+        "robot control, camera capture, or physical obstruction."
+    )
+
+    guarded["done"] = False
+
+    guarded["safety_guard"] = {
+        "no_progress_detected": True,
+        "exact_duplicate_observation": True,
+        "repeat_count": repeat_count,
+        "previous_action_signature": previous_signature,
+        "current_action_signature": current_signature,
+        "reason": reason,
+    }
+
+    guarded["action"] = {
+        "name": "WAIT_OR_RECOVER",
+        "params": {
+            "landmark_id": None,
+            "direction": None,
+            "target": None,
+            "target_description": None,
+            "floor": None,
+            "search_for": "robot movement or camera failure",
+            "stop_condition": "robot remains stopped",
+            "capture_after": False,
+            "evidence_view": "NONE",
+        },
+        "reason": reason,
+        "confidence": "high",
+        "evidence_score": 0.0,
+        "evidence_breakdown": {
+            "no_progress_guard": 1.0,
+            "final_score": 0.0,
+        },
+        "goal_reached": False,
+        "needs_verification": False,
+        "raw": {},
+        "is_valid": True,
+        "invalid_reason": "",
+    }
+
+    guarded["action_display"] = (
+        "WAIT_OR_RECOVER({'evidence_view': 'NONE'}) "
+        "[high, score=0.00] valid - "
+        + reason
+    )
+
+    return guarded
+
+def apply_no_progress_guard(
+    args,
+    response,
+    observation,
+    last_executed_state,
+    repeat_count,
+):
+    """
+    Detect an exact repeated observation after an executed action.
+
+    One retry is allowed by default. The next exact duplicate
+    stops the autonomous loop.
     """
     if args.execute == "false":
-        print("[EXECUTE] Dry run only. Robot will not move.")
-        return False
+        return response, 0, False
+
+    current_hash = _observation_bundle_hash(
+        observation
+    )
+
+    current_signature = _action_signature(
+        response
+    )
+
+    if (
+        not current_hash
+        or not current_signature
+        or last_executed_state is None
+    ):
+        return response, 0, False
+
+    previous_hash = last_executed_state.get(
+        "observation_hash",
+        "",
+    )
+
+    previous_signature = last_executed_state.get(
+        "action_signature",
+        "",
+    )
+
+    if current_hash != previous_hash:
+        return response, 0, False
+
+    repeat_count += 1
+
+    if (
+        repeat_count
+        <= args.max_no_progress_retries
+    ):
+        warned = dict(response)
+
+        warned["safety_guard"] = {
+            "no_progress_detected": False,
+            "exact_duplicate_observation": True,
+            "retry_allowed": True,
+            "repeat_count": repeat_count,
+            "previous_action_signature": (
+                previous_signature
+            ),
+            "current_action_signature": (
+                current_signature
+            ),
+            "reason": (
+                "Exact duplicate observation received "
+                "after movement. One small retry is allowed."
+            ),
+        }
+
+        print(
+            "[WARNING] Exact duplicate camera observation "
+            "after executed movement. Retry {}/{} allowed."
+            .format(
+                repeat_count,
+                args.max_no_progress_retries,
+            )
+        )
+
+        return warned, repeat_count, False
+
+    guarded = _make_no_progress_stop_response(
+        response=response,
+        repeat_count=repeat_count,
+        previous_signature=previous_signature,
+        current_signature=current_signature,
+    )
+
+    return guarded, repeat_count, True
+
+
+_REPEAT_LIMIT_ACTIONS = {
+    "ALIGN_WITH_LANDMARK",
+    "APPROACH_LANDMARK",
+    "PASS_THROUGH_DOORWAY",
+    "SEARCH_FOR_CUE",
+}
+
+def _repeat_limit_for_action(
+    args,
+    action_name,
+):
+    limits = {
+        "ALIGN_WITH_LANDMARK": (
+            args.max_alignment_pulses
+        ),
+        "APPROACH_LANDMARK": (
+            args.max_approach_pulses
+        ),
+        "PASS_THROUGH_DOORWAY": (
+            args.max_doorway_pulses
+        ),
+        "SEARCH_FOR_CUE": (
+            args.max_search_pulses
+        ),
+    }
+
+    return int(
+        limits.get(
+            action_name,
+            0,
+        )
+    )
+
+def _make_retry_limit_stop_response(
+    response,
+    action_name,
+    action_signature,
+    attempted_count,
+    allowed_count,
+):
+    guarded = dict(response)
+
+    reason = (
+        "{} exceeded its pulse limit: attempted {}, "
+        "allowed {}. Robot remains stopped."
+    ).format(
+        action_name,
+        attempted_count,
+        allowed_count,
+    )
+
+    safety_guard = guarded.get(
+        "safety_guard",
+        {},
+    )
+
+    if not isinstance(
+        safety_guard,
+        dict,
+    ):
+        safety_guard = {}
+
+    safety_guard.update({
+        "action_retry_limit_reached": True,
+        "action_name": action_name,
+        "action_signature": action_signature,
+        "attempted_count": attempted_count,
+        "allowed_count": allowed_count,
+        "reason": reason,
+    })
+
+    guarded["safety_guard"] = (
+        safety_guard
+    )
+
+    guarded["done"] = False
+
+    guarded["action"] = {
+        "name": "WAIT_OR_RECOVER",
+        "params": {
+            "landmark_id": None,
+            "direction": None,
+            "target": None,
+            "target_description": None,
+            "stop_condition": (
+                "robot remains stopped"
+            ),
+            "capture_after": False,
+            "evidence_view": "NONE",
+        },
+        "reason": reason,
+        "confidence": "high",
+        "evidence_score": 0.0,
+        "evidence_breakdown": {
+            "action_retry_limit": 1.0,
+            "final_score": 0.0,
+        },
+        "goal_reached": False,
+        "needs_verification": False,
+        "raw": {},
+        "is_valid": True,
+        "invalid_reason": "",
+    }
+
+    guarded["action_display"] = (
+        "WAIT_OR_RECOVER({'evidence_view': 'NONE'}) "
+        "[high, score=0.00] valid - "
+        + reason
+    )
+
+    return guarded
+
+
+def apply_action_retry_guard(
+    args,
+    response,
+    last_executed_state,
+):
+    current_signature = (
+        _action_signature(response)
+    )
+
+    action = response.get(
+        "action",
+        {},
+    )
+
+    if not isinstance(action, dict):
+        return response, False
+
+    action_name = str(
+        action.get("name", "")
+    ).strip().upper()
+
+    if action_name not in _REPEAT_LIMIT_ACTIONS:
+        return response, False
+
+    if (
+        not current_signature
+        or last_executed_state is None
+    ):
+        return response, False
+
+    previous_signature = (
+        last_executed_state.get(
+            "action_signature",
+            "",
+        )
+    )
+
+    if current_signature != previous_signature:
+        return response, False
+
+    previous_count = int(
+        last_executed_state.get(
+            "same_action_count",
+            1,
+        )
+        or 1
+    )
+
+    attempted_count = (
+        previous_count + 1
+    )
+
+    allowed_count = (
+        _repeat_limit_for_action(
+            args,
+            action_name,
+        )
+    )
+
+    if (
+        allowed_count > 0
+        and attempted_count
+        > allowed_count
+    ):
+        guarded = (
+            _make_retry_limit_stop_response(
+                response=response,
+                action_name=action_name,
+                action_signature=(
+                    current_signature
+                ),
+                attempted_count=(
+                    attempted_count
+                ),
+                allowed_count=(
+                    allowed_count
+                ),
+            )
+        )
+
+        return guarded, True
+
+    return response, False
+
+def maybe_execute_robot_action(
+    args,
+    response,
+):
+    if args.execute == "false":
+        print(
+            "[EXECUTE] Dry run only. "
+            "Robot will not move."
+        )
+
+        return (
+            False,
+            {
+                "executed": False,
+                "status": "dry_run",
+                "reason": (
+                    "Execution disabled."
+                ),
+                "command": None,
+                "safety": None,
+            },
+        )
+
+    safety_monitor = RobotSafetyMonitor(
+        sensor_mode=args.safety_mode,
+        allow_without_sensor=(
+            args.allow_motion_without_safety_sensor
+        ),
+    )
 
     executor = SafeCmdVelExecutor(
         topic=args.cmd_vel_topic,
         forward_speed=args.forward_speed,
         turn_speed=args.turn_speed,
         duration=args.move_duration,
+        forward_pulse_duration=(
+            args.forward_pulse_duration
+        ),
+        turn_pulse_duration=(
+            args.turn_pulse_duration
+        ),
+        approach_pulse_duration=(
+            args.approach_pulse_duration
+        ),
+        doorway_pulse_duration=(
+            args.doorway_pulse_duration
+        ),
+        search_pulse_duration=(
+            args.search_pulse_duration
+        ),
         invert_turn=args.invert_turn,
         execute_mode=args.execute,
-        min_evidence_score=args.min_evidence_score,
-        allow_low_confidence=args.allow_low_confidence,
+        min_evidence_score=(
+            args.min_evidence_score
+        ),
+        allow_low_confidence=(
+            args.allow_low_confidence
+        ),
+        safety_monitor=safety_monitor,
     )
 
-    return executor.execute_action_response(response)
+    executed = (
+        executor.execute_action_response(
+            response
+        )
+    )
+
+    return (
+        executed,
+        dict(executor.last_result),
+    )
 
 def safe_goal_name(goal):
     return (
@@ -559,7 +1212,6 @@ def safe_goal_name(goal):
         .replace(".", "_")
         .replace(":", "_")
     )
-
 
 def create_run_dir(args):
     if args.run_dir:
@@ -590,10 +1242,22 @@ def create_run_dir(args):
         "forward_speed": args.forward_speed,
         "turn_speed": args.turn_speed,
         "move_duration": args.move_duration,
+        "forward_pulse_duration": (args.forward_pulse_duration),
+        "turn_pulse_duration": (args.turn_pulse_duration),
+        "approach_pulse_duration": (args.approach_pulse_duration),
+        "doorway_pulse_duration": (args.doorway_pulse_duration),
+        "search_pulse_duration": (args.search_pulse_duration),
+        "max_alignment_pulses": (args.max_alignment_pulses),
+        "max_approach_pulses": (args.max_approach_pulses),
+        "max_doorway_pulses": (args.max_doorway_pulses),
+        "max_search_pulses": (args.max_search_pulses),
+        "safety_mode": args.safety_mode,
+        "allow_motion_without_safety_sensor": (args.allow_motion_without_safety_sensor),
         "invert_turn": args.invert_turn,
         "memory": args.memory,
         "interval": args.interval,
         "max_steps": args.max_steps,
+        "max_no_progress_retries": args.max_no_progress_retries,
         "stitch_width": args.stitch_width,
         "stitch_height": args.stitch_height,
         "min_evidence_score": args.min_evidence_score,
@@ -608,7 +1272,6 @@ def create_run_dir(args):
     print("[LOG] Run directory:", run_dir)
     return run_dir
 
-
 def save_step_log(
     run_dir,
     step_index,
@@ -617,6 +1280,7 @@ def save_step_log(
     executed,
     run_config=None,
     step_metric=None,
+    execution_result=None
 ):
     step_result = {
         "run_settings": run_config or {},
@@ -629,6 +1293,7 @@ def save_step_log(
         "step_metric": step_metric or {},
         "evidence_view": (step_metric or {}).get("evidence_view", "UNKNOWN"),
         "response": response,
+        "execution_result": execution_result or {},
     }
 
     result_path = run_dir / "step_{:03d}_result.json".format(step_index)
@@ -636,7 +1301,6 @@ def save_step_log(
 
     print("[LOG] Step result saved:", result_path)
     return result_path
-
 
 def save_final_summary(run_dir, goal, steps, success, run_config=None, metrics=None):
     summary = {
@@ -654,7 +1318,7 @@ def save_final_summary(run_dir, goal, steps, success, run_config=None, metrics=N
     print("[LOG] Final summary saved:", summary_path)
     return summary_path
 
-def extract_step_metric(response, executed):
+def extract_step_metric(response, executed, execution_result=None):
     action = response.get("action", {})
     if not isinstance(action, dict):
         action = {}
@@ -662,7 +1326,19 @@ def extract_step_metric(response, executed):
     params = action.get("params", {})
     if not isinstance(params, dict):
         params = {}
+    
+    safety_guard = response.get(
+        "safety_guard",
+        {},
+    )
+    if not isinstance(safety_guard, dict):
+        safety_guard = {}
 
+    if not isinstance(
+        execution_result,
+        dict,
+    ):
+        execution_result = {}
     try:
         evidence_score = float(action.get("evidence_score", 0.0) or 0.0)
     except Exception:
@@ -678,8 +1354,15 @@ def extract_step_metric(response, executed):
         "evidence_score": evidence_score,
         "is_valid": bool(action.get("is_valid", True)),
         "evidence_view": params.get("evidence_view"),
+        "no_progress_detected": bool(safety_guard.get("no_progress_detected", False)),
+        "duplicate_observation": bool(safety_guard.get("exact_duplicate_observation", False)),
+        "no_progress_repeat_count": int(safety_guard.get("repeat_count", 0) or 0),
+        "execution_status": execution_result.get("status"),
+        "execution_reason": execution_result.get("reason"),
+        "movement_command": execution_result.get("command"),
+        "safety_result": execution_result.get("safety"),
+        "action_retry_limit_reached": bool(safety_guard.get("action_retry_limit_reached", False)),
     }
-
 
 def compute_run_metrics(step_metrics, success):
     total_steps = len(step_metrics)
@@ -742,13 +1425,15 @@ def run_single_step(args):
         endpoint="/single_step",
         observation=observation,
         goal=args.goal,
+        connect_timeout=args.api_connect_timeout,
+        max_time=args.api_step_timeout,
     )
 
     print_action_result(response)
-    executed = maybe_execute_robot_action(args, response)
+    executed, execution_result = maybe_execute_robot_action(args, response)
 
     run_config = getattr(args, "run_config", {})
-    step_metric = extract_step_metric(response, executed)
+    step_metric = extract_step_metric(response, executed, execution_result)
     step_metrics = [step_metric]
     success = bool(response.get("done"))
     metrics = compute_run_metrics(step_metrics, success)
@@ -761,6 +1446,7 @@ def run_single_step(args):
         executed=executed,
         run_config=run_config,
         step_metric=step_metric,
+        execution_result=execution_result,
     )
 
     save_final_summary(
@@ -780,13 +1466,22 @@ def run_auto_mode(args):
 
     if use_memory:
         print("[INFO] Memory enabled: using /autonomous/start and /autonomous/step")
-        start_autonomous_session(args.api, args.goal)
+        start_autonomous_session(
+            args.api,
+            args.goal,
+            args.execute != "false",
+            connect_timeout=args.api_connect_timeout,
+            max_time=args.api_timeout,
+        )
     else:
         print("[INFO] Memory disabled: using fresh /single_step for every auto step")
 
     success = False
     completed_steps = 0
     step_metrics = []
+
+    last_executed_state = None
+    no_progress_repeat_count = 0
 
     for step in range(1, args.max_steps + 1):
         completed_steps = step
@@ -806,12 +1501,136 @@ def run_auto_mode(args):
             endpoint=endpoint,
             observation=observation,
             goal=goal_for_request,
+            connect_timeout=args.api_connect_timeout,
+            max_time=args.api_step_timeout,
+        )
+        (
+            response,
+            no_progress_repeat_count,
+            no_progress_blocked,
+        ) = apply_no_progress_guard(
+            args=args,
+            response=response,
+            observation=observation,
+            last_executed_state=last_executed_state,
+            repeat_count=no_progress_repeat_count,
         )
 
-        print_action_result(response)
-        executed = maybe_execute_robot_action(args, response)
+        retry_limit_blocked = False
+        if not no_progress_blocked:
+            (
+                response,
+                retry_limit_blocked,
+            ) = apply_action_retry_guard(
+                args=args,
+                response=response,
+                last_executed_state=(
+                    last_executed_state
+                ),
+            )
 
-        step_metric = extract_step_metric(response, executed)
+        print_action_result(response)
+        executed, execution_result = maybe_execute_robot_action(
+            args,
+            response,
+        )
+
+        ack_failed = False
+        if (
+            args.execute != "false"
+            and response.get(
+                "execution_ack_required",
+                False,
+            )
+        ):
+            ack_response = post_execution_ack(
+                api=args.api,
+                response=response,
+                executed=executed,
+                execution_result=execution_result,
+                connect_timeout=args.api_connect_timeout,
+                max_time=args.api_timeout,
+            )
+
+            execution_result[
+                "amd_ack"
+            ] = ack_response
+
+            if not ack_response.get(
+                "accepted",
+                False,
+            ):
+                ack_failed = True
+                print(
+                    "[ERROR] AMD execution acknowledgement failed:"
+                )
+                print(
+                    json.dumps(
+                        ack_response,
+                        indent=2,
+                    )
+                )
+
+        if (
+            executed
+            and not no_progress_blocked
+            and not retry_limit_blocked
+        ):
+            current_signature = (
+                _action_signature(response)
+            )
+
+            previous_signature = ""
+
+            previous_count = 0
+
+            if last_executed_state is not None:
+                previous_signature = (
+                    last_executed_state.get(
+                        "action_signature",
+                        "",
+                    )
+                )
+
+                previous_count = int(
+                    last_executed_state.get(
+                        "same_action_count",
+                        0,
+                    )
+                    or 0
+                )
+
+            same_action_count = (
+                previous_count + 1
+                if (
+                    current_signature
+                    == previous_signature
+                )
+                else 1
+            )
+
+            last_executed_state = {
+                "observation_hash": (
+                    _observation_bundle_hash(
+                        observation
+                    )
+                ),
+                "action_signature": (
+                    current_signature
+                ),
+                "same_action_count": (
+                    same_action_count
+                ),
+            }
+
+        elif (
+            not no_progress_blocked
+            and not retry_limit_blocked
+        ):
+            last_executed_state = None
+            no_progress_repeat_count = 0
+
+        step_metric = extract_step_metric(response, executed, execution_result)
         step_metrics.append(step_metric)
 
         save_step_log(
@@ -822,7 +1641,32 @@ def run_auto_mode(args):
             executed=executed,
             run_config=run_config,
             step_metric=step_metric,
+            execution_result=execution_result
         )
+
+        if ack_failed:
+            print(
+                "[STOPPED] Navigation stopped because "
+                "AMD and ThinkPad execution state could "
+                "not be synchronized."
+            )
+            break
+
+        if no_progress_blocked:
+            print(
+                "[STOPPED] Autonomous loop stopped because "
+                "the observation did not change after repeated "
+                "movement attempts."
+            )
+            break
+        
+        if retry_limit_blocked:
+            print(
+                "[STOPPED] Autonomous loop stopped "
+                "because an action exceeded its "
+                "maximum pulse count."
+            )
+            break
 
         if response.get("done") is True:
             print("[DONE] Goal reached according to pipeline.")
@@ -843,7 +1687,12 @@ def run_auto_mode(args):
     )
 
     if use_memory:
-        export_autonomous_session(args.api, run_dir)
+        export_autonomous_session(
+            args.api,
+            run_dir,
+            connect_timeout=args.api_connect_timeout,
+            max_time=args.api_timeout,
+        )
 
 def parse_args():
     parser = argparse.ArgumentParser(
@@ -917,6 +1766,41 @@ def parse_args():
     )
 
     parser.add_argument(
+        "--ssh-timeout",
+        type=int,
+        default=20,
+        help="Extra seconds allowed for SSH overhead on top of the capture timeout",
+    )
+    parser.add_argument(
+        "--scp-timeout",
+        type=int,
+        default=20,
+        help="Timeout in seconds for each scp file transfer from the robot",
+    )
+    parser.add_argument(
+        "--api-connect-timeout",
+        type=int,
+        default=10,
+        help="Max seconds to establish a connection to the AMD API",
+    )
+    parser.add_argument(
+        "--api-timeout",
+        type=int,
+        default=60,
+        help="Max seconds for lightweight AMD API calls (start/ack/export)",
+    )
+    parser.add_argument(
+        "--api-step-timeout",
+        type=int,
+        default=900,
+        help=(
+            "Max seconds for AMD API calls that run VLM inference "
+            "(single_step/autonomous/step). Keep this comfortably above "
+            "the server's own MODEL_TIMEOUT_S."
+        ),
+    )
+
+    parser.add_argument(
         "--remote-image-path",
         default="/tmp/vlm_current_frame.png",
         help="Robot-side image path for single camera mode",
@@ -933,6 +1817,17 @@ def parse_args():
 
     parser.add_argument("--interval", type=float, default=5.0)
     parser.add_argument("--max-steps", type=int, default=10)
+
+    parser.add_argument(
+        "--max-no-progress-retries",
+        type=int,
+        default=1,
+        help=(
+            "Number of small retries allowed when an exact "
+            "duplicate camera observation is received after "
+            "an executed movement."
+        ),
+    )
 
     parser.add_argument(
         "--execute",
@@ -964,10 +1859,81 @@ def parse_args():
     parser.add_argument(
         "--move-duration",
         type=float,
-        default=5.0,
+        default=0.40,
         help="Duration in seconds for each tiny movement",
     )
 
+    parser.add_argument(
+        "--forward-pulse-duration",
+        type=float,
+        default=0.40,
+    )
+
+    parser.add_argument(
+        "--turn-pulse-duration",
+        type=float,
+        default=0.35,
+    )
+
+    parser.add_argument(
+        "--approach-pulse-duration",
+        type=float,
+        default=0.30,
+    )
+
+    parser.add_argument(
+        "--doorway-pulse-duration",
+        type=float,
+        default=0.25,
+    )
+
+    parser.add_argument(
+        "--search-pulse-duration",
+        type=float,
+        default=0.25,
+    )
+
+    parser.add_argument(
+        "--max-alignment-pulses",
+        type=int,
+        default=8,
+    )
+
+    parser.add_argument(
+        "--max-approach-pulses",
+        type=int,
+        default=12,
+    )
+
+    parser.add_argument(
+        "--max-doorway-pulses",
+        type=int,
+        default=8,
+    )
+
+    parser.add_argument(
+        "--max-search-pulses",
+        type=int,
+        default=6,
+    )
+
+    parser.add_argument(
+        "--safety-mode",
+        choices=[
+            "placeholder",
+            "disabled",
+        ],
+        default="placeholder",
+    )
+
+    parser.add_argument(
+        "--allow-motion-without-safety-sensor",
+        action="store_true",
+        help=(
+            "Explicitly bypass the unavailable "
+            "LiDAR safety check."
+        ),
+    )
     parser.add_argument(
         "--invert-turn",
         action="store_true",
@@ -1002,35 +1968,89 @@ def parse_args():
 
     return parser.parse_args()
 
- 
+def send_emergency_stop(args):
+    if args.execute == "false":
+        return
+
+    try:
+        executor = SafeCmdVelExecutor(
+            topic=args.cmd_vel_topic,
+            execute_mode="true",
+            safety_monitor=RobotSafetyMonitor(
+                sensor_mode="disabled",
+                allow_without_sensor=True,
+            ),
+        )
+
+        executor.stop()
+
+    except Exception as exc:
+        print(
+            "[EMERGENCY STOP ERROR]",
+            exc,
+        )
+
 def main():
     args = parse_args()
 
-    print("[INFO] Mode:", args.mode)
-    print("[INFO] Camera mode:", args.camera_mode)
-    print("[INFO] Memory:", args.memory)
-    print("[INFO] Goal:", args.goal)
-    print("[INFO] AMD API:", args.api)
-    print("[INFO] Robot:", "{}@{}".format(args.robot_user, args.robot_ip))
+    try:
+        print("[INFO] Mode:", args.mode)
+        print("[INFO] Camera mode:", args.camera_mode)
+        print("[INFO] Memory:", args.memory)
+        print("[INFO] Goal:", args.goal)
+        print("[INFO] AMD API:", args.api)
+        print(
+            "[INFO] Robot:",
+            "{}@{}".format(
+                args.robot_user,
+                args.robot_ip,
+            ),
+        )
 
-    if args.camera_mode == "single":
-        print("[INFO] Single camera device:", args.camera_device)
-    else:
-        print("[INFO] Front camera:", args.front_device)
-        print("[INFO] Left camera:", args.left_device)
-        print("[INFO] Right camera:", args.right_device)
+        if args.camera_mode == "single":
+            print(
+                "[INFO] Single camera device:",
+                args.camera_device,
+            )
+        else:
+            print(
+                "[INFO] Front camera:",
+                args.front_device,
+            )
+            print(
+                "[INFO] Left camera:",
+                args.left_device,
+            )
+            print(
+                "[INFO] Right camera:",
+                args.right_device,
+            )
 
-    if args.mode == "single":
-        run_single_step(args)
-    elif args.mode == "auto":
-        run_auto_mode(args)
-    else:
-        raise ValueError("Unsupported mode: {}".format(args.mode))
+        if args.mode == "single":
+            run_single_step(args)
 
+        elif args.mode == "auto":
+            run_auto_mode(args)
+
+        else:
+            raise ValueError(
+                "Unsupported mode: {}".format(
+                    args.mode
+                )
+            )
+
+    except BaseException:
+        send_emergency_stop(args)
+        raise
 
 if __name__ == "__main__":
     try:
         main()
+    except subprocess.TimeoutExpired as e:
+        print("\n[COMMAND TIMED OUT]")
+        print("Command:", e.cmd)
+        print("Timeout:", e.timeout, "seconds")
+        sys.exit(124)
     except subprocess.CalledProcessError as e:
         print("\n[COMMAND FAILED]")
         print("Return code:", e.returncode)
@@ -1042,4 +2062,4 @@ if __name__ == "__main__":
         sys.exit(130)
     except Exception as e:
         print("\n[ERROR]", e)
-        sys.exit(1)
+        sys.exit(1)   

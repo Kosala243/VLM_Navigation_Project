@@ -10,6 +10,7 @@ Updated behaviour:
 """
 from __future__ import annotations
 
+import copy
 import json
 from dataclasses import dataclass, field, asdict
 from datetime import datetime
@@ -116,6 +117,8 @@ class NavigationSystem:
         self.verifier = TargetVerifier(model)
         self.action_generator = ActionGenerator(model)
         self.goal: NavigationGoal | None = None
+        self.pending_action: Action | None = None
+        self.pending_step_number: int | None = None
         self.records: list[StepRecord] = []
         self.started_at = ""
         self._memory_kept_for_current_goal = False
@@ -133,6 +136,8 @@ class NavigationSystem:
             self.memory.clear()
 
         self.records.clear()
+        self.pending_action = None
+        self.pending_step_number = None
         self.started_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         self.goal = self.goal_parser.parse(raw_goal)
         self._memory_kept_for_current_goal = keep_memory
@@ -157,6 +162,7 @@ class NavigationSystem:
         image_paths: dict[str, str] | None = None,
         frontiers: list[dict[str, Any]] | None = None,
         execute: bool = False,
+        expect_external_execution: bool = False,
     ) -> tuple[Action, bool]:
 
         if self.goal is None:
@@ -165,14 +171,90 @@ class NavigationSystem:
         if frontiers:
             self.memory.add_frontiers(frontiers)
 
-        update = self.memory.update_from_image(image_path, self.goal, image_paths=image_paths)
+        update = self.memory.update_from_image(
+            image_path,
+            self.goal,
+            image_paths=image_paths,
+        )
 
-        # Proper target verification happens before planning the next action.
-        verification = self.verifier.verify(image_path, self.goal, update, image_paths=image_paths)
-        if verification.target_reached:
-            action = verification.to_action()
+        if not update.parse_ok:
+            # Fail closed. Do not allow the action planner to invent
+            # landmarks from an image whose structured perception failed.
+            verification = VerificationResult(
+                target_visible=False,
+                target_reached=False,
+                evidence_type="unclear",
+                confidence="low",
+                evidence_score=0.0,
+                evidence_breakdown={
+                    "current_perception_failed": 1.0,
+                    "final_score": 0.0,
+                },
+                reason=(
+                    "Target verification skipped because current-frame "
+                    "memory extraction failed."
+                ),
+                raw={
+                    "memory_error": update.error,
+                    "parse_attempts": update.parse_attempts,
+                },
+            )
+
+            action = Action(
+                name="WAIT_OR_RECOVER",
+                params={
+                    "landmark_id": None,
+                    "direction": None,
+                    "target": None,
+                    "target_description": None,
+                    "search_for": (
+                        "a fresh valid camera observation"
+                    ),
+                    "stop_condition": (
+                        "robot remains stopped until current-frame "
+                        "perception succeeds"
+                    ),
+                    "capture_after": True,
+                    "evidence_view": "NONE",
+                },
+                reason=(
+                    "Current-frame perception failed, so movement is "
+                    "blocked and a fresh observation is required."
+                ),
+                confidence="low",
+                evidence_score=0.0,
+                evidence_breakdown={
+                    "current_perception_failed": 1.0,
+                    "final_score": 0.0,
+                },
+                goal_reached=False,
+                needs_verification=True,
+                raw={
+                    "memory_error": update.error,
+                    "parse_attempts": update.parse_attempts,
+                },
+                is_valid=True,
+            )
+
         else:
-            action = self.action_generator.generate(image_path, self.goal, self.memory, image_paths=image_paths)
+            # Only parsed, grounded current-frame memory can support
+            # target verification or movement planning.
+            verification = self.verifier.verify(
+                image_path,
+                self.goal,
+                update,
+                image_paths=image_paths,
+            )
+
+            if verification.target_reached:
+                action = verification.to_action()
+            else:
+                action = self.action_generator.generate(
+                    image_path,
+                    self.goal,
+                    self.memory,
+                    image_paths=image_paths,
+                )
 
         if not verification.target_reached and action.name == "STOP_AND_VERIFY":
             action.is_valid = False
@@ -188,7 +270,9 @@ class NavigationSystem:
         executed = False
         if execute and self.executor is not None and action.is_valid:
             executed = bool(self.executor.execute(action))
-            if not executed:
+            if executed:
+                self._mark_action_landmark_status(action)
+            else:
                 self.memory.add_failed_action(
                     f"Executor failed for {action.name}: {action.reason}"
                 )
@@ -197,17 +281,35 @@ class NavigationSystem:
             self.memory.add_failed_action(action.invalid_reason)
 
         if action.is_valid:
-            self._mark_action_landmark_status(action)
+            self._record_action_landmark_selection(
+                action
+            )
 
         rec = StepRecord(
             image_num=len(self.records) + 1,
             image_path=str(image_path),
-            memory_update=update,
-            verification=verification,
-            action=action,
+            memory_update=copy.deepcopy(update),
+            verification=copy.deepcopy(verification),
+            action=copy.deepcopy(action),
             executed=executed,
         )
         self.records.append(rec)
+        if (
+            expect_external_execution
+            and action.is_valid
+            and not executed
+            and action.name not in {
+                "STOP_AND_VERIFY",
+                "WAIT_OR_RECOVER",
+            }
+        ):
+            self.pending_action = copy.deepcopy(
+                action
+            )
+            self.pending_step_number = rec.image_num
+        else:
+            self.pending_action = None
+            self.pending_step_number = None
 
         navigation_complete = (
             action.name == "STOP_AND_VERIFY"
@@ -265,6 +367,82 @@ class NavigationSystem:
         print(log.summary())
         print(f"Saved: {log_path}")
         return log
+
+    def acknowledge_execution(
+        self,
+        step_number: int,
+        executed: bool,
+        reason: str = "",
+    ) -> dict[str, Any]:
+        """
+        Apply landmark status changes only after the ThinkPad
+        reports the actual execution result.
+        """
+        if (
+            self.pending_action is None
+            or self.pending_step_number is None
+        ):
+            return {
+                "accepted": False,
+                "reason": "No pending action.",
+            }
+
+        if int(step_number) != int(
+            self.pending_step_number
+        ):
+            return {
+                "accepted": False,
+                "reason": (
+                    "Execution acknowledgement step does not "
+                    "match the pending action."
+                ),
+                "expected_step": (
+                    self.pending_step_number
+                ),
+                "received_step": step_number,
+            }
+
+        action = self.pending_action
+
+        if executed:
+            self._mark_action_landmark_status(
+                action
+            )
+        else:
+            self.memory.add_failed_action(
+                reason
+                or (
+                    "ThinkPad did not execute "
+                    f"{action.name}."
+                )
+            )
+
+        self.pending_action = None
+        self.pending_step_number = None
+
+        return {
+            "accepted": True,
+            "executed": bool(executed),
+            "action": action.name,
+            "landmark_id": action.params.get(
+                "landmark_id"
+            ),
+        }
+
+    def _record_action_landmark_selection(
+        self,
+        action: Action,
+    ) -> None:
+        landmark_id = action.params.get(
+            "landmark_id"
+        )
+
+        if not landmark_id:
+            return
+
+        self.memory.record_landmark_selection(
+            str(landmark_id)
+        )
 
     def _mark_action_landmark_status(self, action: Action) -> None:
         """Mark action-related landmarks without deleting old memory."""

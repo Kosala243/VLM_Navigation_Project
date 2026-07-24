@@ -1,0 +1,109 @@
+{
+  "run_settings": {
+    "started_at": "2026-07-20T05:05:42",
+    "goal": "C0.016",
+    "mode": "auto",
+    "camera_mode": "separate",
+    "api": "http://ernis-amd395:8001",
+    "robot_user": "unitree",
+    "robot_ip": "192.168.123.14",
+    "camera_device": "/dev/video3",
+    "front_device": "/dev/video2",
+    "left_device": "/dev/video4",
+    "right_device": "/dev/video3",
+    "capture_size": "960x720",
+    "execute": "false",
+    "cmd_vel_topic": "/cmd_vel",
+    "forward_speed": 0.12,
+    "turn_speed": 0.2,
+    "move_duration": 5.0,
+    "invert_turn": false,
+    "memory": "true",
+    "interval": 5.0,
+    "max_steps": 20,
+    "stitch_width": 960,
+    "stitch_height": 720,
+    "min_evidence_score": 0.3,
+    "allow_low_confidence": false
+  },
+  "step": 7,
+  "timestamp": "2026-07-20T05:24:40",
+  "camera_mode": "separate",
+  "primary_path": "robot_live_frames/step_0007/front.png",
+  "saved_files": {
+    "left": "robot_live_frames/step_0007/left.png",
+    "front": "robot_live_frames/step_0007/front.png",
+    "right": "robot_live_frames/step_0007/right.png"
+  },
+  "executed": false,
+  "step_metric": {
+    "done": false,
+    "executed": false,
+    "mode": "autonomous_step",
+    "observation_mode": "separate",
+    "action_name": "NAVIGATE_TO_LANDMARK",
+    "confidence": "low",
+    "evidence_score": 0.0,
+    "is_valid": false,
+    "evidence_view": "FRONT"
+  },
+  "evidence_view": "FRONT",
+  "response": {
+    "mode": "autonomous_step",
+    "goal": "C0.016",
+    "observation_mode": "separate",
+    "image_path": "live_frames/frame_1784517720251_front.png",
+    "image_paths": {
+      "LEFT": "live_frames/frame_1784517720249_left.png",
+      "FRONT": "live_frames/frame_1784517720251_front.png",
+      "RIGHT": "live_frames/frame_1784517720251_right.png"
+    },
+    "done": false,
+    "action": {
+      "name": "NAVIGATE_TO_LANDMARK",
+      "params": {
+        "landmark_id": "L007",
+        "direction": "forward",
+        "target": "L007",
+        "target_description": "A hallway extending forward and slightly to the left, lined with wooden slats and leading to an exit sign.",
+        "floor": null,
+        "search_for": null,
+        "stop_condition": "capture when near the corridor bend",
+        "capture_after": true,
+        "evidence_view": "FRONT"
+      },
+      "reason": "The current view is sparse, but the recent remembered route landmark L007 (corridor with wooden slats) supports continued progress toward the target room C0.016, which is indicated to be further down this path.",
+      "confidence": "low",
+      "evidence_score": 0.0,
+      "evidence_breakdown": {
+        "invalid_action": 1.0,
+        "final_score": 0.0
+      },
+      "goal_reached": false,
+      "needs_verification": true,
+      "raw": {
+        "action": "NAVIGATE_TO_LANDMARK",
+        "params": {
+          "landmark_id": "L007",
+          "direction": "forward",
+          "target": "L007",
+          "target_description": "A hallway extending forward and slightly to the left, lined with wooden slats and leading to an exit sign.",
+          "floor": null,
+          "search_for": null,
+          "stop_condition": "capture when near the corridor bend",
+          "capture_after": true,
+          "evidence_view": "FRONT"
+        },
+        "reason": "The current view is sparse, but the recent remembered route landmark L007 (corridor with wooden slats) supports continued progress toward the target room C0.016, which is indicated to be further down this path.",
+        "confidence": "medium",
+        "goal_reached": false,
+        "needs_verification": true
+      },
+      "is_valid": false,
+      "invalid_reason": "Structural landmark L007 points forward, but the latest semantic evidence points left."
+    },
+    "action_display": "NAVIGATE_TO_LANDMARK({'landmark_id': 'L007', 'direction': 'forward', 'target': 'L007', 'target_description': 'A hallway extending forward and slightly to the left, lined with wooden slats and leading to an exit sign.', 'floor': None, 'search_for': None, 'stop_condition': 'capture when near the corridor bend', 'capture_after': True, 'evidence_view': 'FRONT'}) [low, score=0.00] INVALID: Structural landmark L007 points forward, but the latest semantic evidence points left. - The current view is sparse, but the recent remembered route landmark L007 (corridor with wooden slats) supports continued progress toward the target room C0.016, which is indicated to be further down this path.",
+    "status": "Goal=C0.016 | records=7 | memory_landmarks=10 | session_memory_active=True | inherited_previous_memory=False",
+    "saved_result": "navigation_outputs/http_api/autonomous_step_latest_result.json"
+  }
+}

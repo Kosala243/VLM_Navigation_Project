@@ -1,0 +1,117 @@
+{
+  "run_settings": {
+    "started_at": "2026-07-20T11:18:32",
+    "goal": "C0.004",
+    "mode": "single",
+    "camera_mode": "separate",
+    "api": "http://ernis-amd395:8001",
+    "robot_user": "unitree",
+    "robot_ip": "192.168.123.14",
+    "camera_device": "/dev/video3",
+    "front_device": "/dev/video2",
+    "left_device": "/dev/video4",
+    "right_device": "/dev/video3",
+    "capture_size": "960x720",
+    "execute": "false",
+    "cmd_vel_topic": "/cmd_vel",
+    "forward_speed": 0.12,
+    "turn_speed": 0.2,
+    "move_duration": 5.0,
+    "invert_turn": false,
+    "memory": "true",
+    "interval": 5.0,
+    "max_steps": 10,
+    "stitch_width": 960,
+    "stitch_height": 720,
+    "min_evidence_score": 0.3,
+    "allow_low_confidence": false
+  },
+  "step": 1,
+  "timestamp": "2026-07-20T11:21:11",
+  "camera_mode": "separate",
+  "primary_path": "robot_live_frames/step_0001/front.png",
+  "saved_files": {
+    "left": "robot_live_frames/step_0001/left.png",
+    "front": "robot_live_frames/step_0001/front.png",
+    "right": "robot_live_frames/step_0001/right.png"
+  },
+  "executed": false,
+  "step_metric": {
+    "done": false,
+    "executed": false,
+    "mode": "single_step",
+    "observation_mode": "separate",
+    "action_name": "NAVIGATE_TO_LANDMARK",
+    "confidence": "medium",
+    "evidence_score": 0.6975,
+    "is_valid": true,
+    "evidence_view": "FRONT"
+  },
+  "evidence_view": "FRONT",
+  "response": {
+    "mode": "single_step",
+    "goal": "C0.004",
+    "observation_mode": "separate",
+    "image_path": "live_frames/frame_1784539116089_front.png",
+    "image_paths": {
+      "LEFT": "live_frames/frame_1784539116088_left.png",
+      "FRONT": "live_frames/frame_1784539116089_front.png",
+      "RIGHT": "live_frames/frame_1784539116090_right.png"
+    },
+    "done": false,
+    "action": {
+      "name": "NAVIGATE_TO_LANDMARK",
+      "params": {
+        "landmark_id": "L003",
+        "direction": "forward",
+        "target": "L003",
+        "target_description": "An open glass doorway visible in the front view, leading to a corridor or room beyond.",
+        "floor": null,
+        "search_for": null,
+        "stop_condition": "capture when near the doorway threshold",
+        "capture_after": true,
+        "evidence_view": "FRONT"
+      },
+      "reason": "The current view is sparse, but the recent remembered structural landmark (L003) indicates a traversable open doorway ahead that serves as the primary route continuation toward the towers.",
+      "confidence": "medium",
+      "evidence_score": 0.6975,
+      "evidence_breakdown": {
+        "action_base_score": 0.6,
+        "supporting_landmark_score": 0.6500000000000001,
+        "supporting_landmark_bonus": 0.09750000000000002,
+        "no_landmark_penalty": 0.0,
+        "partial_marker_penalty": 0.0,
+        "used_landmark_penalty": 0.0,
+        "invalid_penalty": 0.0,
+        "mismatched_room_code_penalty": 0.0,
+        "structural_route_penalty": 0.0,
+        "final_score": 0.6975
+      },
+      "goal_reached": false,
+      "needs_verification": true,
+      "raw": {
+        "action": "NAVIGATE_TO_LANDMARK",
+        "params": {
+          "landmark_id": "L003",
+          "direction": "forward",
+          "target": "L003",
+          "target_description": "An open glass doorway visible in the front view, leading to a corridor or room beyond.",
+          "floor": null,
+          "search_for": null,
+          "stop_condition": "capture when near the doorway threshold",
+          "capture_after": true,
+          "evidence_view": "FRONT"
+        },
+        "reason": "The current view is sparse, but the recent remembered structural landmark (L003) indicates a traversable open doorway ahead that serves as the primary route continuation toward the towers.",
+        "confidence": "medium",
+        "goal_reached": false,
+        "needs_verification": true
+      },
+      "is_valid": true,
+      "invalid_reason": ""
+    },
+    "action_display": "NAVIGATE_TO_LANDMARK({'landmark_id': 'L003', 'direction': 'forward', 'target': 'L003', 'target_description': 'An open glass doorway visible in the front view, leading to a corridor or room beyond.', 'floor': None, 'search_for': None, 'stop_condition': 'capture when near the doorway threshold', 'capture_after': True, 'evidence_view': 'FRONT'}) [medium, score=0.70] valid - The current view is sparse, but the recent remembered structural landmark (L003) indicates a traversable open doorway ahead that serves as the primary route continuation toward the towers.",
+    "status": "Goal=C0.004 | records=1 | memory_landmarks=3 | session_memory_active=True | inherited_previous_memory=False",
+    "saved_result": "navigation_outputs/http_api/single_step_latest_result.json"
+  }
+}
