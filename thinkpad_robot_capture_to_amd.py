@@ -65,7 +65,6 @@ def ssh_run(robot_user, robot_ip, remote_cmd, timeout=30):
         [
             "ssh",
             "-o", "ConnectTimeout=10",
-            "-o", "BatchMode=yes",
             "{}@{}".format(robot_user, robot_ip),
             remote_cmd,
         ],
