@@ -79,7 +79,6 @@ def scp_from_robot(robot_user, robot_ip, remote_path, local_path, timeout=30):
         [
             "scp",
             "-o", "ConnectTimeout=10",
-            "-o", "BatchMode=yes",
             "{}@{}:{}".format(robot_user, robot_ip, remote_path),
             str(local_path),
         ],
