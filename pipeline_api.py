@@ -265,7 +265,11 @@ async def single_step(
 
 
 @app.post("/autonomous/start")
-async def autonomous_start(goal: str = Form(default=None), execution_enabled: bool = Form(default=False)):
+async def autonomous_start(
+    goal: str = Form(default=None),
+    execution_enabled: bool = Form(default=False),
+    keep_memory: bool = Form(default=False),
+):
     """
     Starts/reset a memory-preserving autonomous session.
     Movement is still disabled on AMD; ThinkPad handles movement separately.
@@ -275,13 +279,24 @@ async def autonomous_start(goal: str = Form(default=None), execution_enabled: bo
     async with NAV_LOCK:
         CURRENT_GOAL = goal or CURRENT_GOAL
         EXTERNAL_EXECUTION_ENABLED = bool(execution_enabled)
-        NAV = new_navigation_system(CURRENT_GOAL, keep_memory=False)
+
+        # A brand-new NavigationSystem carries a brand-new, empty
+        # NavigationMemory (see NavigationSystem.__init__), so
+        # keep_memory=True must reuse the existing NAV/memory instance
+        # in place rather than constructing a fresh one first -
+        # otherwise there is no previous memory left to keep.
+        memory_kept = bool(keep_memory) and NAV is not None
+        if memory_kept:
+            NAV.start(CURRENT_GOAL, keep_memory=True)
+        else:
+            NAV = new_navigation_system(CURRENT_GOAL, keep_memory=False)
 
         return {
             "status": "started",
             "goal": CURRENT_GOAL,
             "movement_enabled": False,
             "external_execution_enabled": EXTERNAL_EXECUTION_ENABLED,
+            "keep_memory": memory_kept,
         }
 
 @app.post("/autonomous/step")

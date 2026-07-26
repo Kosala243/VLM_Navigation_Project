@@ -470,7 +470,7 @@ def post_observation_to_amd(api, endpoint, observation, goal=None, connect_timeo
         print(result.stdout)
         raise
 
-def start_autonomous_session(api, goal, execution_enabled, connect_timeout=10, max_time=60):
+def start_autonomous_session(api, goal, execution_enabled, connect_timeout=10, max_time=60, keep_memory=False):
     url = api.rstrip("/") + "/autonomous/start"
 
     result = run(
@@ -486,6 +486,8 @@ def start_autonomous_session(api, goal, execution_enabled, connect_timeout=10, m
             "goal={}".format(goal),
             "-F",
             "execution_enabled={}".format("true" if execution_enabled else "false"),
+            "-F",
+            "keep_memory={}".format("true" if keep_memory else "false"),
         ],
         verbose=False,
         timeout=max_time + 10,
@@ -1302,11 +1304,13 @@ def save_step_log(
     print("[LOG] Step result saved:", result_path)
     return result_path
 
-def save_final_summary(run_dir, goal, steps, success, run_config=None, metrics=None):
+def save_final_summary(run_dir, goal, steps, success, run_config=None, metrics=None, legs=None):
     summary = {
         "run_settings": run_config or {},
         "ended_at": datetime.now().isoformat(timespec="seconds"),
         "goal": goal,
+        "final_goal": (legs[-1]["goal"] if legs else goal),
+        "legs": legs or [],
         "steps": steps,
         "success": success,
         "metrics": metrics or {},
@@ -1482,6 +1486,10 @@ def run_auto_mode(args):
 
     last_executed_state = None
     no_progress_repeat_count = 0
+
+    legs = []
+    current_leg_goal = args.goal
+    current_leg_start_step = 1
 
     for step in range(1, args.max_steps + 1):
         completed_steps = step
@@ -1669,11 +1677,57 @@ def run_auto_mode(args):
             break
 
         if response.get("done") is True:
-            print("[DONE] Goal reached according to pipeline.")
+            print(
+                "[DONE] Goal '{}' reached at step {}.".format(
+                    current_leg_goal, step
+                )
+            )
+            legs.append({
+                "goal": current_leg_goal,
+                "start_step": current_leg_start_step,
+                "end_step": step,
+                "steps": step - current_leg_start_step + 1,
+                "success": True,
+            })
             success = True
-            break
+
+            next_goal = ""
+            if use_memory:
+                try:
+                    next_goal = input(
+                        "Enter next goal to continue navigating with "
+                        "existing memory (blank to stop): "
+                    ).strip()
+                except EOFError:
+                    next_goal = ""
+
+            if not next_goal:
+                break
+
+            start_autonomous_session(
+                args.api,
+                next_goal,
+                args.execute != "false",
+                connect_timeout=args.api_connect_timeout,
+                max_time=args.api_timeout,
+                keep_memory=True,
+            )
+            current_leg_goal = next_goal
+            current_leg_start_step = step + 1
+            last_executed_state = None
+            no_progress_repeat_count = 0
+            success = False
 
         time.sleep(args.interval)
+
+    if not legs or legs[-1]["end_step"] < completed_steps:
+        legs.append({
+            "goal": current_leg_goal,
+            "start_step": current_leg_start_step,
+            "end_step": completed_steps,
+            "steps": completed_steps - current_leg_start_step + 1,
+            "success": success,
+        })
 
     metrics = compute_run_metrics(step_metrics, success)
 
@@ -1684,6 +1738,7 @@ def run_auto_mode(args):
         success=success,
         run_config=run_config,
         metrics=metrics,
+        legs=legs,
     )
 
     if use_memory:

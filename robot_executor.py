@@ -518,8 +518,13 @@ class SafeCmdVelExecutor(object):
             return None
 
         if name == "SEARCH_FOR_CUE":
+            search_direction = (
+                direction
+                if direction in {"left", "right"}
+                else "left"
+            )
             return self._turn_cmd(
-                "left",
+                search_direction,
                 self.search_pulse_duration,
                 "visual_search",
             )
