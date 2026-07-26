@@ -300,6 +300,7 @@ class NavigationMemory:
         self.failed_actions: list[str] = []
         self.image_count = 0
         self._next_id = 1
+        self.last_search_direction = ""
 
     def update_from_image(
         self,
@@ -880,6 +881,7 @@ class NavigationMemory:
     def save(self, path: str) -> None:
         data = {
             "image_count": self.image_count,
+            "last_search_direction": self.last_search_direction,
             "landmarks": [asdict(lm) for lm in self.landmarks],
             "observation_summaries": self.observation_summaries,
             "hypotheses": self.hypotheses,
@@ -902,6 +904,7 @@ class NavigationMemory:
         self.current_subgoal = NavigationSubgoal()
         self.image_count = 0
         self._next_id = 1
+        self.last_search_direction = ""
 
     # ------------------------------------------------------------------
     # Internal helpers

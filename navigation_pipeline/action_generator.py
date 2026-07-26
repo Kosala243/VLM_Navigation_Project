@@ -716,6 +716,10 @@ class ActionGenerator:
             validated,
             memory,
         )
+        self._ensure_search_direction(
+            validated,
+            memory,
+        )
         return validated
 
     def _ensure_evidence_view(self, action: Action, memory: "NavigationMemory") -> None:
@@ -744,6 +748,45 @@ class ActionGenerator:
             inferred = _infer_evidence_view_from_action(action)
 
         action.params["evidence_view"] = inferred or "NONE"
+
+    def _ensure_search_direction(self, action: Action, memory: "NavigationMemory") -> None:
+        """
+        Give SEARCH_FOR_CUE a grounded sweep direction instead of always
+        turning the same way.
+
+        Preference order: (1) a direction the model already supplied,
+        (2) the continuation_direction of the most recently seen
+        structural landmark (the same signal NAVIGATE_TO_LANDMARK uses),
+        (3) alternate from the last search direction so a repeated
+        search actually sweeps both sides within its pulse budget.
+        """
+        if action.name != "SEARCH_FOR_CUE":
+            return
+
+        if not isinstance(action.params, dict):
+            action.params = {}
+
+        direction = str(action.params.get("direction") or "").strip().lower()
+
+        if direction in {"left", "right"}:
+            memory.last_search_direction = direction
+            return
+
+        chosen = ""
+        for lm in reversed(getattr(memory, "landmarks", [])):
+            if not _is_structural_landmark(lm):
+                continue
+            candidate = _structural_landmark_direction(lm)
+            if candidate in {"left", "right"}:
+                chosen = candidate
+                break
+
+        if not chosen:
+            previous = getattr(memory, "last_search_direction", "")
+            chosen = "right" if previous == "left" else "left"
+
+        action.params["direction"] = chosen
+        memory.last_search_direction = chosen
 
     def _promote_open_doorway_action(
         self,
