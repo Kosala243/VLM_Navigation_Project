@@ -26,6 +26,20 @@ from robot_safety import RobotSafetyMonitor
 
 VALID_EXECUTE_MODES = {"false", "confirm", "true"}
 
+# rostopic pub must register a fresh anonymous node with the ROS master
+# before it can publish anything; that handshake can take on the order
+# of a second under load. The pulse `timeout` was previously sized to
+# the intended motion duration alone, so it could SIGTERM the process
+# mid-registration (rospy.exceptions.ROSInitException) before a single
+# message went out. This grace period is added on top of the requested
+# pulse duration so registration has room to finish before the kill.
+ROS_STARTUP_GRACE_SECONDS = 1.0
+
+# rostopic pub -1 (used for STOP and other one-off publishes) latches
+# for up to 3s to make sure a subscriber receives it; the wrapper
+# timeout must cover registration plus that full latch window.
+STOP_PUBLISH_TIMEOUT_SECONDS = 4.0
+
 
 def _coerce_bool(value, default=True):
     """Coerce a possibly-string action field into a real bool.
@@ -169,6 +183,7 @@ class SafeCmdVelExecutor(object):
         status/reason is escalated so callers cannot mistake this for a
         normal, safely-stopped rejection.
         """
+        print("[EXECUTOR] ABORT ({}): {}".format(status, reason))
         stop_ok = self.stop()
         if not stop_ok:
             status = "stop_command_failed"
@@ -638,7 +653,7 @@ class SafeCmdVelExecutor(object):
             return_code = subprocess.call(
                 [
                     "timeout",
-                    str(duration),
+                    str(duration + ROS_STARTUP_GRACE_SECONDS),
                 ]
                 + command
             )
@@ -676,7 +691,7 @@ class SafeCmdVelExecutor(object):
             once=True,
         )
         return subprocess.call(
-            ["timeout", "2"] + command
+            ["timeout", str(STOP_PUBLISH_TIMEOUT_SECONDS)] + command
         )
 
     def _rostopic_pub_cmd(
