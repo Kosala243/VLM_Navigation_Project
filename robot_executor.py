@@ -16,8 +16,9 @@ IMPORTANT:
 """
 
 import argparse
+import atexit
 import json
-import shutil
+import os
 import subprocess
 import sys
 import time
@@ -26,19 +27,164 @@ from robot_safety import RobotSafetyMonitor
 
 VALID_EXECUTE_MODES = {"false", "confirm", "true"}
 
-# rostopic pub must register a fresh anonymous node with the ROS master
-# before it can publish anything; that handshake can take on the order
-# of a second under load. The pulse `timeout` was previously sized to
-# the intended motion duration alone, so it could SIGTERM the process
-# mid-registration (rospy.exceptions.ROSInitException) before a single
-# message went out. This grace period is added on top of the requested
-# pulse duration so registration has room to finish before the kill.
-ROS_STARTUP_GRACE_SECONDS = 1.0
+BRIDGE_SCRIPT_PATH = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)),
+    "cmd_vel_bridge.py",
+)
+BRIDGE_PYTHON2_BIN = "python2"
+BRIDGE_READY_TIMEOUT_SECONDS = 8.0
+BRIDGE_REPLY_TIMEOUT_SECONDS = 6.0
+DEFAULT_PUBLISH_RATE_HZ = 10.0
 
-# rostopic pub -1 (used for STOP and other one-off publishes) latches
-# for up to 3s to make sure a subscriber receives it; the wrapper
-# timeout must cover registration plus that full latch window.
-STOP_PUBLISH_TIMEOUT_SECONDS = 4.0
+# One bridge subprocess per topic, shared across every SafeCmdVelExecutor
+# instance in this process. ROS node registration is the expensive part
+# of talking to /cmd_vel (on the order of a second, sometimes more under
+# load); paying it once per run instead of once per pulse is the entire
+# point of the bridge. Callers construct a new SafeCmdVelExecutor per
+# step/action, so this cache is what makes those all share one node.
+_SHARED_BRIDGES = {}
+
+
+class PersistentCmdVelBridge(object):
+    """Owns one long-lived python2 rospy publisher subprocess.
+
+    robot_executor.py runs under Python 3, but this ROS Melodic install
+    only has rospy for Python 2, so the actual rospy.Publisher lives in
+    a separate cmd_vel_bridge.py child process. Requests/replies are
+    newline-delimited JSON over the child's stdin/stdout. Because the
+    child's rospy node is created exactly once at startup, every pulse
+    after that is just a fast local IPC round-trip plus in-process
+    rospy.Rate() timing in the child -- no more per-pulse ROS
+    registration, and no more racing an external `timeout` kill against
+    rospy.init_node() completing.
+    """
+
+    def __init__(self, topic="/cmd_vel", rate=DEFAULT_PUBLISH_RATE_HZ):
+        self.topic = topic
+        self.rate = rate
+        self._ready = False
+        self._ready_error = None
+        self._closed = False
+
+        self._proc = subprocess.Popen(
+            [
+                BRIDGE_PYTHON2_BIN,
+                "-u",
+                BRIDGE_SCRIPT_PATH,
+                "--topic",
+                topic,
+                "--rate",
+                str(rate),
+            ],
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            universal_newlines=True,
+            bufsize=1,
+        )
+        self._wait_ready()
+
+    def _wait_ready(self):
+        deadline = time.time() + BRIDGE_READY_TIMEOUT_SECONDS
+        while time.time() < deadline:
+            if self._proc.poll() is not None:
+                stderr = self._proc.stderr.read()
+                self._ready_error = (
+                    "bridge process exited early (code {}): {}".format(
+                        self._proc.returncode, stderr.strip()
+                    )
+                )
+                return
+            line = self._proc.stdout.readline()
+            if not line:
+                continue
+            try:
+                msg = json.loads(line.strip())
+            except Exception:
+                continue
+            if msg.get("ready"):
+                self._ready = True
+                self._connections = msg.get("connections", 0)
+                if self._connections == 0:
+                    print(
+                        "[BRIDGE] WARNING: no subscriber connected to "
+                        "{} yet; is twist_sub running?".format(self.topic)
+                    )
+                return
+            self._ready_error = msg.get("error", "unknown bridge error")
+            return
+        self._ready_error = "timed out waiting for bridge readiness"
+
+    @property
+    def is_ready(self):
+        return self._ready and self._proc.poll() is None
+
+    @property
+    def ready_error(self):
+        return self._ready_error
+
+    def _send(self, request):
+        if self._proc.poll() is not None:
+            return {"ok": False, "error": "bridge process is not running"}
+        try:
+            self._proc.stdin.write(json.dumps(request) + "\n")
+            self._proc.stdin.flush()
+        except Exception as exc:
+            return {
+                "ok": False,
+                "error": "failed to send to bridge: {}".format(exc),
+            }
+
+        line = self._proc.stdout.readline()
+        if not line:
+            return {"ok": False, "error": "bridge process closed its output"}
+        try:
+            return json.loads(line.strip())
+        except Exception as exc:
+            return {
+                "ok": False,
+                "error": "bad reply from bridge: {}".format(exc),
+            }
+
+    def pulse(self, linear_x, angular_z, duration):
+        return self._send({
+            "cmd": "pulse",
+            "linear_x": linear_x,
+            "angular_z": angular_z,
+            "duration": duration,
+            "rate": self.rate,
+        })
+
+    def stop(self):
+        return self._send({"cmd": "stop"})
+
+    def shutdown(self):
+        if self._closed:
+            return
+        self._closed = True
+        if self._proc.poll() is None:
+            try:
+                self._send({"cmd": "quit"})
+            except Exception:
+                pass
+            try:
+                self._proc.stdin.close()
+            except Exception:
+                pass
+            try:
+                self._proc.wait(timeout=3.0)
+            except Exception:
+                self._proc.kill()
+
+
+def _get_shared_bridge(topic, rate=DEFAULT_PUBLISH_RATE_HZ):
+    bridge = _SHARED_BRIDGES.get(topic)
+    if bridge is not None and bridge.is_ready:
+        return bridge
+    bridge = PersistentCmdVelBridge(topic=topic, rate=rate)
+    _SHARED_BRIDGES[topic] = bridge
+    atexit.register(bridge.shutdown)
+    return bridge
 
 
 def _coerce_bool(value, default=True):
@@ -88,6 +234,7 @@ class SafeCmdVelExecutor(object):
         safety_monitor=None,
     ):
         self.topic = topic
+        self.publish_rate = DEFAULT_PUBLISH_RATE_HZ
         self.forward_speed = float(forward_speed)
         self.turn_speed = float(turn_speed)
 
@@ -160,19 +307,31 @@ class SafeCmdVelExecutor(object):
         }
         return bool(executed)
 
+    def _bridge(self):
+        return _get_shared_bridge(self.topic, self.publish_rate)
+
     def stop(self):
         """Publish a zero-velocity command and report whether it succeeded."""
         print("[EXECUTOR] STOP")
 
-        return_code = self._publish_once(
-            0.0,
-            0.0,
-        )
-        stop_ok = return_code in {0, 124}
+        bridge = self._bridge()
+        if not bridge.is_ready:
+            print(
+                "[EXECUTOR] CRITICAL: cmd_vel bridge is not ready ({}); "
+                "cannot confirm the robot has stopped.".format(
+                    bridge.ready_error
+                )
+            )
+            return False
+
+        result = bridge.stop()
+        stop_ok = bool(result.get("ok"))
         if not stop_ok:
             print(
-                "[EXECUTOR] CRITICAL: stop command returned code {}; "
-                "the robot may still be moving.".format(return_code)
+                "[EXECUTOR] CRITICAL: stop command failed ({}); "
+                "the robot may still be moving.".format(
+                    result.get("error")
+                )
             )
         return stop_ok
 
@@ -310,14 +469,13 @@ class SafeCmdVelExecutor(object):
                     "User rejected movement.",
                     command=command,
                 )
-        preflight_ok, preflight_reason = (
-            self._preflight_check()
-        )
-
-        if not preflight_ok:
+        bridge = self._bridge()
+        if not bridge.is_ready:
             return self._abort(
                 "ros_preflight_failed",
-                preflight_reason,
+                "cmd_vel bridge is not ready: {}".format(
+                    bridge.ready_error
+                ),
                 command=command,
             )
         linear_x = float(
@@ -576,54 +734,6 @@ class SafeCmdVelExecutor(object):
             "motion_kind": str(motion_kind),
         }
 
-    def _preflight_check(self):
-        if shutil.which("rostopic") is None:
-            return (
-                False,
-                "rostopic command is not available.",
-            )
-        try:
-            result = subprocess.run(
-                [
-                    "rostopic",
-                    "type",
-                    self.topic,
-                ],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                universal_newlines=True,
-                timeout=3,
-            )
-        except Exception as exc:
-            return (
-                False,
-                "ROS topic preflight failed: {}".format(
-                    exc
-                ),
-            )
-        if result.returncode != 0:
-            return (
-                False,
-                (
-                    "Could not resolve ROS topic {}: {}"
-                ).format(
-                    self.topic,
-                    result.stderr.strip(),
-                ),
-            )
-        topic_type = result.stdout.strip()
-        if topic_type != "geometry_msgs/Twist":
-            return (
-                False,
-                (
-                    "ROS topic {} has unexpected type {}."
-                ).format(
-                    self.topic,
-                    topic_type or "unknown",
-                ),
-            )
-        return True, ""
-
     def _move_for_duration(
         self,
         linear_x,
@@ -642,90 +752,42 @@ class SafeCmdVelExecutor(object):
                 duration,
             )
         )
-        command = self._rostopic_pub_cmd(
-            linear_x,
-            angular_z,
-            rate=10,
-        )
-        pulse_ok = False
-        pulse_exc = None
-        try:
-            return_code = subprocess.call(
-                [
-                    "timeout",
-                    str(duration + ROS_STARTUP_GRACE_SECONDS),
-                ]
-                + command
+
+        bridge = self._bridge()
+        if not bridge.is_ready:
+            raise RuntimeError(
+                "cmd_vel bridge is not ready: {}".format(
+                    bridge.ready_error
+                )
             )
-            # timeout normally returns 124 because rostopic pub -r
-            # is intentionally terminated after the pulse duration.
-            pulse_ok = return_code in {0, 124}
-        except Exception as exc:
-            pulse_exc = exc
-        finally:
-            # This stop() is the actual mechanism that halts the robot:
-            # the rate-limited "rostopic pub -r" pulse does not zero the
-            # velocity on its own when killed by `timeout`. If this stop
-            # publish fails, the robot may still be executing the last
-            # nonzero /cmd_vel, so that must not be treated as a normal
-            # successful pulse.
-            stop_ok = self.stop()
+
+        result = bridge.pulse(linear_x, angular_z, duration)
+        pulse_ok = bool(result.get("ok"))
+        if not pulse_ok:
+            print(
+                "[EXECUTOR] Pulse failed: {}".format(
+                    result.get("error")
+                )
+            )
+
+        # The bridge always zeroes velocity itself at the end of a pulse,
+        # including on its own internal failure, but this explicit stop()
+        # is what this method relies on to *confirm* a halt: if it fails,
+        # the robot may still be executing the last nonzero /cmd_vel, so
+        # that must not be treated as a normal successful pulse.
+        stop_ok = self.stop()
 
         if not stop_ok:
             raise RuntimeError(
                 "STOP command failed to confirm halt after the movement "
                 "pulse; the robot may still be moving."
             )
-        if pulse_exc is not None:
-            raise pulse_exc
+        if not pulse_ok:
+            raise RuntimeError(
+                result.get("error") or "Pulse command failed."
+            )
         return pulse_ok
 
-    def _publish_once(
-        self,
-        linear_x,
-        angular_z,
-    ):
-        command = self._rostopic_pub_cmd(
-            linear_x,
-            angular_z,
-            once=True,
-        )
-        return subprocess.call(
-            ["timeout", str(STOP_PUBLISH_TIMEOUT_SECONDS)] + command
-        )
-
-    def _rostopic_pub_cmd(
-        self,
-        linear_x,
-        angular_z,
-        rate=None,
-        once=False,
-    ):
-        message = (
-            "{linear: {x: %.4f, y: 0.0, z: 0.0}, "
-            "angular: {x: 0.0, y: 0.0, z: %.4f}}"
-        ) % (
-            linear_x,
-            angular_z,
-        )
-        command = [
-            "rostopic",
-            "pub",
-        ]
-        if once:
-            command.append("-1")
-        else:
-            command.extend([
-                "-r",
-                str(rate or 10),
-            ])
-        command.extend([
-            self.topic,
-            "geometry_msgs/Twist",
-            message,
-        ])
-        return command
-    
 def load_json_file(path):
     with open(path, "r") as f:
         return json.load(f)
