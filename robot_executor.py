@@ -230,7 +230,7 @@ class SafeCmdVelExecutor(object):
         invert_turn=False,
         execute_mode="confirm",
         min_evidence_score=0.30,
-        allow_low_confidence=False,
+        allow_low_confidence=True,
         safety_monitor=None,
     ):
         self.topic = topic
