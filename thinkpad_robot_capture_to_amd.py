@@ -11,7 +11,11 @@ import time
 import shutil
 from datetime import datetime
 from pathlib import Path
-from robot_executor import SafeCmdVelExecutor, EXPLORATION_TURN_PULSE_DURATION_DEFAULT_S
+from robot_executor import (
+    SafeCmdVelExecutor,
+    EXPLORATION_TURN_PULSE_DURATION_DEFAULT_S,
+    _sanitize_terminal_input,
+)
 from robot_safety import RobotSafetyMonitor
 
 def run(cmd, check=True, verbose=True, timeout=60):
@@ -1195,6 +1199,8 @@ def maybe_execute_robot_action(
             args.allow_low_confidence
         ),
         safety_monitor=safety_monitor,
+        yaw_feedback_enabled=args.use_yaw_feedback,
+        high_state_topic=args.high_state_topic,
     )
 
     executed = (
@@ -1259,6 +1265,8 @@ def create_run_dir(args):
         "max_search_pulses": (args.max_search_pulses),
         "safety_mode": args.safety_mode,
         "allow_motion_without_safety_sensor": (args.allow_motion_without_safety_sensor),
+        "use_yaw_feedback": args.use_yaw_feedback,
+        "high_state_topic": args.high_state_topic,
         "invert_turn": args.invert_turn,
         "memory": args.memory,
         "interval": args.interval,
@@ -1698,10 +1706,10 @@ def run_auto_mode(args):
             next_goal = ""
             if use_memory:
                 try:
-                    next_goal = input(
+                    next_goal = _sanitize_terminal_input(input(
                         "Enter next goal to continue navigating with "
                         "existing memory (blank to stop): "
-                    ).strip()
+                    )).strip()
                 except EOFError:
                     next_goal = ""
 
@@ -2036,6 +2044,18 @@ def parse_args():
         action="store_true",
         help="Allow low-confidence VLM actions to move the robot",
     )
+
+    parser.add_argument(
+        "--use-yaw-feedback",
+        action="store_true",
+        help=(
+            "Execute turns closed-loop against real /high_state IMU "
+            "yaw instead of a fixed timed duration. Opt-in and unproven "
+            "on hardware -- falls back to open-loop automatically if "
+            "the high_state bridge isn't ready."
+        ),
+    )
+    parser.add_argument("--high-state-topic", default="/high_state")
 
     return parser.parse_args()
 

@@ -20,6 +20,7 @@ import atexit
 import json
 import math
 import os
+import re
 import subprocess
 import sys
 import time
@@ -27,6 +28,20 @@ import time
 from robot_safety import RobotSafetyMonitor, LIDAR_STOP_DISTANCE_M
 
 VALID_EXECUTE_MODES = {"false", "confirm", "true"}
+
+# A flaky key (confirmed: a laptop's right-arrow key firing spontaneously)
+# can leak a raw ANSI/CSI escape sequence into input(), e.g. "\x1b[C",
+# instead of being consumed as a pure cursor move -- corrupting whatever
+# prompt is being answered (a real "y" reads as "\x1b[Cy", which fails
+# the exact "y"/"yes" check and is treated as a rejection). Strip these
+# out before using any interactive input.
+_ANSI_ESCAPE_RE = re.compile(r"\x1b\[[0-9;]*[a-zA-Z]|\x1b")
+
+
+def _sanitize_terminal_input(raw):
+    if raw is None:
+        return raw
+    return _ANSI_ESCAPE_RE.sub("", raw)
 
 # LiDAR-scaled forward pulses (only for genuine forward-advance motion
 # kinds, not the deliberately-small precision pulses like landmark
@@ -75,16 +90,24 @@ EXPLORATION_TURN_PULSE_DURATION_DEFAULT_S = 1.30
 # no stitching/resizing. params.evidence_view (LEFT/FRONT/RIGHT) says
 # which of the three images the offset fraction is relative to.
 #
-# PROVISIONAL: every value below is a placeholder pending physical
-# measurement on the real hardware (wall-distance method for FOV,
-# known-bearing-marker method for boresight -- see the lab checklist).
 # Sign convention matches the LiDAR azimuth convention already used
 # elsewhere in this repo: positive degrees = left, negative = right.
+#
+# FOV: all three cameras are Logitech C920 webcams. Spec is 78 deg
+# diagonal FOV in native 16:9 mode, which converts to ~70.4 deg
+# horizontal / ~43.3 deg vertical. STILL A LITTLE PROVISIONAL: capture
+# is 960x720 (4:3), not the C920's native 16:9 -- if the driver crops
+# sensor height to get 4:3 this holds, if it crops differently the true
+# value could be narrower. Not yet spot-checked with the wall-distance
+# method.
 CAMERA_HORIZONTAL_FOV_DEG = {
-    "FRONT": 60.0,
-    "LEFT": 60.0,
-    "RIGHT": 60.0,
+    "FRONT": 70.4,
+    "LEFT": 70.4,
+    "RIGHT": 70.4,
 }
+# Boresight: confirmed by the user against the physical mounting -- the
+# LEFT/RIGHT cameras are mounted at exactly 90 deg from the robot's
+# forward pose by design. Not provisional.
 CAMERA_BORESIGHT_DEG = {
     "FRONT": 0.0,
     "LEFT": 90.0,
@@ -254,6 +277,146 @@ def _get_shared_bridge(topic, rate=DEFAULT_PUBLISH_RATE_HZ):
     return bridge
 
 
+# --- #4: closed-loop yaw turning ---
+# /high_state confirmed real (temp_files/ROS_related.txt): IMU rpy at
+# ~50Hz, stable/low-noise. This bridge reads current yaw so a turn can
+# stop when it actually reaches its target heading instead of trusting
+# a timed duration derived from an uncalibrated turn_speed.
+HIGH_STATE_BRIDGE_SCRIPT_PATH = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)),
+    "high_state_bridge.py",
+)
+
+# Stop once within this of the target heading -- avoids fine oscillation
+# chasing an exact zero error against noisy/discretized feedback.
+YAW_FEEDBACK_ANGLE_TOLERANCE_RAD = math.radians(2.0)
+
+# Safety bound on total closed-loop turning time: stop trying once this
+# multiple of the open-loop nominal duration has elapsed, whether or not
+# the target was reached, so a wrong turn_speed assumption or bad
+# feedback can't spin the robot indefinitely.
+YAW_FEEDBACK_MAX_DURATION_MULTIPLIER = 2.0
+YAW_FEEDBACK_MIN_MAX_DURATION_S = 1.0
+
+
+def _yaw_diff(a, b):
+    """Signed shortest angular difference a-b, wrapped to (-pi, pi]."""
+    diff = a - b
+    while diff > math.pi:
+        diff -= 2.0 * math.pi
+    while diff <= -math.pi:
+        diff += 2.0 * math.pi
+    return diff
+
+
+class PersistentHighStateBridge(object):
+    """Owns one long-lived python2 rospy subscriber subprocess for /high_state.
+
+    Mirrors PersistentCmdVelBridge's pattern: newline-delimited JSON
+    requests/replies over the child's stdin/stdout, so the rospy node
+    and topic subscription are paid for once, not once per yaw query.
+    """
+
+    def __init__(self, topic="/high_state"):
+        self.topic = topic
+        self._ready = False
+        self._ready_error = None
+        self._closed = False
+
+        self._proc = subprocess.Popen(
+            [
+                BRIDGE_PYTHON2_BIN,
+                "-u",
+                HIGH_STATE_BRIDGE_SCRIPT_PATH,
+                "--topic",
+                topic,
+            ],
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            universal_newlines=True,
+            bufsize=1,
+        )
+        self._wait_ready()
+
+    def _wait_ready(self):
+        deadline = time.time() + BRIDGE_READY_TIMEOUT_SECONDS
+        while time.time() < deadline:
+            if self._proc.poll() is not None:
+                stderr = self._proc.stderr.read()
+                self._ready_error = (
+                    "high_state bridge process exited early (code {}): {}".format(
+                        self._proc.returncode, stderr.strip()
+                    )
+                )
+                return
+            line = self._proc.stdout.readline()
+            if not line:
+                continue
+            try:
+                msg = json.loads(line.strip())
+            except Exception:
+                continue
+            if msg.get("ready"):
+                self._ready = True
+                return
+            self._ready_error = msg.get("error", "unknown high_state bridge error")
+            return
+        self._ready_error = "timed out waiting for high_state bridge readiness"
+
+    @property
+    def is_ready(self):
+        return self._ready and self._proc.poll() is None
+
+    @property
+    def ready_error(self):
+        return self._ready_error
+
+    def _send(self, request):
+        if self._proc.poll() is not None:
+            return {"ok": False, "error": "high_state bridge process is not running"}
+        try:
+            self._proc.stdin.write(json.dumps(request) + "\n")
+            self._proc.stdin.flush()
+        except Exception as exc:
+            return {
+                "ok": False,
+                "error": "failed to send to high_state bridge: {}".format(exc),
+            }
+
+        line = self._proc.stdout.readline()
+        if not line:
+            return {"ok": False, "error": "high_state bridge process closed its output"}
+        try:
+            return json.loads(line.strip())
+        except Exception as exc:
+            return {
+                "ok": False,
+                "error": "bad reply from high_state bridge: {}".format(exc),
+            }
+
+    def get_yaw(self):
+        return self._send({"cmd": "get_yaw"})
+
+    def shutdown(self):
+        if self._closed:
+            return
+        self._closed = True
+        if self._proc.poll() is None:
+            try:
+                self._send({"cmd": "quit"})
+            except Exception:
+                pass
+            try:
+                self._proc.stdin.close()
+            except Exception:
+                pass
+            try:
+                self._proc.wait(timeout=3.0)
+            except Exception:
+                self._proc.kill()
+
+
 def _coerce_bool(value, default=True):
     """Coerce a possibly-string action field into a real bool.
 
@@ -300,6 +463,8 @@ class SafeCmdVelExecutor(object):
         min_evidence_score=0.30,
         allow_low_confidence=True,
         safety_monitor=None,
+        yaw_feedback_enabled=False,
+        high_state_topic="/high_state",
     ):
         self.topic = topic
         self.publish_rate = DEFAULT_PUBLISH_RATE_HZ
@@ -354,6 +519,23 @@ class SafeCmdVelExecutor(object):
             if safety_monitor is not None
             else RobotSafetyMonitor()
         )
+
+        self.yaw_feedback_enabled = bool(yaw_feedback_enabled)
+        self._high_state_bridge = None
+        self._high_state_spawn_error = None
+        if self.yaw_feedback_enabled:
+            try:
+                self._high_state_bridge = PersistentHighStateBridge(
+                    topic=high_state_topic
+                )
+                atexit.register(self._high_state_bridge.shutdown)
+            except Exception as exc:
+                # Spawn failure is not fatal -- turns just fall back to
+                # the existing open-loop duration/watch behavior, same
+                # graceful-degradation principle as the LiDAR bridge.
+                self._high_state_bridge = None
+                self._high_state_spawn_error = str(exc)
+
         self.last_result = {
             "executed": False,
             "status": "not_started",
@@ -535,9 +717,9 @@ class SafeCmdVelExecutor(object):
                 command=command,
             )
         if self.execute_mode == "confirm":
-            answer = input(
+            answer = _sanitize_terminal_input(input(
                 "Execute this small movement pulse? [y/N]: "
-            ).strip().lower()
+            )).strip().lower()
 
             if answer not in {"y", "yes"}:
                 return self._abort(
@@ -606,6 +788,86 @@ class SafeCmdVelExecutor(object):
             # Keep the logged/returned command in sync with what actually
             # runs, not the pre-scaling nominal duration it started as.
             command["duration"] = pulse_duration
+
+        # #4: closed-loop yaw turning, opt-in via yaw_feedback_enabled.
+        # Only for pure turns -- the target angle is derived from
+        # whatever #1/#2 already decided (angular_z * pulse_duration),
+        # so this only changes execution, not the upstream decision of
+        # how big the turn should be.
+        is_turn = abs(angular_z) > 1e-6 and abs(linear_x) <= 1e-6
+        if (
+            is_turn
+            and self.yaw_feedback_enabled
+            and self._high_state_bridge is not None
+            and self._high_state_bridge.is_ready
+        ):
+            try:
+                closed_loop_result = self._turn_closed_loop(
+                    angular_z, pulse_duration, motion_kind
+                )
+            except Exception as exc:
+                return self._abort(
+                    "movement_exception",
+                    str(exc),
+                    command=command,
+                    safety=safety,
+                )
+            outcome = closed_loop_result["outcome"]
+            if outcome != "feedback_unavailable":
+                command["elapsed_duration"] = closed_loop_result["elapsed"]
+                command["target_angle_rad"] = closed_loop_result["target_angle_rad"]
+                command["achieved_angle_rad"] = closed_loop_result["achieved_angle_rad"]
+                if outcome == "pulse_failed":
+                    return self._set_result(
+                        False,
+                        "movement_command_failed",
+                        "The ROS movement command failed mid-turn.",
+                        command=command,
+                        safety=safety,
+                    )
+                if outcome == "feedback_lost":
+                    return self._set_result(
+                        True,
+                        "turn_closed_loop_feedback_lost",
+                        "Turn stopped after {:.2f}s ({:.1f} of {:.1f} deg "
+                        "planned) -- yaw feedback lost: {}".format(
+                            closed_loop_result["elapsed"],
+                            math.degrees(closed_loop_result["achieved_angle_rad"]),
+                            math.degrees(closed_loop_result["target_angle_rad"]),
+                            closed_loop_result.get("error", "unknown"),
+                        ),
+                        command=command,
+                        safety=safety,
+                    )
+                if outcome == "timeout":
+                    return self._set_result(
+                        True,
+                        "turn_closed_loop_timeout",
+                        "Turn stopped after {:.2f}s, reached {:.1f} of {:.1f} "
+                        "deg planned before the safety time limit.".format(
+                            closed_loop_result["elapsed"],
+                            math.degrees(closed_loop_result["achieved_angle_rad"]),
+                            math.degrees(closed_loop_result["target_angle_rad"]),
+                        ),
+                        command=command,
+                        safety=safety,
+                    )
+                # outcome == "reached"
+                return self._set_result(
+                    True,
+                    "turn_closed_loop_reached",
+                    "Turn reached target heading: {:.1f} of {:.1f} deg "
+                    "planned, in {:.2f}s.".format(
+                        math.degrees(closed_loop_result["achieved_angle_rad"]),
+                        math.degrees(closed_loop_result["target_angle_rad"]),
+                        closed_loop_result["elapsed"],
+                    ),
+                    command=command,
+                    safety=safety,
+                )
+            # outcome == "feedback_unavailable": nothing moved yet, fall
+            # through to the normal open-loop path below as if
+            # closed-loop had never been attempted.
 
         # Any pulse longer than one chunk is watched -- run in short,
         # re-checked segments rather than one long blind hold. For a
@@ -1084,6 +1346,75 @@ class SafeCmdVelExecutor(object):
             "safety": last_safety,
         }
 
+    def _turn_closed_loop(self, angular_z, nominal_duration, motion_kind):
+        """Execute a turn by watching real yaw instead of trusting duration.
+
+        The target angle is derived from what's already being commanded
+        (angular_z * nominal_duration) rather than needing new plumbing
+        upstream -- #1's magnitude tiers and #2's vision-grounded turning
+        still decide how big a turn should be exactly as before; this
+        only changes how that decision gets executed. Caller is
+        responsible for only invoking this when the high_state bridge
+        is ready, and for falling back to the open-loop path if the
+        outcome comes back "feedback_unavailable" (nothing moved yet).
+        """
+        target_angle_rad = angular_z * nominal_duration
+        max_duration = max(
+            YAW_FEEDBACK_MIN_MAX_DURATION_S,
+            abs(nominal_duration) * YAW_FEEDBACK_MAX_DURATION_MULTIPLIER,
+        )
+
+        start_reply = self._high_state_bridge.get_yaw()
+        if not start_reply.get("ok"):
+            return {
+                "outcome": "feedback_unavailable",
+                "elapsed": 0.0,
+                "achieved_angle_rad": 0.0,
+                "target_angle_rad": target_angle_rad,
+                "error": start_reply.get("error"),
+            }
+        start_yaw = start_reply["yaw"]
+
+        elapsed = 0.0
+        achieved_angle_rad = 0.0
+        while (
+            abs(achieved_angle_rad)
+            < abs(target_angle_rad) - YAW_FEEDBACK_ANGLE_TOLERANCE_RAD
+            and elapsed < max_duration
+        ):
+            chunk = min(MOTION_WATCH_CHUNK_SECONDS, max_duration - elapsed)
+            moved = self._move_for_duration(0.0, angular_z, chunk)
+            if not moved:
+                return {
+                    "outcome": "pulse_failed",
+                    "elapsed": elapsed,
+                    "achieved_angle_rad": achieved_angle_rad,
+                    "target_angle_rad": target_angle_rad,
+                }
+            elapsed += chunk
+
+            reply = self._high_state_bridge.get_yaw()
+            if not reply.get("ok"):
+                return {
+                    "outcome": "feedback_lost",
+                    "elapsed": elapsed,
+                    "achieved_angle_rad": achieved_angle_rad,
+                    "target_angle_rad": target_angle_rad,
+                    "error": reply.get("error"),
+                }
+            achieved_angle_rad = _yaw_diff(reply["yaw"], start_yaw)
+
+        reached = (
+            abs(achieved_angle_rad)
+            >= abs(target_angle_rad) - YAW_FEEDBACK_ANGLE_TOLERANCE_RAD
+        )
+        return {
+            "outcome": "reached" if reached else "timeout",
+            "elapsed": elapsed,
+            "achieved_angle_rad": achieved_angle_rad,
+            "target_angle_rad": target_angle_rad,
+        }
+
 def load_json_file(path):
     with open(path, "r") as f:
         return json.load(f)
@@ -1147,6 +1478,17 @@ def parse_args():
         help="Minimum evidence score required for movement",
     )
     parser.add_argument("--allow-low-confidence", action="store_true", help="Allow low-confidence actions to move the robot")
+    parser.add_argument(
+        "--use-yaw-feedback",
+        action="store_true",
+        help=(
+            "Execute turns closed-loop against real /high_state IMU "
+            "yaw instead of a fixed timed duration. Opt-in and unproven "
+            "on hardware -- falls back to open-loop automatically if "
+            "the high_state bridge isn't ready."
+        ),
+    )
+    parser.add_argument("--high-state-topic", default="/high_state")
     return parser.parse_args()
 
 def main():
@@ -1187,6 +1529,8 @@ def main():
         min_evidence_score=args.min_evidence_score,
         allow_low_confidence=args.allow_low_confidence,
         safety_monitor=safety_monitor,
+        yaw_feedback_enabled=args.use_yaw_feedback,
+        high_state_topic=args.high_state_topic,
     )
 
     if args.stop:

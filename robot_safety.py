@@ -39,7 +39,7 @@ LIDAR_CONE_HALF_ANGLE_DEG = 20.0
 # above the actually-observed floor z once temp_files/lidar_probe.py's
 # floor-band section has been run and read (a flat floor should show
 # z roughly constant around -0.38 to -0.435 regardless of range).
-LIDAR_FLOOR_HEIGHT_CUTOFF_M = -0.30
+LIDAR_FLOOR_HEIGHT_CUTOFF_M = -0.35
 
 # Stop-distance threshold (meters): block a forward/backward pulse if
 # the nearest in-cone, floor-excluded point is closer than this.
