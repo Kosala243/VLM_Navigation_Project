@@ -205,6 +205,12 @@ class NavigationMemory:
         - Use RIGHT when the landmark/cue is visible in the right image/panel.
         - Use STITCHED_UNKNOWN when the stitched panel/source is unclear.
         - Use NONE only when no current visual cue supports the landmark.
+        - Also set extra.horizontal_offset_fraction: your best estimate of the
+          landmark's horizontal position within its own source image (the
+          LEFT, FRONT, or RIGHT image named by source_view -- not the whole
+          scene), as a number from -1.0 (left edge of that image) to +1.0
+          (right edge), with 0.0 meaning dead center. Use null if you cannot
+          judge it.
 
         Extract ONLY navigation-useful evidence. Ignore furniture, ceiling, wall colour, general room appearance, and random people unless they are part of an official help desk.
 
@@ -255,6 +261,7 @@ class NavigationMemory:
                 "zone": null,
                 "source_view": "LEFT | FRONT | RIGHT | STITCHED_UNKNOWN | NONE",
                 "horizontal_position": "left | center | right | unknown",
+                "horizontal_offset_fraction": null,
                 "proximity": "far | medium | near | reached | unknown",
                 "path_clear_visual": true,
                 "doorway_state": "open | closed | blocked | unknown",
@@ -810,6 +817,7 @@ class NavigationMemory:
                 "observation_count": lm.observation_count,
                 "source_view": extra.get("source_view", "NONE"),
                 "horizontal_position": extra.get("horizontal_position", "unknown"),
+                "horizontal_offset_fraction": extra.get("horizontal_offset_fraction"),
                 "proximity": extra.get("proximity", "unknown"),
                 "path_clear_visual": extra.get("path_clear_visual"),
                 "doorway_state": extra.get("doorway_state", "unknown"),
@@ -925,6 +933,7 @@ class NavigationMemory:
         extra["source_image_index"] = self.image_count
         extra["source_view"] = _normalise_source_view(extra.get("source_view"))
         extra["horizontal_position"] = _normalise_horizontal_position(extra.get("horizontal_position"))
+        extra["horizontal_offset_fraction"] = _normalise_horizontal_offset_fraction(extra.get("horizontal_offset_fraction"))
         extra["proximity"] = _normalise_proximity(extra.get("proximity"))
         extra["doorway_state"] = _normalise_doorway_state(extra.get("doorway_state"))
         extra["threshold_state"] = _normalise_threshold_state(extra.get("threshold_state"))
@@ -1264,6 +1273,17 @@ def _normalise_horizontal_position(
         return "center"
 
     return "unknown"
+
+def _normalise_horizontal_offset_fraction(value: Any) -> float | None:
+    if value is None:
+        return None
+    try:
+        offset = float(value)
+    except (TypeError, ValueError):
+        return None
+    if offset != offset:  # NaN
+        return None
+    return max(-1.0, min(1.0, offset))
 
 def _normalise_proximity(value: Any) -> str:
     text = str(value or "").strip().lower()

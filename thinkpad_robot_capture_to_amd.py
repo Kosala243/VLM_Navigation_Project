@@ -11,7 +11,7 @@ import time
 import shutil
 from datetime import datetime
 from pathlib import Path
-from robot_executor import SafeCmdVelExecutor
+from robot_executor import SafeCmdVelExecutor, EXPLORATION_TURN_PULSE_DURATION_DEFAULT_S
 from robot_safety import RobotSafetyMonitor
 
 def run(cmd, check=True, verbose=True, timeout=60):
@@ -1174,6 +1174,9 @@ def maybe_execute_robot_action(
         turn_pulse_duration=(
             args.turn_pulse_duration
         ),
+        exploration_turn_pulse_duration=(
+            args.exploration_turn_pulse_duration
+        ),
         approach_pulse_duration=(
             args.approach_pulse_duration
         ),
@@ -1246,6 +1249,7 @@ def create_run_dir(args):
         "move_duration": args.move_duration,
         "forward_pulse_duration": (args.forward_pulse_duration),
         "turn_pulse_duration": (args.turn_pulse_duration),
+        "exploration_turn_pulse_duration": (args.exploration_turn_pulse_duration),
         "approach_pulse_duration": (args.approach_pulse_duration),
         "doorway_pulse_duration": (args.doorway_pulse_duration),
         "search_pulse_duration": (args.search_pulse_duration),
@@ -1931,6 +1935,17 @@ def parse_args():
     )
 
     parser.add_argument(
+        "--exploration-turn-pulse-duration",
+        type=float,
+        default=EXPLORATION_TURN_PULSE_DURATION_DEFAULT_S,
+        help=(
+            "Turn duration for reorienting turns (route/direction turns, "
+            "and by default SEARCH_FOR_CUE) as opposed to fine alignment "
+            "corrections, which keep using --turn-pulse-duration."
+        ),
+    )
+
+    parser.add_argument(
         "--approach-pulse-duration",
         type=float,
         default=0.30,
@@ -1945,7 +1960,7 @@ def parse_args():
     parser.add_argument(
         "--search-pulse-duration",
         type=float,
-        default=0.25,
+        default=EXPLORATION_TURN_PULSE_DURATION_DEFAULT_S,
     )
 
     parser.add_argument(
@@ -1977,6 +1992,7 @@ def parse_args():
         choices=[
             "placeholder",
             "disabled",
+            "lidar",
         ],
         default="placeholder",
     )

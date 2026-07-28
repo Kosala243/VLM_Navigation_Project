@@ -18,14 +18,81 @@ IMPORTANT:
 import argparse
 import atexit
 import json
+import math
 import os
 import subprocess
 import sys
 import time
 
-from robot_safety import RobotSafetyMonitor
+from robot_safety import RobotSafetyMonitor, LIDAR_STOP_DISTANCE_M
 
 VALID_EXECUTE_MODES = {"false", "confirm", "true"}
+
+# LiDAR-scaled forward pulses (only for genuine forward-advance motion
+# kinds, not the deliberately-small precision pulses like landmark
+# approach or doorway traversal, which should keep re-imaging often as
+# they close in rather than lunge toward their target in one step).
+# PROVISIONAL ceiling -- how far a single pulse may travel even when
+# the LiDAR sees a fully open path ahead; tune once this has been
+# tried on real hardware.
+MAX_FORWARD_PULSE_DISTANCE_M = 0.60
+MIN_SCALED_PULSE_DURATION_S = 0.05
+LIDAR_SCALABLE_MOTION_KINDS = {"route_advance", "direction_advance"}
+
+# A scaled forward pulse longer than this is chunked into sub-pulses of
+# this size, with a fresh LiDAR clearance check before each one, instead
+# of one long blind cmd_vel hold -- so something entering the path
+# mid-pulse gets caught at the next chunk boundary instead of only after
+# the whole pulse finishes. Matches the existing forward_pulse_duration
+# default, i.e. the same "one blind increment" size already used
+# elsewhere in this file, not a new arbitrary number.
+MOTION_WATCH_CHUNK_SECONDS = 0.40
+
+# Turn magnitude tiers (#1). Every turn used to share one fixed duration
+# regardless of whether it was a fine alignment nudge or a "reorient
+# toward a new heading" turn, which was implicated in the left/right
+# hunting behavior observed during real runs: a fixed pulse either
+# overshoots a small needed correction or undershoots a large one.
+# "Fine" turns (ALIGN_WITH_LANDMARK, cue_alignment) keep using
+# turn_pulse_duration unchanged. "Exploratory" turns (route_alignment,
+# direction_turn, and by extension visual_search) get their own, larger
+# duration. PROVISIONAL: ~15 degrees at the default turn_speed=0.20 rad/s
+# (0.2618 rad / 0.20 rad/s), not yet validated on hardware.
+EXPLORATION_TURN_PULSE_DURATION_DEFAULT_S = 1.30
+
+# Vision-grounded turning (#2). Converts the VLM's own estimate of a
+# landmark/cue's horizontal position within its source camera image
+# (params.horizontal_offset_fraction, -1.0=left edge of that image to
+# +1.0=right edge, 0.0=center) into an actual turn angle, instead of the
+# fixed magnitude-tier duration. Only applies to landmark/cue alignment
+# turns (ALIGN_WITH_LANDMARK, cue_alignment) -- there's nothing to
+# ground against for route/direction/search turns, which stay on the
+# fixed tiers from #1.
+#
+# This pipeline captures three separate cameras in --camera-mode
+# separate (the mode actually used for real runs) -- front/left/right
+# images sent to the model individually, at native capture resolution,
+# no stitching/resizing. params.evidence_view (LEFT/FRONT/RIGHT) says
+# which of the three images the offset fraction is relative to.
+#
+# PROVISIONAL: every value below is a placeholder pending physical
+# measurement on the real hardware (wall-distance method for FOV,
+# known-bearing-marker method for boresight -- see the lab checklist).
+# Sign convention matches the LiDAR azimuth convention already used
+# elsewhere in this repo: positive degrees = left, negative = right.
+CAMERA_HORIZONTAL_FOV_DEG = {
+    "FRONT": 60.0,
+    "LEFT": 60.0,
+    "RIGHT": 60.0,
+}
+CAMERA_BORESIGHT_DEG = {
+    "FRONT": 0.0,
+    "LEFT": 90.0,
+    "RIGHT": -90.0,
+}
+# Clamp against a wildly-off single estimate (miscalibration or a bad
+# model guess) turning into an oversized blind turn.
+MAX_VISION_TURN_ANGLE_DEG = 90.0
 
 BRIDGE_SCRIPT_PATH = os.path.join(
     os.path.dirname(os.path.abspath(__file__)),
@@ -224,6 +291,7 @@ class SafeCmdVelExecutor(object):
         duration=0.40,
         forward_pulse_duration=None,
         turn_pulse_duration=None,
+        exploration_turn_pulse_duration=None,
         approach_pulse_duration=None,
         doorway_pulse_duration=None,
         search_pulse_duration=None,
@@ -250,6 +318,11 @@ class SafeCmdVelExecutor(object):
             if turn_pulse_duration is not None
             else fallback_duration
         )
+        self.exploration_turn_pulse_duration = float(
+            exploration_turn_pulse_duration
+            if exploration_turn_pulse_duration is not None
+            else EXPLORATION_TURN_PULSE_DURATION_DEFAULT_S
+        )
         self.approach_pulse_duration = float(
             approach_pulse_duration
             if approach_pulse_duration is not None
@@ -263,7 +336,10 @@ class SafeCmdVelExecutor(object):
         self.search_pulse_duration = float(
             search_pulse_duration
             if search_pulse_duration is not None
-            else self.turn_pulse_duration
+            # SEARCH_FOR_CUE is an exploratory scan, not a fine
+            # correction, so it defaults alongside route/direction
+            # turns rather than the fine-alignment tier.
+            else self.exploration_turn_pulse_duration
         )
         self.invert_turn = bool(invert_turn)
         self.execute_mode = execute_mode
@@ -506,6 +582,86 @@ class SafeCmdVelExecutor(object):
                 command=command,
                 safety=safety,
             )
+
+        motion_kind = command.get("motion_kind", "unknown")
+        lidar_scaled = (
+            self.safety_monitor.sensor_mode == "lidar"
+            and motion_kind in LIDAR_SCALABLE_MOTION_KINDS
+            and abs(linear_x) > 1e-6
+        )
+        if lidar_scaled:
+            nearest = safety.get("nearest_range_m")
+            safe_distance = (
+                MAX_FORWARD_PULSE_DISTANCE_M
+                if nearest is None
+                else min(
+                    MAX_FORWARD_PULSE_DISTANCE_M,
+                    max(0.0, nearest - LIDAR_STOP_DISTANCE_M),
+                )
+            )
+            pulse_duration = max(
+                MIN_SCALED_PULSE_DURATION_S,
+                safe_distance / abs(linear_x),
+            )
+            # Keep the logged/returned command in sync with what actually
+            # runs, not the pre-scaling nominal duration it started as.
+            command["duration"] = pulse_duration
+
+        # Any pulse longer than one chunk is watched -- run in short,
+        # re-checked segments rather than one long blind hold. For a
+        # LiDAR-scaled forward pulse this is a real obstacle recheck each
+        # chunk; for a turn (vision-grounded or the fixed exploration
+        # tier) there's no sensor that can cancel it early today, but
+        # each chunk still ends in a confirmed stop(), so the worst-case
+        # single uninterrupted blind segment is bounded to one chunk
+        # instead of the whole multi-second turn. Anything at or under
+        # one chunk keeps the original single-shot behavior unchanged.
+        if pulse_duration > MOTION_WATCH_CHUNK_SECONDS + 1e-6:
+            try:
+                watch_result = self._move_for_duration_watched(
+                    linear_x,
+                    angular_z,
+                    pulse_duration,
+                    motion_kind,
+                )
+            except Exception as exc:
+                return self._abort(
+                    "movement_exception",
+                    str(exc),
+                    command=command,
+                    safety=safety,
+                )
+            command["elapsed_duration"] = watch_result["elapsed"]
+            watch_safety = watch_result.get("safety") or safety
+            if watch_result["pulse_failed"]:
+                return self._set_result(
+                    False,
+                    "movement_command_failed",
+                    "The ROS movement command failed mid-pulse.",
+                    command=command,
+                    safety=watch_safety,
+                )
+            if watch_result["cut_short"]:
+                return self._set_result(
+                    True,
+                    "pulse_cut_short",
+                    "Pulse stopped early after {:.2f}s of "
+                    "{:.2f}s planned -- {}".format(
+                        watch_result["elapsed"],
+                        pulse_duration,
+                        watch_safety.get("reason", "obstacle detected"),
+                    ),
+                    command=command,
+                    safety=watch_safety,
+                )
+            return self._set_result(
+                True,
+                "pulse_executed",
+                "One watched pulse was executed.",
+                command=command,
+                safety=watch_safety,
+            )
+
         try:
             moved = self._move_for_duration(
                 linear_x,
@@ -569,6 +725,7 @@ class SafeCmdVelExecutor(object):
         ).strip().lower()
 
         traversable = params.get("traversable")
+        horizontal_offset_fraction = params.get("horizontal_offset_fraction")
 
         if name in {
             "STOP_AND_VERIFY",
@@ -578,8 +735,21 @@ class SafeCmdVelExecutor(object):
         }:
             return None
 
-        # Phase 3.2: one small alignment pulse.
+        # Phase 3.2: one small alignment pulse. Vision-grounded (#2) when
+        # the model supplied a usable horizontal_offset_fraction, else
+        # falls back to the fixed fine-alignment tier from #1.
         if name == "ALIGN_WITH_LANDMARK":
+            vision_turn = self._vision_grounded_turn(
+                evidence_view, horizontal_offset_fraction
+            )
+            if vision_turn is not None:
+                vg_direction, vg_duration = vision_turn
+                return self._turn_cmd(
+                    vg_direction,
+                    vg_duration,
+                    "visual_alignment",
+                )
+
             if direction not in {"left", "right"}:
                 return None
 
@@ -623,13 +793,25 @@ class SafeCmdVelExecutor(object):
             "READ_SIGN",
             "CHECK_DOOR_LABEL",
         }:
+            # Vision-grounded (#2) when the model supplied a usable
+            # horizontal_offset_fraction for this evidence_view, else
+            # falls back to the fixed fine-alignment tier from #1.
+            vision_turn = self._vision_grounded_turn(
+                evidence_view, horizontal_offset_fraction
+            )
             if evidence_view == "LEFT":
+                if vision_turn is not None:
+                    vg_direction, vg_duration = vision_turn
+                    return self._turn_cmd(vg_direction, vg_duration, "cue_alignment")
                 return self._turn_cmd(
                     "left",
                     self.turn_pulse_duration,
                     "cue_alignment",
                 )
             if evidence_view == "RIGHT":
+                if vision_turn is not None:
+                    vg_direction, vg_duration = vision_turn
+                    return self._turn_cmd(vg_direction, vg_duration, "cue_alignment")
                 return self._turn_cmd(
                     "right",
                     self.turn_pulse_duration,
@@ -642,6 +824,9 @@ class SafeCmdVelExecutor(object):
                     "right",
                 }
             ):
+                if vision_turn is not None:
+                    vg_direction, vg_duration = vision_turn
+                    return self._turn_cmd(vg_direction, vg_duration, "cue_alignment")
                 return self._turn_cmd(
                     horizontal_position,
                     self.turn_pulse_duration,
@@ -664,7 +849,7 @@ class SafeCmdVelExecutor(object):
             if direction in {"left", "right"}:
                 return self._turn_cmd(
                     direction,
-                    self.turn_pulse_duration,
+                    self.exploration_turn_pulse_duration,
                     "route_alignment",
                 )
 
@@ -679,7 +864,7 @@ class SafeCmdVelExecutor(object):
             if direction in {"left", "right"}:
                 return self._turn_cmd(
                     direction,
-                    self.turn_pulse_duration,
+                    self.exploration_turn_pulse_duration,
                     "direction_turn",
                 )
 
@@ -733,6 +918,42 @@ class SafeCmdVelExecutor(object):
             "duration": float(duration),
             "motion_kind": str(motion_kind),
         }
+
+    def _vision_grounded_turn(self, evidence_view, horizontal_offset_fraction):
+        """Convert a VLM-estimated in-frame offset into (direction, duration).
+
+        Returns None if evidence_view/horizontal_offset_fraction aren't
+        usable (missing field, wrong type, NaN, or an evidence_view this
+        repo has no camera calibration for) -- callers fall back to their
+        fixed magnitude-tier duration in that case.
+        """
+        if evidence_view not in CAMERA_HORIZONTAL_FOV_DEG:
+            return None
+        try:
+            offset = float(horizontal_offset_fraction)
+        except (TypeError, ValueError):
+            return None
+        if offset != offset:  # NaN
+            return None
+        offset = max(-1.0, min(1.0, offset))
+
+        fov_deg = CAMERA_HORIZONTAL_FOV_DEG[evidence_view]
+        boresight_deg = CAMERA_BORESIGHT_DEG[evidence_view]
+        # offset=-1.0 is the left edge of that camera's own image, which
+        # needs a *more positive* (more left, in this repo's left=positive
+        # convention) turn to center it -- hence the negation here.
+        target_relative_angle_deg = boresight_deg - offset * (fov_deg / 2.0)
+
+        magnitude_deg = min(
+            MAX_VISION_TURN_ANGLE_DEG,
+            abs(target_relative_angle_deg),
+        )
+        direction = "left" if target_relative_angle_deg >= 0 else "right"
+        duration = max(
+            MIN_SCALED_PULSE_DURATION_S,
+            math.radians(magnitude_deg) / self.turn_speed,
+        )
+        return direction, duration
 
     def _move_for_duration(
         self,
@@ -788,6 +1009,81 @@ class SafeCmdVelExecutor(object):
             )
         return pulse_ok
 
+    def _move_for_duration_watched(
+        self,
+        linear_x,
+        angular_z,
+        total_duration,
+        motion_kind,
+    ):
+        """Run a long pulse (forward or turn) as short, re-checked chunks.
+
+        A single blind cmd_vel hold for several seconds means nothing
+        changing mid-pulse gets noticed until the whole pulse finishes.
+        Instead this re-queries the safety monitor before every
+        MOTION_WATCH_CHUNK_SECONDS-sized chunk and stops early if it
+        stops being allowed -- the robot is already halted (each chunk
+        ends in a confirmed stop()) the moment a chunk decides not to
+        start the next one.
+
+        For a forward/backward pulse under "lidar" mode this is a real
+        obstacle recheck (see RobotSafetyMonitor._check_lidar_clearance).
+        For a pure turn, check_motion() always allows it by design (pure
+        turns aren't LiDAR-gated), so this degrades to bounding the
+        maximum blind turn segment and creating pause points -- not an
+        automatic cancel condition, since no sensor exists today that
+        can tell a turn to stop early. Still meaningfully safer than one
+        uninterrupted multi-second blind spin.
+        """
+        remaining = total_duration
+        elapsed = 0.0
+        last_safety = None
+
+        while remaining > 1e-6:
+            last_safety = self.safety_monitor.check_motion(
+                action_name="MOTION_WATCH_RECHECK",
+                linear_x=linear_x,
+                angular_z=angular_z,
+                motion_kind=motion_kind,
+            )
+            if not last_safety.get("allowed", False):
+                print(
+                    "[EXECUTOR] Motion watch: cutting pulse short after "
+                    "{:.2f}s of {:.2f}s planned -- {}".format(
+                        elapsed,
+                        total_duration,
+                        last_safety.get("reason", "obstacle detected"),
+                    )
+                )
+                return {
+                    "completed": False,
+                    "cut_short": True,
+                    "pulse_failed": False,
+                    "elapsed": elapsed,
+                    "safety": last_safety,
+                }
+
+            chunk = min(MOTION_WATCH_CHUNK_SECONDS, remaining)
+            moved = self._move_for_duration(linear_x, angular_z, chunk)
+            if not moved:
+                return {
+                    "completed": False,
+                    "cut_short": False,
+                    "pulse_failed": True,
+                    "elapsed": elapsed,
+                    "safety": last_safety,
+                }
+            elapsed += chunk
+            remaining -= chunk
+
+        return {
+            "completed": True,
+            "cut_short": False,
+            "pulse_failed": False,
+            "elapsed": elapsed,
+            "safety": last_safety,
+        }
+
 def load_json_file(path):
     with open(path, "r") as f:
         return json.load(f)
@@ -809,10 +1105,24 @@ def parse_args():
     parser.add_argument("--duration", type=float, default=0.40, help="Fallback pulse duration in seconds.")
     parser.add_argument("--forward-pulse-duration", type=float, default=0.40)
     parser.add_argument("--turn-pulse-duration", type=float, default=0.35)
+    parser.add_argument(
+        "--exploration-turn-pulse-duration",
+        type=float,
+        default=EXPLORATION_TURN_PULSE_DURATION_DEFAULT_S,
+        help=(
+            "Turn duration for reorienting turns (route/direction turns, "
+            "and by default SEARCH_FOR_CUE) as opposed to fine alignment "
+            "corrections, which keep using --turn-pulse-duration."
+        ),
+    )
     parser.add_argument("--approach-pulse-duration", type=float, default=0.30)
     parser.add_argument("--doorway-pulse-duration", type=float, default=0.25)
-    parser.add_argument("--search-pulse-duration",type=float,default=0.25)
-    parser.add_argument("--safety-mode", choices=["placeholder", "disabled"], default="placeholder")
+    parser.add_argument(
+        "--search-pulse-duration",
+        type=float,
+        default=EXPLORATION_TURN_PULSE_DURATION_DEFAULT_S,
+    )
+    parser.add_argument("--safety-mode", choices=["placeholder", "disabled", "lidar"], default="placeholder")
     parser.add_argument(
         "--allow-motion-without-safety-sensor",
         action="store_true",
@@ -859,6 +1169,9 @@ def main():
         ),
         turn_pulse_duration=(
             args.turn_pulse_duration
+        ),
+        exploration_turn_pulse_duration=(
+            args.exploration_turn_pulse_duration
         ),
         approach_pulse_duration=(
             args.approach_pulse_duration

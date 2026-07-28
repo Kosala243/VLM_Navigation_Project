@@ -167,6 +167,11 @@ class ActionGenerator:
         - Use "RIGHT" if the strongest cue is in the right camera/panel.
         - Use "STITCHED_UNKNOWN" if the image is stitched but the panel/source is unclear.
         - Use "NONE" if no useful visual cue is visible.
+        - When the action is ALIGN_WITH_LANDMARK, READ_SIGN, or CHECK_DOOR_LABEL, also include
+          "horizontal_offset_fraction": your best estimate of the selected landmark/cue's
+          horizontal position within its own source image (the LEFT, FRONT, or RIGHT image
+          named by evidence_view -- not the whole scene), from -1.0 (left edge of that image)
+          to +1.0 (right edge), 0.0 = dead center. Use null if you cannot judge it.
         - If the exact target door or target entrance is visible only in LEFT or RIGHT, choose ALIGN_WITH_LANDMARK first. Do not claim that the target has been reached.
         - Confirm the target only after a new observation shows the target in FRONT.
         - A landmark in FRONT is aligned only when horizontal_position="center".
@@ -203,6 +208,7 @@ class ActionGenerator:
             "capture_after": true,
             "evidence_view": "LEFT | FRONT | RIGHT | STITCHED_UNKNOWN | NONE",
             "horizontal_position": "left | center | right | unknown",
+            "horizontal_offset_fraction": null,
             "proximity": "far | medium | near | reached | unknown",
             "doorway_state": "open | closed | blocked | unknown",
             "threshold_state": "before | at | passed | unknown",
@@ -408,6 +414,11 @@ class ActionGenerator:
                     exact_target_lm
                 )
             )
+            offset_fraction = (
+                _landmark_offset_fraction(
+                    exact_target_lm
+                )
+            )
             proximity = _landmark_proximity(
                 exact_target_lm
             )
@@ -442,6 +453,9 @@ class ActionGenerator:
                         "evidence_view": target_view,
                         "horizontal_position": (
                             horizontal_position
+                        ),
+                        "horizontal_offset_fraction": (
+                            offset_fraction
                         ),
                         "proximity": proximity,
                     },
@@ -487,6 +501,9 @@ class ActionGenerator:
                         "evidence_view": "FRONT",
                         "horizontal_position": (
                             horizontal_position
+                        ),
+                        "horizontal_offset_fraction": (
+                            offset_fraction
                         ),
                         "proximity": proximity,
                     },
@@ -565,6 +582,9 @@ class ActionGenerator:
                         "evidence_view": target_view,
                         "horizontal_position": (
                             horizontal_position
+                        ),
+                        "horizontal_offset_fraction": (
+                            offset_fraction
                         ),
                         "proximity": proximity,
                     },
@@ -1090,6 +1110,9 @@ class ActionGenerator:
                 "horizontal_position": (
                     horizontal_position
                 ),
+                "horizontal_offset_fraction": (
+                    _landmark_offset_fraction(lm)
+                ),
                 "proximity": (
                     _landmark_proximity(lm)
                 ),
@@ -1300,6 +1323,10 @@ class ActionGenerator:
             action.params[
                 "horizontal_position"
             ] = horizontal_position
+
+            action.params[
+                "horizontal_offset_fraction"
+            ] = _landmark_offset_fraction(lm)
 
             action.params[
                 "proximity"
@@ -2218,6 +2245,33 @@ def _landmark_horizontal_position(
         return value
 
     return "unknown"
+
+
+def _landmark_offset_fraction(
+    landmark: "Landmark | None",
+) -> float | None:
+    if landmark is None:
+        return None
+
+    extra = (
+        landmark.extra
+        if isinstance(
+            getattr(landmark, "extra", {}),
+            dict,
+        )
+        else {}
+    )
+
+    value = extra.get("horizontal_offset_fraction")
+    if value is None:
+        return None
+    try:
+        offset = float(value)
+    except (TypeError, ValueError):
+        return None
+    if offset != offset:  # NaN
+        return None
+    return max(-1.0, min(1.0, offset))
 
 
 def _landmark_proximity(

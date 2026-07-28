@@ -1,0 +1,193 @@
+{
+  "run_settings": {
+    "started_at": "2026-07-27T14:12:56",
+    "goal": "C0.004",
+    "mode": "auto",
+    "camera_mode": "separate",
+    "api": "http://ernis-amd395:8001",
+    "robot_user": "unitree",
+    "robot_ip": "192.168.123.14",
+    "camera_device": "/dev/video3",
+    "front_device": "/dev/video2",
+    "left_device": "/dev/video4",
+    "right_device": "/dev/video3",
+    "capture_size": "960x720",
+    "execute": "confirm",
+    "cmd_vel_topic": "/cmd_vel",
+    "forward_speed": 0.08,
+    "turn_speed": 0.3,
+    "move_duration": 0.4,
+    "forward_pulse_duration": 12.0,
+    "turn_pulse_duration": 8.0,
+    "approach_pulse_duration": 10.0,
+    "doorway_pulse_duration": 10.0,
+    "search_pulse_duration": 10.0,
+    "max_alignment_pulses": 8,
+    "max_approach_pulses": 12,
+    "max_doorway_pulses": 8,
+    "max_search_pulses": 6,
+    "safety_mode": "placeholder",
+    "allow_motion_without_safety_sensor": true,
+    "invert_turn": false,
+    "memory": "true",
+    "interval": 2.0,
+    "max_steps": 30,
+    "max_no_progress_retries": 1,
+    "stitch_width": 960,
+    "stitch_height": 720,
+    "min_evidence_score": 0.2,
+    "allow_low_confidence": false
+  },
+  "step": 1,
+  "timestamp": "2026-07-27T14:14:33",
+  "camera_mode": "separate",
+  "primary_path": "robot_live_frames/step_0001/front.png",
+  "saved_files": {
+    "left": "robot_live_frames/step_0001/left.png",
+    "front": "robot_live_frames/step_0001/front.png",
+    "right": "robot_live_frames/step_0001/right.png"
+  },
+  "executed": true,
+  "step_metric": {
+    "done": false,
+    "executed": true,
+    "mode": "autonomous_step",
+    "observation_mode": "separate",
+    "action_name": "PASS_THROUGH_DOORWAY",
+    "confidence": "medium",
+    "evidence_score": 0.7125,
+    "is_valid": true,
+    "evidence_view": "FRONT",
+    "no_progress_detected": false,
+    "duplicate_observation": false,
+    "no_progress_repeat_count": 0,
+    "execution_status": "pulse_executed",
+    "execution_reason": "One small movement pulse was executed.",
+    "movement_command": {
+      "linear_x": 0.08,
+      "angular_z": 0.0,
+      "duration": 10.0,
+      "motion_kind": "doorway_traversal"
+    },
+    "safety_result": {
+      "allowed": true,
+      "sensor_ready": false,
+      "sensor_mode": "placeholder",
+      "bypassed": true,
+      "reason": "Motion allowed through explicit manual override. No LiDAR or robot-state safety check was performed.",
+      "action_name": "PASS_THROUGH_DOORWAY",
+      "motion_kind": "doorway_traversal"
+    },
+    "action_retry_limit_reached": false
+  },
+  "evidence_view": "FRONT",
+  "response": {
+    "mode": "autonomous_step",
+    "goal": "C0.004",
+    "observation_mode": "separate",
+    "image_path": "live_frames/frame_1785154388249_front.png",
+    "image_paths": {
+      "LEFT": "live_frames/frame_1785154388249_left.png",
+      "FRONT": "live_frames/frame_1785154388249_front.png",
+      "RIGHT": "live_frames/frame_1785154388249_right.png"
+    },
+    "done": false,
+    "action": {
+      "name": "PASS_THROUGH_DOORWAY",
+      "params": {
+        "landmark_id": "L003",
+        "direction": "forward",
+        "target": "L003",
+        "target_description": "Open doorway leading into the interior lobby area with warm lighting",
+        "stop_condition": "capture immediately after crossing the doorway threshold",
+        "capture_after": true,
+        "evidence_view": "FRONT",
+        "horizontal_position": "center",
+        "proximity": "near",
+        "doorway_state": "open",
+        "threshold_state": "at",
+        "traversable": true
+      },
+      "reason": "Current doorway L003 is open, centred in FRONT, and traversable, so the dedicated doorway traversal skill is used.",
+      "confidence": "medium",
+      "evidence_score": 0.7125,
+      "evidence_breakdown": {
+        "action_base_score": 0.6,
+        "supporting_landmark_score": 0.7500000000000001,
+        "supporting_landmark_bonus": 0.11250000000000002,
+        "no_landmark_penalty": 0.0,
+        "partial_marker_penalty": 0.0,
+        "used_landmark_penalty": 0.0,
+        "invalid_penalty": 0.0,
+        "mismatched_room_code_penalty": 0.0,
+        "structural_route_penalty": 0.0,
+        "final_score": 0.7125
+      },
+      "goal_reached": false,
+      "needs_verification": true,
+      "raw": {
+        "source": "deterministic_doorway_promotion",
+        "planner_response": {
+          "action": "NAVIGATE_TO_LANDMARK",
+          "params": {
+            "landmark_id": "L003",
+            "direction": "forward",
+            "target": "L003",
+            "target_description": "Open doorway leading into the interior lobby area with warm lighting",
+            "floor": null,
+            "search_for": null,
+            "stop_condition": "capture when near the doorway threshold",
+            "capture_after": true,
+            "evidence_view": "FRONT",
+            "horizontal_position": "center",
+            "proximity": "near",
+            "doorway_state": "open",
+            "threshold_state": "at",
+            "traversable": true
+          },
+          "reason": "The robot is at the entrance of Building C and the open doorway (L003) directly ahead leads into the lobby where the target room is likely located.",
+          "confidence": "high",
+          "goal_reached": false,
+          "needs_verification": true,
+          "_parse_ok": true,
+          "_parse_attempts": 1
+        }
+      },
+      "is_valid": true,
+      "invalid_reason": ""
+    },
+    "action_display": "PASS_THROUGH_DOORWAY({'landmark_id': 'L003', 'direction': 'forward', 'target': 'L003', 'target_description': 'Open doorway leading into the interior lobby area with warm lighting', 'stop_condition': 'capture immediately after crossing the doorway threshold', 'capture_after': True, 'evidence_view': 'FRONT', 'horizontal_position': 'center', 'proximity': 'near', 'doorway_state': 'open', 'threshold_state': 'at', 'traversable': True}) [medium, score=0.71] valid - Current doorway L003 is open, centred in FRONT, and traversable, so the dedicated doorway traversal skill is used.",
+    "status": "Goal=C0.004 | records=1 | memory_landmarks=3 | session_memory_active=True | inherited_previous_memory=False",
+    "action_step": 1,
+    "perception_ok": true,
+    "perception_error": "",
+    "execution_ack_required": true,
+    "saved_result": "navigation_outputs/http_api/autonomous_step_latest_result.json"
+  },
+  "execution_result": {
+    "executed": true,
+    "status": "pulse_executed",
+    "reason": "One small movement pulse was executed.",
+    "command": {
+      "linear_x": 0.08,
+      "angular_z": 0.0,
+      "duration": 10.0,
+      "motion_kind": "doorway_traversal"
+    },
+    "safety": {
+      "allowed": true,
+      "sensor_ready": false,
+      "sensor_mode": "placeholder",
+      "bypassed": true,
+      "reason": "Motion allowed through explicit manual override. No LiDAR or robot-state safety check was performed.",
+      "action_name": "PASS_THROUGH_DOORWAY",
+      "motion_kind": "doorway_traversal"
+    },
+    "amd_ack": {
+      "accepted": true,
+      "executed": true,
+      "action": "PASS_THROUGH_DOORWAY",
+      "landmark_id": "L003"
+    }
+  }
+}
