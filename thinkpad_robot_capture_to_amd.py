@@ -14,6 +14,7 @@ from pathlib import Path
 from robot_executor import (
     SafeCmdVelExecutor,
     EXPLORATION_TURN_PULSE_DURATION_DEFAULT_S,
+    LIDAR_SCALABLE_MOTION_KINDS,
     _sanitize_terminal_input,
 )
 from robot_safety import RobotSafetyMonitor
@@ -1137,6 +1138,27 @@ def apply_action_retry_guard(
 
     return response, False
 
+def _pick_redirect_direction(safety_info):
+    """Decide which way to turn for an executor-driven auto-redirect.
+
+    safety_info is the "safety" dict from a blocked execution_result
+    (RobotSafetyMonitor._check_lidar_clearance's blocked-obstacle branch),
+    which carries left_range_m/right_range_m from the LiDAR side cones.
+    A side reading of None means no point was found in that cone at all
+    (i.e. clearer than any measured side, not "unknown-so-avoid"), so a
+    None side is preferred over a measured one.
+    """
+    left = safety_info.get("left_range_m")
+    right = safety_info.get("right_range_m")
+
+    if left is None and right is None:
+        return None
+    if left is None:
+        return "left"
+    if right is None:
+        return "right"
+    return "left" if left >= right else "right"
+
 def maybe_execute_robot_action(
     args,
     response,
@@ -1267,6 +1289,7 @@ def create_run_dir(args):
         "allow_motion_without_safety_sensor": (args.allow_motion_without_safety_sensor),
         "use_yaw_feedback": args.use_yaw_feedback,
         "high_state_topic": args.high_state_topic,
+        "auto_redirect_after_blocks": args.auto_redirect_after_blocks,
         "invert_turn": args.invert_turn,
         "memory": args.memory,
         "interval": args.interval,
@@ -1474,264 +1497,25 @@ def run_single_step(args):
         metrics=metrics,
     )
 
-def run_auto_mode(args):
-    run_dir = create_run_dir(args)
-    run_config = getattr(args, "run_config", {})
+def _finalize_auto_run(
+    run_dir,
+    args,
+    use_memory,
+    legs,
+    current_leg_goal,
+    current_leg_start_step,
+    completed_steps,
+    success,
+    run_config,
+    step_metrics,
+):
+    """Close out the current leg, compute metrics, and save
+    final_run_summary.json / memory.json / navigation_log.json.
 
-    use_memory = args.memory == "true"
-
-    if use_memory:
-        print("[INFO] Memory enabled: using /autonomous/start and /autonomous/step")
-        start_autonomous_session(
-            args.api,
-            args.goal,
-            args.execute != "false",
-            connect_timeout=args.api_connect_timeout,
-            max_time=args.api_timeout,
-        )
-    else:
-        print("[INFO] Memory disabled: using fresh /single_step for every auto step")
-
-    success = False
-    completed_steps = 0
-    step_metrics = []
-
-    last_executed_state = None
-    no_progress_repeat_count = 0
-
-    legs = []
-    current_leg_goal = args.goal
-    current_leg_start_step = 1
-
-    for step in range(1, args.max_steps + 1):
-        completed_steps = step
-        print("\n========== AUTO STEP {} ==========".format(step))
-
-        observation = get_observation(args, step_index=step)
-
-        if use_memory:
-            endpoint = "/autonomous/step"
-            goal_for_request = None
-        else:
-            endpoint = "/single_step"
-            goal_for_request = args.goal
-
-        response = post_observation_to_amd(
-            api=args.api,
-            endpoint=endpoint,
-            observation=observation,
-            goal=goal_for_request,
-            connect_timeout=args.api_connect_timeout,
-            max_time=args.api_step_timeout,
-        )
-        (
-            response,
-            no_progress_repeat_count,
-            no_progress_blocked,
-        ) = apply_no_progress_guard(
-            args=args,
-            response=response,
-            observation=observation,
-            last_executed_state=last_executed_state,
-            repeat_count=no_progress_repeat_count,
-        )
-
-        retry_limit_blocked = False
-        if not no_progress_blocked:
-            (
-                response,
-                retry_limit_blocked,
-            ) = apply_action_retry_guard(
-                args=args,
-                response=response,
-                last_executed_state=(
-                    last_executed_state
-                ),
-            )
-
-        print_action_result(response)
-        executed, execution_result = maybe_execute_robot_action(
-            args,
-            response,
-        )
-
-        ack_failed = False
-        if (
-            args.execute != "false"
-            and response.get(
-                "execution_ack_required",
-                False,
-            )
-        ):
-            ack_response = post_execution_ack(
-                api=args.api,
-                response=response,
-                executed=executed,
-                execution_result=execution_result,
-                connect_timeout=args.api_connect_timeout,
-                max_time=args.api_timeout,
-            )
-
-            execution_result[
-                "amd_ack"
-            ] = ack_response
-
-            if not ack_response.get(
-                "accepted",
-                False,
-            ):
-                ack_failed = True
-                print(
-                    "[ERROR] AMD execution acknowledgement failed:"
-                )
-                print(
-                    json.dumps(
-                        ack_response,
-                        indent=2,
-                    )
-                )
-
-        if (
-            executed
-            and not no_progress_blocked
-            and not retry_limit_blocked
-        ):
-            current_signature = (
-                _action_signature(response)
-            )
-
-            previous_signature = ""
-
-            previous_count = 0
-
-            if last_executed_state is not None:
-                previous_signature = (
-                    last_executed_state.get(
-                        "action_signature",
-                        "",
-                    )
-                )
-
-                previous_count = int(
-                    last_executed_state.get(
-                        "same_action_count",
-                        0,
-                    )
-                    or 0
-                )
-
-            same_action_count = (
-                previous_count + 1
-                if (
-                    current_signature
-                    == previous_signature
-                )
-                else 1
-            )
-
-            last_executed_state = {
-                "observation_hash": (
-                    _observation_bundle_hash(
-                        observation
-                    )
-                ),
-                "action_signature": (
-                    current_signature
-                ),
-                "same_action_count": (
-                    same_action_count
-                ),
-            }
-
-        elif (
-            not no_progress_blocked
-            and not retry_limit_blocked
-        ):
-            last_executed_state = None
-            no_progress_repeat_count = 0
-
-        step_metric = extract_step_metric(response, executed, execution_result)
-        step_metrics.append(step_metric)
-
-        save_step_log(
-            run_dir=run_dir,
-            step_index=step,
-            observation=observation,
-            response=response,
-            executed=executed,
-            run_config=run_config,
-            step_metric=step_metric,
-            execution_result=execution_result
-        )
-
-        if ack_failed:
-            print(
-                "[STOPPED] Navigation stopped because "
-                "AMD and ThinkPad execution state could "
-                "not be synchronized."
-            )
-            break
-
-        if no_progress_blocked:
-            print(
-                "[STOPPED] Autonomous loop stopped because "
-                "the observation did not change after repeated "
-                "movement attempts."
-            )
-            break
-        
-        if retry_limit_blocked:
-            print(
-                "[STOPPED] Autonomous loop stopped "
-                "because an action exceeded its "
-                "maximum pulse count."
-            )
-            break
-
-        if response.get("done") is True:
-            print(
-                "[DONE] Goal '{}' reached at step {}.".format(
-                    current_leg_goal, step
-                )
-            )
-            legs.append({
-                "goal": current_leg_goal,
-                "start_step": current_leg_start_step,
-                "end_step": step,
-                "steps": step - current_leg_start_step + 1,
-                "success": True,
-            })
-            success = True
-
-            next_goal = ""
-            if use_memory:
-                try:
-                    next_goal = _sanitize_terminal_input(input(
-                        "Enter next goal to continue navigating with "
-                        "existing memory (blank to stop): "
-                    )).strip()
-                except EOFError:
-                    next_goal = ""
-
-            if not next_goal:
-                break
-
-            start_autonomous_session(
-                args.api,
-                next_goal,
-                args.execute != "false",
-                connect_timeout=args.api_connect_timeout,
-                max_time=args.api_timeout,
-                keep_memory=True,
-            )
-            current_leg_goal = next_goal
-            current_leg_start_step = step + 1
-            last_executed_state = None
-            no_progress_repeat_count = 0
-            success = False
-
-        time.sleep(args.interval)
-
+    Shared by both the normal end-of-run path and the abort path
+    (KeyboardInterrupt / unhandled exception) in run_auto_mode, so
+    aborted runs get the same saved artifacts as completed ones.
+    """
     if not legs or legs[-1]["end_step"] < completed_steps:
         legs.append({
             "goal": current_leg_goal,
@@ -1760,6 +1544,363 @@ def run_auto_mode(args):
             connect_timeout=args.api_connect_timeout,
             max_time=args.api_timeout,
         )
+
+
+def run_auto_mode(args):
+    run_dir = create_run_dir(args)
+    run_config = getattr(args, "run_config", {})
+
+    use_memory = args.memory == "true"
+
+    if use_memory:
+        print("[INFO] Memory enabled: using /autonomous/start and /autonomous/step")
+        start_autonomous_session(
+            args.api,
+            args.goal,
+            args.execute != "false",
+            connect_timeout=args.api_connect_timeout,
+            max_time=args.api_timeout,
+        )
+    else:
+        print("[INFO] Memory disabled: using fresh /single_step for every auto step")
+
+    success = False
+    completed_steps = 0
+    step_metrics = []
+
+    last_executed_state = None
+    no_progress_repeat_count = 0
+    consecutive_safety_blocks = 0
+
+    legs = []
+    current_leg_goal = args.goal
+    current_leg_start_step = 1
+
+    try:
+        for step in range(1, args.max_steps + 1):
+            completed_steps = step
+            print("\n========== AUTO STEP {} ==========".format(step))
+
+            observation = get_observation(args, step_index=step)
+
+            if use_memory:
+                endpoint = "/autonomous/step"
+                goal_for_request = None
+            else:
+                endpoint = "/single_step"
+                goal_for_request = args.goal
+
+            response = post_observation_to_amd(
+                api=args.api,
+                endpoint=endpoint,
+                observation=observation,
+                goal=goal_for_request,
+                connect_timeout=args.api_connect_timeout,
+                max_time=args.api_step_timeout,
+            )
+            (
+                response,
+                no_progress_repeat_count,
+                no_progress_blocked,
+            ) = apply_no_progress_guard(
+                args=args,
+                response=response,
+                observation=observation,
+                last_executed_state=last_executed_state,
+                repeat_count=no_progress_repeat_count,
+            )
+
+            retry_limit_blocked = False
+            if not no_progress_blocked:
+                (
+                    response,
+                    retry_limit_blocked,
+                ) = apply_action_retry_guard(
+                    args=args,
+                    response=response,
+                    last_executed_state=(
+                        last_executed_state
+                    ),
+                )
+
+            print_action_result(response)
+            executed, execution_result = maybe_execute_robot_action(
+                args,
+                response,
+            )
+
+            safety_info = execution_result.get("safety") or {}
+            if (
+                not executed
+                and execution_result.get("status") == "safety_blocked"
+                and safety_info.get("nearest_range_m") is not None
+                and safety_info.get("motion_kind") in LIDAR_SCALABLE_MOTION_KINDS
+            ):
+                consecutive_safety_blocks += 1
+            else:
+                consecutive_safety_blocks = 0
+
+            ack_failed = False
+            if (
+                args.execute != "false"
+                and response.get(
+                    "execution_ack_required",
+                    False,
+                )
+            ):
+                ack_response = post_execution_ack(
+                    api=args.api,
+                    response=response,
+                    executed=executed,
+                    execution_result=execution_result,
+                    connect_timeout=args.api_connect_timeout,
+                    max_time=args.api_timeout,
+                )
+
+                execution_result[
+                    "amd_ack"
+                ] = ack_response
+
+                if not ack_response.get(
+                    "accepted",
+                    False,
+                ):
+                    ack_failed = True
+                    print(
+                        "[ERROR] AMD execution acknowledgement failed:"
+                    )
+                    print(
+                        json.dumps(
+                            ack_response,
+                            indent=2,
+                        )
+                    )
+
+            if (
+                executed
+                and not no_progress_blocked
+                and not retry_limit_blocked
+            ):
+                current_signature = (
+                    _action_signature(response)
+                )
+
+                previous_signature = ""
+
+                previous_count = 0
+
+                if last_executed_state is not None:
+                    previous_signature = (
+                        last_executed_state.get(
+                            "action_signature",
+                            "",
+                        )
+                    )
+
+                    previous_count = int(
+                        last_executed_state.get(
+                            "same_action_count",
+                            0,
+                        )
+                        or 0
+                    )
+
+                same_action_count = (
+                    previous_count + 1
+                    if (
+                        current_signature
+                        == previous_signature
+                    )
+                    else 1
+                )
+
+                last_executed_state = {
+                    "observation_hash": (
+                        _observation_bundle_hash(
+                            observation
+                        )
+                    ),
+                    "action_signature": (
+                        current_signature
+                    ),
+                    "same_action_count": (
+                        same_action_count
+                    ),
+                }
+
+            elif (
+                not no_progress_blocked
+                and not retry_limit_blocked
+            ):
+                last_executed_state = None
+                no_progress_repeat_count = 0
+
+            step_metric = extract_step_metric(response, executed, execution_result)
+            step_metrics.append(step_metric)
+
+            save_step_log(
+                run_dir=run_dir,
+                step_index=step,
+                observation=observation,
+                response=response,
+                executed=executed,
+                run_config=run_config,
+                step_metric=step_metric,
+                execution_result=execution_result
+            )
+
+            if ack_failed:
+                print(
+                    "[STOPPED] Navigation stopped because "
+                    "AMD and ThinkPad execution state could "
+                    "not be synchronized."
+                )
+                break
+
+            if no_progress_blocked:
+                print(
+                    "[STOPPED] Autonomous loop stopped because "
+                    "the observation did not change after repeated "
+                    "movement attempts."
+                )
+                break
+        
+            if retry_limit_blocked:
+                print(
+                    "[STOPPED] Autonomous loop stopped "
+                    "because an action exceeded its "
+                    "maximum pulse count."
+                )
+                break
+
+            if response.get("done") is True:
+                print(
+                    "[DONE] Goal '{}' reached at step {}.".format(
+                        current_leg_goal, step
+                    )
+                )
+                legs.append({
+                    "goal": current_leg_goal,
+                    "start_step": current_leg_start_step,
+                    "end_step": step,
+                    "steps": step - current_leg_start_step + 1,
+                    "success": True,
+                })
+                success = True
+
+                next_goal = ""
+                if use_memory:
+                    try:
+                        next_goal = _sanitize_terminal_input(input(
+                            "Enter next goal to continue navigating with "
+                            "existing memory (blank to stop): "
+                        )).strip()
+                    except EOFError:
+                        next_goal = ""
+
+                if not next_goal:
+                    break
+
+                start_autonomous_session(
+                    args.api,
+                    next_goal,
+                    args.execute != "false",
+                    connect_timeout=args.api_connect_timeout,
+                    max_time=args.api_timeout,
+                    keep_memory=True,
+                )
+                current_leg_goal = next_goal
+                current_leg_start_step = step + 1
+                last_executed_state = None
+                no_progress_repeat_count = 0
+                success = False
+
+            if (
+                args.auto_redirect_after_blocks > 0
+                and consecutive_safety_blocks
+                >= args.auto_redirect_after_blocks
+            ):
+                redirect_direction = _pick_redirect_direction(safety_info)
+                if redirect_direction:
+                    print(
+                        "[AUTO-REDIRECT] {} consecutive obstacle blocks -- "
+                        "turning {} (LiDAR reports it clearer) before "
+                        "continuing.".format(
+                            consecutive_safety_blocks, redirect_direction
+                        )
+                    )
+                    maybe_execute_robot_action(
+                        args,
+                        {
+                            "action": {
+                                "name": "FOLLOW_DIRECTION",
+                                "params": {
+                                    "direction": redirect_direction,
+                                },
+                                "reason": (
+                                    "Auto-redirect after {} consecutive "
+                                    "obstacle blocks; LiDAR reports {} "
+                                    "is clearer.".format(
+                                        consecutive_safety_blocks,
+                                        redirect_direction,
+                                    )
+                                ),
+                                "confidence": "high",
+                                "evidence_score": 1.0,
+                                "is_valid": True,
+                            },
+                            "done": False,
+                        },
+                    )
+                else:
+                    print(
+                        "[AUTO-REDIRECT] {} consecutive obstacle blocks, "
+                        "but no usable left/right clearance data to "
+                        "redirect toward -- skipping.".format(
+                            consecutive_safety_blocks
+                        )
+                    )
+                consecutive_safety_blocks = 0
+
+            time.sleep(args.interval)
+    except BaseException:
+        print(
+            "[ABORT] Autonomous loop interrupted -- stopping the "
+            "robot and saving partial run data before exiting."
+        )
+        try:
+            send_emergency_stop(args)
+        except Exception as exc:
+            print("[ABORT] Emergency stop attempt failed:", exc)
+        try:
+            _finalize_auto_run(
+                run_dir=run_dir,
+                args=args,
+                use_memory=use_memory,
+                legs=legs,
+                current_leg_goal=current_leg_goal,
+                current_leg_start_step=current_leg_start_step,
+                completed_steps=completed_steps,
+                success=success,
+                run_config=run_config,
+                step_metrics=step_metrics,
+            )
+        except Exception as exc:
+            print("[ABORT] Failed to save partial run data:", exc)
+        raise
+
+    _finalize_auto_run(
+        run_dir=run_dir,
+        args=args,
+        use_memory=use_memory,
+        legs=legs,
+        current_leg_goal=current_leg_goal,
+        current_leg_start_step=current_leg_start_step,
+        completed_steps=completed_steps,
+        success=success,
+        run_config=run_config,
+        step_metrics=step_metrics,
+    )
 
 def parse_args():
     parser = argparse.ArgumentParser(
@@ -2056,6 +2197,19 @@ def parse_args():
         ),
     )
     parser.add_argument("--high-state-topic", default="/high_state")
+
+    parser.add_argument(
+        "--auto-redirect-after-blocks",
+        type=int,
+        default=0,
+        help=(
+            "After this many consecutive route/exploration-motion "
+            "safety_blocked results (0 = disabled), have the executor "
+            "itself turn toward whichever side LiDAR reports clearer, "
+            "instead of waiting for the VLM to change direction on its "
+            "own. Opt-in and unproven on hardware."
+        ),
+    )
 
     return parser.parse_args()
 

@@ -618,9 +618,16 @@ class ActionGenerator:
             )
         )
 
-        if (
-            semantic_lm is not None
-            and not planner_direction_is_grounded
+        semantic_is_exact_goal_match = (
+            _semantic_landmark_is_exact_goal_match(
+                semantic_lm,
+                goal,
+            )
+        )
+
+        if semantic_lm is not None and (
+            not planner_direction_is_grounded
+            or semantic_is_exact_goal_match
         ):
             extra = (
                 semantic_lm.extra
@@ -2415,6 +2422,45 @@ def _landmark_exactly_matches_goal(
             )
         ).lower() == "high"
     )
+
+
+def _semantic_landmark_is_exact_goal_match(
+    landmark: "Landmark | None",
+    goal: "NavigationGoal",
+) -> bool:
+    """True when a sign/directory's visible text literally contains the
+    goal's room code -- not just a model-assigned relevance label.
+
+    A literal text match doesn't depend on the model's own judgement, so
+    it's safe to treat as unconditional priority over an already-valid
+    planner action, the same way _best_current_exact_target_landmark
+    already does unconditionally for doors/observations. A "high
+    relevance" sign without a literal code match still defers to the
+    planner via planner_direction_is_grounded, as before.
+    """
+    if landmark is None:
+        return False
+
+    if str(
+        getattr(landmark, "category", "")
+    ).lower() not in {"sign", "directory"}:
+        return False
+
+    goal_codes = _goal_room_code_norms(goal)
+    if not goal_codes:
+        return False
+
+    visible_text = " ".join([
+        str(getattr(landmark, "text", "")),
+        str(getattr(landmark, "description", "")),
+    ])
+    visible_codes = {
+        _normalise_room_code(code)
+        for code in _extract_room_codes(visible_text)
+        if _normalise_room_code(code)
+    }
+
+    return bool(visible_codes & goal_codes)
 
 
 def _best_current_exact_target_landmark(

@@ -50,10 +50,11 @@ LIDAR_FLOOR_HEIGHT_CUTOFF_M = -0.35
 
 # Stop-distance threshold (meters): block a forward/backward pulse if
 # the nearest in-cone, floor-excluded point is closer than this.
-# PROVISIONAL placeholder -- replace with measured single-pulse travel
-# distance (mark the nose position, run one forward pulse, measure the
-# gap) plus a safety margin, once that measurement exists.
-LIDAR_STOP_DISTANCE_M = 0.50
+# Raised from 0.50 to 0.80 on 2026-07-29: 0.50 is measured from the LiDAR's
+# mounting point, not the robot's body -- it says nothing about leg splay
+# during a turn, and real-hardware photos showed the quadruped's legs
+# touching a wall at that distance. 0.80 gives room for the legs to clear.
+LIDAR_STOP_DISTANCE_M = 0.80
 
 LIDAR_MAX_SCAN_AGE_SECONDS = 1.0
 
