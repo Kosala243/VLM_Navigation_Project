@@ -512,8 +512,8 @@ def post_execution_ack(
     response,
     executed,
     execution_result,
-    connect_timeout=10,
-    max_time=60,
+    connect_timeout=60,
+    max_time=90,
 ):
     step_number = response.get(
         "action_step"
