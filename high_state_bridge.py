@@ -17,7 +17,11 @@ wait for a fresh message.
 
 Confirmed via temp_files/ROS_related.txt: /high_state publishes at
 ~50Hz, unitree_legged_msgs/HighState, with imu.rpy = [roll, pitch, yaw]
-in radians.
+in radians, and a separate top-level position = [x, y, z] float32[3]
+field (also confirmed live: e.g. [0.0107, -0.0439, 0.2888] at rest --
+z here is body height off the ground, not LiDAR-frame height). Both
+are returned together by get_yaw so a single query gives a full
+before/after motion-calibration reading.
 
 Protocol: newline-delimited JSON on stdin (requests) and stdout
 (replies), identical style to lidar_bridge.py / cmd_vel_bridge.py.
@@ -138,6 +142,7 @@ def main():
                     "ok": True,
                     "cmd": cmd,
                     "yaw": float(msg.imu.rpy[2]),
+                    "position": [float(v) for v in msg.position],
                     "age": age,
                 })
 

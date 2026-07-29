@@ -22,6 +22,12 @@ Filtering, mirrors temp_files/lidar_probe.py's validated geometry:
     ~constant negative z regardless of range, which is why this is a
     height cutoff and not an elevation-angle cutoff)
 
+get_range also reports two side cones (same half-angle, recentred at
++/-side-cone-center-deg -- positive azimuth is the robot's left, per
+atan2(y, x) with +Y=left) so a caller blocked in the forward cone can
+tell whether the left or right side looks clearer, instead of only
+knowing "blocked, distance unknown which way to go."
+
 Protocol: newline-delimited JSON on stdin (requests) and stdout
 (replies), identical style to cmd_vel_bridge.py.
 
@@ -48,10 +54,24 @@ def _emit(obj):
     sys.stdout.flush()
 
 
-def _nearest_forward_range(msg, cone_half_angle_deg, floor_height_cutoff_m):
+def _in_cone(azimuth_deg, center_deg, half_angle_deg):
+    diff = azimuth_deg - center_deg
+    while diff > 180.0:
+        diff -= 360.0
+    while diff < -180.0:
+        diff += 360.0
+    return abs(diff) <= half_angle_deg
+
+
+def _nearest_ranges(msg, floor_height_cutoff_m, cones):
+    """cones: dict of name -> (center_deg, half_angle_deg).
+
+    Single pass over the point cloud, bucketing each point into every
+    cone it falls in. Returns dict of name -> nearest range or None.
+    """
     from sensor_msgs import point_cloud2
 
-    nearest = None
+    nearest = dict((name, None) for name in cones)
     for x, y, z in point_cloud2.read_points(
         msg, field_names=("x", "y", "z"), skip_nans=True
     ):
@@ -61,10 +81,10 @@ def _nearest_forward_range(msg, cone_half_angle_deg, floor_height_cutoff_m):
         if r < 1e-6:
             continue
         azimuth_deg = math.degrees(math.atan2(y, x))
-        if abs(azimuth_deg) > cone_half_angle_deg:
-            continue
-        if nearest is None or r < nearest:
-            nearest = r
+        for name, (center_deg, half_angle_deg) in cones.items():
+            if _in_cone(azimuth_deg, center_deg, half_angle_deg):
+                if nearest[name] is None or r < nearest[name]:
+                    nearest[name] = r
     return nearest
 
 
@@ -72,6 +92,12 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--topic", default="/rslidar_points")
     parser.add_argument("--cone-half-angle-deg", type=float, default=20.0)
+    parser.add_argument(
+        "--side-cone-center-deg",
+        type=float,
+        default=45.0,
+        help="Azimuth (deg) of the left/right cone centers, mirrored +/-.",
+    )
     parser.add_argument("--floor-height-cutoff-m", type=float, default=-0.30)
     parser.add_argument("--max-scan-age-seconds", type=float, default=1.0)
     parser.add_argument(
@@ -151,13 +177,20 @@ def main():
                         "error": "stale scan, age={:.2f}s".format(age),
                     })
                     continue
-                nearest = _nearest_forward_range(
-                    msg, args.cone_half_angle_deg, args.floor_height_cutoff_m
+                cones = {
+                    "forward": (0.0, args.cone_half_angle_deg),
+                    "left": (args.side_cone_center_deg, args.cone_half_angle_deg),
+                    "right": (-args.side_cone_center_deg, args.cone_half_angle_deg),
+                }
+                ranges = _nearest_ranges(
+                    msg, args.floor_height_cutoff_m, cones
                 )
                 _emit({
                     "ok": True,
                     "cmd": cmd,
-                    "range": nearest,
+                    "range": ranges["forward"],
+                    "left_range": ranges["left"],
+                    "right_range": ranges["right"],
                     "age": age,
                 })
 

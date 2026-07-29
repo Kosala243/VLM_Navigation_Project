@@ -32,6 +32,13 @@ BRIDGE_READY_TIMEOUT_SECONDS = 10.0
 # (good point density, correctly separated near/far real objects at +/-20 deg).
 LIDAR_CONE_HALF_ANGLE_DEG = 20.0
 
+# Azimuth (deg) of the left/right side-cone centers the bridge also
+# reports alongside the forward cone, mirrored +/- (positive azimuth is
+# the robot's left, per atan2(y, x) with +Y=left). Used to tell a
+# blocked-forward-motion caller which side looks clearer, not to gate
+# motion on its own -- only the forward cone gates a pulse.
+LIDAR_SIDE_CONE_CENTER_DEG = 45.0
+
 # Floor-height cutoff (meters, in the LiDAR's own frame -- negative is
 # below the sensor). PROVISIONAL: derived from the photo-measured LiDAR
 # mounting height (38-43.5cm above the floor, temp_files/20260727_144133.jpg),
@@ -50,6 +57,39 @@ LIDAR_STOP_DISTANCE_M = 0.50
 
 LIDAR_MAX_SCAN_AGE_SECONDS = 1.0
 
+# One bridge subprocess per topic, shared across every RobotSafetyMonitor
+# instance in this process -- mirrors robot_executor.py's
+# _SHARED_BRIDGES/_get_shared_bridge for /cmd_vel. Callers (e.g.
+# thinkpad_robot_capture_to_amd.py's maybe_execute_robot_action)
+# construct a new RobotSafetyMonitor every step, so without this cache
+# a fresh rospy node + /rslidar_points subscription was being spawned
+# every step, leaving prior bridge subprocesses orphaned (only cleaned
+# up once, via atexit, at final process exit) and causing "stale scan"
+# safety_blocked aborts as they piled up.
+_SHARED_LIDAR_BRIDGES = {}
+
+
+def _get_shared_lidar_bridge(
+    topic,
+    cone_half_angle_deg=LIDAR_CONE_HALF_ANGLE_DEG,
+    side_cone_center_deg=LIDAR_SIDE_CONE_CENTER_DEG,
+    floor_height_cutoff_m=LIDAR_FLOOR_HEIGHT_CUTOFF_M,
+    max_scan_age_seconds=LIDAR_MAX_SCAN_AGE_SECONDS,
+):
+    bridge = _SHARED_LIDAR_BRIDGES.get(topic)
+    if bridge is not None and bridge.is_ready:
+        return bridge
+    bridge = PersistentLidarBridge(
+        topic=topic,
+        cone_half_angle_deg=cone_half_angle_deg,
+        side_cone_center_deg=side_cone_center_deg,
+        floor_height_cutoff_m=floor_height_cutoff_m,
+        max_scan_age_seconds=max_scan_age_seconds,
+    )
+    _SHARED_LIDAR_BRIDGES[topic] = bridge
+    atexit.register(bridge.shutdown)
+    return bridge
+
 
 class PersistentLidarBridge(object):
     """Owns one long-lived python2 rospy subscriber subprocess.
@@ -64,6 +104,7 @@ class PersistentLidarBridge(object):
         self,
         topic="/rslidar_points",
         cone_half_angle_deg=LIDAR_CONE_HALF_ANGLE_DEG,
+        side_cone_center_deg=LIDAR_SIDE_CONE_CENTER_DEG,
         floor_height_cutoff_m=LIDAR_FLOOR_HEIGHT_CUTOFF_M,
         max_scan_age_seconds=LIDAR_MAX_SCAN_AGE_SECONDS,
     ):
@@ -81,6 +122,8 @@ class PersistentLidarBridge(object):
                 topic,
                 "--cone-half-angle-deg",
                 str(cone_half_angle_deg),
+                "--side-cone-center-deg",
+                str(side_cone_center_deg),
                 "--floor-height-cutoff-m",
                 str(floor_height_cutoff_m),
                 "--max-scan-age-seconds",
@@ -172,6 +215,31 @@ class PersistentLidarBridge(object):
                 self._proc.kill()
 
 
+def _format_side_clearance(left, right):
+    """Turn left/right side-cone ranges into a short human-readable note.
+
+    Used to enrich a blocked-motion reason string so it's not just "blocked"
+    -- the text ends up in NavigationMemory.failed_actions and is shown back
+    to the planner VLM on the next step, so it needs to be self-contained.
+    """
+    if left is None and right is None:
+        return ""
+
+    left_text = "left {:.2f}m".format(left) if left is not None else "left unknown"
+    right_text = "right {:.2f}m".format(right) if right is not None else "right unknown"
+
+    clearer = ""
+    if left is not None and right is not None:
+        if left > right + 0.10:
+            clearer = ", left is clearer"
+        elif right > left + 0.10:
+            clearer = ", right is clearer"
+        else:
+            clearer = ", left and right about equal"
+
+    return " Side clearance: {}, {}{}.".format(left_text, right_text, clearer)
+
+
 class RobotSafetyMonitor(object):
     VALID_MODES = {
         "placeholder",
@@ -203,8 +271,7 @@ class RobotSafetyMonitor(object):
         self._lidar_bridge = None
         if self.sensor_mode == "lidar":
             try:
-                self._lidar_bridge = PersistentLidarBridge(topic=lidar_topic)
-                atexit.register(self._lidar_bridge.shutdown)
+                self._lidar_bridge = _get_shared_lidar_bridge(lidar_topic)
             except Exception as exc:
                 # Spawn failure is not fatal here -- it surfaces through
                 # sensor_ready/check_motion the same way an unready
@@ -294,6 +361,8 @@ class RobotSafetyMonitor(object):
             }
 
         nearest = reply.get("range")
+        left = reply.get("left_range")
+        right = reply.get("right_range")
         if nearest is not None and nearest < LIDAR_STOP_DISTANCE_M:
             return {
                 "allowed": False,
@@ -302,13 +371,17 @@ class RobotSafetyMonitor(object):
                 "bypassed": False,
                 "reason": (
                     "Motion blocked: nearest obstacle at {:.2f}m, "
-                    "below the {:.2f}m stop distance.".format(
-                        nearest, LIDAR_STOP_DISTANCE_M
+                    "below the {:.2f}m stop distance.{}".format(
+                        nearest,
+                        LIDAR_STOP_DISTANCE_M,
+                        _format_side_clearance(left, right),
                     )
                 ),
                 "action_name": str(action_name),
                 "motion_kind": str(motion_kind),
                 "nearest_range_m": nearest,
+                "left_range_m": left,
+                "right_range_m": right,
             }
 
         return {
@@ -324,6 +397,8 @@ class RobotSafetyMonitor(object):
             "action_name": str(action_name),
             "motion_kind": str(motion_kind),
             "nearest_range_m": nearest,
+            "left_range_m": left,
+            "right_range_m": right,
         }
 
     def check_motion(

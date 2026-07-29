@@ -82,6 +82,7 @@ class ActionGenerator:
         - recent_landmarks: landmarks from the latest observations;
         - target_relevant_landmarks: semantic evidence relevant to the goal;
         - remembered_route_landmarks: corridors, bends, junctions, passages, doorways, frontiers, and dead ends observed in current or recent images.
+        - failed_actions: reasons the most recent action attempts could not be executed, most recent last. A "Motion blocked" entry means an obstacle-safety sensor stopped that attempt; if it also lists a left/right side clearance, the side with the larger distance is more open.
 
         Current image: provided separately.
 
@@ -104,6 +105,7 @@ class ActionGenerator:
         - Use ASK_RECEPTION_OR_STAFF only when no reliable navigation cue is available, or the robot cannot make further progress after searching.
         - If both reception and a plausible navigation cue toward the goal are visible, continue navigation using the visual cue instead of asking for help.
         - If no useful cue is visible, use NAVIGATE_TO_FRONTIER or SEARCH_FOR_CUE.
+        - If the most recent failed_actions entry is a "Motion blocked" obstacle report for the same direction or target you are about to choose again, do not repeat it. Pick a different action or direction instead: if a left/right side clearance was given, prefer a turn or frontier/search toward the clearer side; otherwise use SEARCH_FOR_CUE or WAIT_OR_RECOVER.
         Structural route-memory rules:
         - Do not immediately use SEARCH_FOR_CUE or WAIT_OR_RECOVER merely because the current image contains plain walls or an visually empty corridor.
         - First check remembered_route_landmarks for a recent route continuation, corridor bend, junction, passage, or doorway that has not been passed, blocked, ignored, or contradicted.

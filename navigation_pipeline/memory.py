@@ -153,13 +153,16 @@ class NavigationMemory:
         - Set extra.path_clear_visual to true, false, or null.
         - Visual path clearance is advisory only and does not replace LiDAR.
         - For a sign containing multiple destinations or multiple arrows, identify the single direction associated with the active navigation goal.
+        - For a sign with multiple rows or multiple arrows, treat each row as its own arrow-to-label pair. Match the active goal only to the row/pair whose label range actually contains it, not to the sign as a whole or to the most visually prominent arrow.
+        - Do not assume an arrow applies to the goal just because it is listed first, largest, or closest to other text; verify the arrow is on the same row/pair as the goal-matching label before using it.
+        - In the description, briefly state which row/pair was matched to the goal, e.g. "right arrow -> C0.004-C0.008 row matches goal".
         - Store that goal-specific direction in extra.target_direction.
         - extra.target_direction must be exactly left, right, forward, none, or unknown.
         - Do not store combined values such as "left, right" in target_direction.
-        - extra.arrow may preserve the raw visible arrow information.
+        - For semantic landmarks (signs, directories, doors), also set extra.direction to the same normalized value as extra.target_direction. The two must always agree; do not set them to different directions.
         - For a multi-destination sign, identify the arrow associated specifically with the active goal, room range, building, tower, zone, or floor.
         - If the target-associated arrow cannot be identified confidently, set target_direction="unknown" or "none".
-        - extra.arrow should be normalized to left, right, forward, none, or unknown whenever possible.
+        - extra.arrow must be normalized to exactly left, right, forward, none, or unknown. Do not store raw arrow symbols, glyphs, or unnormalized phrases in extra.arrow.
         - For semantic signs and directories, do not copy source_view into continuation_direction.
         - continuation_direction is primarily for structural landmarks such as corridors, bends, junctions, doorways, and passages.
         - A room range or destination name without a visible associated arrow does not establish a route direction.
@@ -193,6 +196,7 @@ class NavigationMemory:
         - extra.continuation_direction: "left | right | forward | left_forward | right_forward | none | unknown"
         - extra.route_state: "visible_now | remembered | reached | passed | blocked"
         - extra.goal_support: "direct | indirect | none | unknown"
+        - Also set extra.direction to the same value as extra.continuation_direction. The two must always agree; do not set them to different directions.
 
         Important route-selection rule:
         - Do not treat structural attractiveness as proof that a route leads toward the goal.

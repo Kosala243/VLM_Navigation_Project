@@ -788,6 +788,9 @@ class SafeCmdVelExecutor(object):
             # Keep the logged/returned command in sync with what actually
             # runs, not the pre-scaling nominal duration it started as.
             command["duration"] = pulse_duration
+            print(
+                "Mapped command (LiDAR-scaled duration):", command
+            )
 
         # #4: closed-loop yaw turning, opt-in via yaw_feedback_enabled.
         # Only for pure turns -- the target angle is derived from
