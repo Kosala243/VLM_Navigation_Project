@@ -142,6 +142,8 @@ class ActionGenerator:
         - Always include "evidence_view" for the selected cue.
         - When multiple navigation cues are visible, choose the cue that makes the most progress toward the goal rather than the most visually prominent object.
         - Use USE_ELEVATOR_OR_STAIRS only when recent evidence shows a lift/stairs and the goal/floor evidence suggests a floor transition.
+        - If both a lift/elevator and stairs are visible or remembered as plausible routes to the needed floor, prefer USE_ELEVATOR_OR_STAIRS toward the elevator over the stairs -- the robot cannot climb stairs unassisted, and elevator entry/floor-selection/exit are human-confirmed, so this action always triggers a human-in-the-loop pause regardless of which one is chosen.
+        - For USE_ELEVATOR_OR_STAIRS, include landmark_id of the elevator/stairs evidence, direction/evidence_view for where it is in view, and floor with your best guess of the target floor number if the goal or memory suggests one (otherwise null -- a human will confirm the actual floor before any button is pressed).
         - Never assume a room-code structure is true until signs/labels/directories confirm it.
         - A landmark marked "used" or "visited" may be reused when it is visible in the current images and remains relevant to the active navigation goal.
         - Prefer a newer cue only when the previous landmark is no longer visible, has already been passed, or no longer provides useful progress.
@@ -236,7 +238,7 @@ class ActionGenerator:
         prompt = (
             self._PROMPT
             .replace("{goal_context}", goal.compact())
-            .replace("{memory_context}", memory.context_for_planner())
+            .replace("{memory_context}", memory.context_for_planner(goal=goal))
             .replace(
                 "{action_list}",
                 "\n".join(f"- {k}: {v}" for k, v in self.VALID_ACTIONS.items()),
@@ -785,9 +787,13 @@ class ActionGenerator:
 
         Preference order: (1) a direction the model already supplied,
         (2) the continuation_direction of the most recently seen
-        structural landmark (the same signal NAVIGATE_TO_LANDMARK uses),
-        (3) alternate from the last search direction so a repeated
-        search actually sweeps both sides within its pulse budget.
+        structural landmark (the same signal NAVIGATE_TO_LANDMARK uses)
+        -- also carries that landmark's evidence_view/
+        horizontal_offset_fraction so the executor's vision-grounded
+        turn math can size the pulse precisely instead of using the
+        fixed exploratory-tier duration, (3) alternate from the last
+        search direction so a repeated search actually sweeps both
+        sides within its pulse budget.
         """
         if action.name != "SEARCH_FOR_CUE":
             return
@@ -801,13 +807,23 @@ class ActionGenerator:
             memory.last_search_direction = direction
             return
 
+        current_floor = getattr(memory, "current_floor", "")
         chosen = ""
+        grounding_lm = None
         for lm in reversed(getattr(memory, "landmarks", [])):
             if not _is_structural_landmark(lm):
+                continue
+            lm_extra = (
+                lm.extra
+                if isinstance(getattr(lm, "extra", {}), dict)
+                else {}
+            )
+            if str(lm_extra.get("floor", "")) != str(current_floor):
                 continue
             candidate = _structural_landmark_direction(lm)
             if candidate in {"left", "right"}:
                 chosen = candidate
+                grounding_lm = lm
                 break
 
         if not chosen:
@@ -815,6 +831,13 @@ class ActionGenerator:
             chosen = "right" if previous == "left" else "left"
 
         action.params["direction"] = chosen
+        if grounding_lm is not None:
+            action.params["evidence_view"] = (
+                _infer_evidence_view_from_landmark(grounding_lm)
+            )
+            action.params["horizontal_offset_fraction"] = (
+                _landmark_offset_fraction(grounding_lm)
+            )
         memory.last_search_direction = chosen
 
     def _promote_open_doorway_action(

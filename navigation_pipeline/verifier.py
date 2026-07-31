@@ -221,7 +221,10 @@ class TargetVerifier:
         for lm in getattr(memory_update, "landmarks", []) or []:
             category = str(getattr(lm, "category", "")).lower()
             combined = _landmark_combined_text(lm)
-            matched = _find_stop_label(labels, combined)
+            # Stop-worthy matching must only ever look at the literal
+            # read text, not the full description/extra blob -- see
+            # _landmark_label_text's docstring for why.
+            matched = _find_stop_label(labels, _landmark_label_text(lm))
             extra = getattr(lm, "extra", {}) if isinstance(getattr(lm, "extra", {}), dict) else {}
             source_view = _landmark_source_view(lm)
             target_relevance = str(extra.get("target_relevance", "")).lower()
@@ -236,7 +239,7 @@ class TargetVerifier:
                     visual_confidence=getattr(lm, "confidence", "high"),
                 )
 
-                if _landmark_ready_for_stop(lm):
+                if _landmark_ready_for_stop(lm) and _landmark_confirmed_by_reobservation(lm):
                     return VerificationResult(
                         target_visible=True,
                         target_reached=score >= 0.85,
@@ -250,10 +253,25 @@ class TargetVerifier:
                         raw={"source": "current_memory", "landmark": _safe_asdict(lm)},
                     )
 
-                # Exact target is visible, but it is still a side-view cue.
+                # Exact target is visible, but either still a side-view
+                # cue, or ready-looking but only seen once so far.
                 side_score = min(score, 0.80)
-                breakdown["side_view_alignment_required"] = 1.0
                 breakdown["final_score"] = side_score
+
+                if _landmark_ready_for_stop(lm):
+                    breakdown["pending_reobservation_confirmation"] = 1.0
+                    reason = (
+                        f"Target door label '{matched}' matches the goal and is "
+                        "centred in FRONT, but has only been observed once so "
+                        "far -- awaiting re-observation before confirming arrival."
+                    )
+                else:
+                    breakdown["side_view_alignment_required"] = 1.0
+                    reason = _target_not_ready_reason(
+                        lm,
+                        matched,
+                        "target door",
+                    )
 
                 candidate = VerificationResult(
                     target_visible=True,
@@ -263,11 +281,7 @@ class TargetVerifier:
                     confidence=_confidence_from_score(side_score),
                     evidence_score=side_score,
                     evidence_breakdown=breakdown,
-                    reason=_target_not_ready_reason(
-                        lm,
-                        matched,
-                        "target door",
-                    ),
+                    reason=reason,
                     landmark_id=str(
                         getattr(lm, "id", "")
                     ) or None,
@@ -293,7 +307,7 @@ class TargetVerifier:
                     is_stop_candidate=True,
                     visual_confidence=getattr(lm, "confidence", "medium",),
                 )
-                if _landmark_ready_for_stop(lm):
+                if _landmark_ready_for_stop(lm) and _landmark_confirmed_by_reobservation(lm):
                     return VerificationResult(
                         target_visible=True,
                         target_reached=score >= 0.85,
@@ -316,8 +330,22 @@ class TargetVerifier:
                     )
 
                 side_score = min(score, 0.80)
-                breakdown["side_view_alignment_required"] = 1.0
                 breakdown["final_score"] = side_score
+
+                if _landmark_ready_for_stop(lm):
+                    breakdown["pending_reobservation_confirmation"] = 1.0
+                    reason = (
+                        f"Target entrance '{matched}' matches the goal and is "
+                        "centred in FRONT, but has only been observed once so "
+                        "far -- awaiting re-observation before confirming arrival."
+                    )
+                else:
+                    breakdown["side_view_alignment_required"] = 1.0
+                    reason = (
+                        f"Target entrance '{matched}' is visible in "
+                        f"{source_view}, but the robot must align with "
+                        "the entrance before confirming arrival."
+                    )
 
                 candidate = VerificationResult(
                     target_visible=True,
@@ -329,11 +357,7 @@ class TargetVerifier:
                     ),
                     evidence_score=side_score,
                     evidence_breakdown=breakdown,
-                    reason=(
-                        f"Target entrance '{matched}' is visible in "
-                        f"{source_view}, but the robot must align with "
-                        "the entrance before confirming arrival."
-                    ),
+                    reason=reason,
                     landmark_id=str(
                         getattr(lm, "id", "")
                     ) or None,
@@ -700,6 +724,45 @@ def _landmark_combined_text(lm: "Landmark") -> str:
         extra_text,
     ])
 
+def _landmark_confirmed_by_reobservation(lm: "Landmark") -> bool:
+    """True once a landmark has been independently re-detected in at
+    least one frame beyond the one it was first created from.
+
+    Guards the deterministic stop-shortcut in _verify_from_current_memory
+    specifically: a first-time sighting of an exact-match landmark can
+    still be a one-off hallucinated transcription (real example: a
+    fire-safety panel read as a room-code door label, confidence high,
+    on its first and only observation -- see the 2026-07-31 B0.001 run).
+    A landmark that keeps matching across multiple independent frames is
+    much stronger evidence than any single frame.
+
+    Deliberately NOT applied to _current_memory_supports_stop (the VLM
+    path's own current-memory cross-check) -- that path has already gone
+    through the strict "must be readable" prompt itself, so this gate is
+    only about whether the *shortcut* is allowed to skip that prompt,
+    not about second-guessing a result the prompt already produced.
+    """
+    try:
+        return int(getattr(lm, "observation_count", 0) or 0) >= 2
+    except (TypeError, ValueError):
+        return False
+
+def _landmark_label_text(lm: "Landmark") -> str:
+    """The literal text actually read off a landmark -- its `text` field
+    only, per memory.py's own schema ("exact readable text if any, else
+    empty").
+
+    Deliberately narrower than _landmark_combined_text: room-code
+    stop-matching must only ever match against what was actually
+    transcribed, never against `description`, which is free-text
+    commentary the model writes and can contain hedges like "likely
+    indicating the target room B0001" -- a real example that let a
+    landmark whose actual label was just "B" get accepted as an exact
+    match, since a naive substring search over the combined blob can't
+    tell a hedge apart from a transcription.
+    """
+    return str(getattr(lm, "text", "") or "")
+
 def _landmark_source_view(
     landmark: "Landmark",
 ) -> str:
@@ -982,7 +1045,12 @@ def _current_memory_supports_stop(
         category = str(getattr(lm, "category", "")).lower()
         combined = _landmark_combined_text(lm)
 
-        if not _find_stop_label(labels, combined):
+        # Stop-worthy matching must only look at the literal read text,
+        # not the full description/extra blob -- see
+        # _landmark_label_text's docstring for why. `combined` is still
+        # used below for _looks_like_actual_entrance's broader
+        # semantic classification.
+        if not _find_stop_label(labels, _landmark_label_text(lm)):
             continue
    
         if (evidence_type == "target_door_label" and category == "door"):

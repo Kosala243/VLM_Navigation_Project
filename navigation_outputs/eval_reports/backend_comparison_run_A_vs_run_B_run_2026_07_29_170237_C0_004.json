@@ -1,0 +1,528 @@
+{
+  "summary": {
+    "goal_a": "C0.004",
+    "goal_b": "C0.004",
+    "goal_mismatch": false,
+    "run_a": "run_2026_07_29_170237_C0_004",
+    "run_b": "run_2026_07_29_163341_C0_004",
+    "label_a": "run_A",
+    "label_b": "run_B",
+    "steps_in_a": 20,
+    "steps_in_b": 20,
+    "steps_compared": 20,
+    "step_count_mismatch": false,
+    "success_a": false,
+    "success_b": false,
+    "action_agreement_rate": 0.45,
+    "confidence_agreement_rate": 0.6,
+    "valid_agreement_rate": 0.95,
+    "avg_evidence_score_delta_b_minus_a": -0.05097499999999999,
+    "avg_evidence_score_a": 0.46980000000000005,
+    "avg_evidence_score_b": 0.4188249999999999,
+    "approx_avg_elapsed_s_per_step_a": 87.57894736842105,
+    "approx_avg_elapsed_s_per_step_b": 80.63157894736842,
+    "note": "elapsed_since_prev_s is derived from consecutive step timestamps in each run's own log -- it includes image copy/SSH overhead on top of model inference, it is not a clean inference-only latency benchmark."
+  },
+  "per_step": [
+    {
+      "step": 1,
+      "action_agreement": true,
+      "confidence_agreement": true,
+      "valid_agreement": true,
+      "evidence_score_delta_b_minus_a": -0.007500000000000062,
+      "run_A": {
+        "action": "PASS_THROUGH_DOORWAY",
+        "confidence": "low",
+        "evidence_score": 0.5625,
+        "is_valid": true,
+        "evidence_view": "FRONT",
+        "elapsed_since_prev_s": null,
+        "reason": "The robot is currently at the entrance to Zone C, confirmed by the 'C' label on the door (L001). The open double glass doors (L002) are directly ahead and serve as the primary route into the building to search for the specific room C0.004."
+      },
+      "run_B": {
+        "action": "PASS_THROUGH_DOORWAY",
+        "confidence": "low",
+        "evidence_score": 0.5549999999999999,
+        "is_valid": true,
+        "evidence_view": "FRONT",
+        "elapsed_since_prev_s": null,
+        "reason": "Current doorway L001 is open, centred in FRONT, and traversable, so the dedicated doorway traversal skill is used."
+      }
+    },
+    {
+      "step": 2,
+      "action_agreement": false,
+      "confidence_agreement": false,
+      "valid_agreement": true,
+      "evidence_score_delta_b_minus_a": 0.238,
+      "run_A": {
+        "action": "NAVIGATE_TO_LANDMARK",
+        "confidence": "low",
+        "evidence_score": 0.367,
+        "is_valid": true,
+        "evidence_view": "FRONT",
+        "elapsed_since_prev_s": 87.0,
+        "reason": "The current view is sparse, but the remembered route landmark L005 (corridor) provides a clear, traversable path forward towards the glass door, which is the most likely location for room labels."
+      },
+      "run_B": {
+        "action": "ALIGN_WITH_LANDMARK",
+        "confidence": "medium",
+        "evidence_score": 0.605,
+        "is_valid": true,
+        "evidence_view": "RIGHT",
+        "elapsed_since_prev_s": 87.0,
+        "reason": "Selected landmark is not centred and must be visually aligned before forward movement."
+      }
+    },
+    {
+      "step": 3,
+      "action_agreement": false,
+      "confidence_agreement": false,
+      "valid_agreement": true,
+      "evidence_score_delta_b_minus_a": 0.24549999999999994,
+      "run_A": {
+        "action": "NAVIGATE_TO_LANDMARK",
+        "confidence": "low",
+        "evidence_score": 0.35950000000000004,
+        "is_valid": true,
+        "evidence_view": "FRONT",
+        "elapsed_since_prev_s": 90.0,
+        "reason": "The current front view is sparse, but the remembered corridor landmark (L008) provides a clear route continuation towards the glass door at the end of the hall, which is the most logical path to find the target room."
+      },
+      "run_B": {
+        "action": "ALIGN_WITH_LANDMARK",
+        "confidence": "medium",
+        "evidence_score": 0.605,
+        "is_valid": true,
+        "evidence_view": "FRONT",
+        "elapsed_since_prev_s": 85.0,
+        "reason": "Selected landmark is not centred and must be visually aligned before forward movement."
+      }
+    },
+    {
+      "step": 4,
+      "action_agreement": true,
+      "confidence_agreement": true,
+      "valid_agreement": true,
+      "evidence_score_delta_b_minus_a": 0.0,
+      "run_A": {
+        "action": "ALIGN_WITH_LANDMARK",
+        "confidence": "medium",
+        "evidence_score": 0.617,
+        "is_valid": true,
+        "evidence_view": "LEFT",
+        "elapsed_since_prev_s": 96.0,
+        "reason": "Selected landmark is not centred and must be visually aligned before forward movement."
+      },
+      "run_B": {
+        "action": "ALIGN_WITH_LANDMARK",
+        "confidence": "medium",
+        "evidence_score": 0.617,
+        "is_valid": true,
+        "evidence_view": "RIGHT",
+        "elapsed_since_prev_s": 81.0,
+        "reason": "Selected landmark is not centred and must be visually aligned before forward movement."
+      }
+    },
+    {
+      "step": 5,
+      "action_agreement": false,
+      "confidence_agreement": false,
+      "valid_agreement": true,
+      "evidence_score_delta_b_minus_a": 0.238,
+      "run_A": {
+        "action": "NAVIGATE_TO_LANDMARK",
+        "confidence": "low",
+        "evidence_score": 0.367,
+        "is_valid": true,
+        "evidence_view": "FRONT",
+        "elapsed_since_prev_s": 88.0,
+        "reason": "The current view shows a clear corridor (L013) extending forward, which is the most logical path to continue searching for the target room C0004, as the sign on the right wall indicates the room is likely further along this route."
+      },
+      "run_B": {
+        "action": "ALIGN_WITH_LANDMARK",
+        "confidence": "medium",
+        "evidence_score": 0.605,
+        "is_valid": true,
+        "evidence_view": "RIGHT",
+        "elapsed_since_prev_s": 89.0,
+        "reason": "Selected landmark is not centred and must be visually aligned before forward movement."
+      }
+    },
+    {
+      "step": 6,
+      "action_agreement": true,
+      "confidence_agreement": true,
+      "valid_agreement": true,
+      "evidence_score_delta_b_minus_a": -0.007499999999999951,
+      "run_A": {
+        "action": "NAVIGATE_TO_LANDMARK",
+        "confidence": "low",
+        "evidence_score": 0.367,
+        "is_valid": true,
+        "evidence_view": "FRONT",
+        "elapsed_since_prev_s": 84.0,
+        "reason": "The current front view shows a clear corridor path (L017) that continues forward, which is the most reliable structural route anchor available to progress toward the target room C0.004."
+      },
+      "run_B": {
+        "action": "NAVIGATE_TO_LANDMARK",
+        "confidence": "low",
+        "evidence_score": 0.35950000000000004,
+        "is_valid": true,
+        "evidence_view": "FRONT",
+        "elapsed_since_prev_s": 76.0,
+        "reason": "The current view shows a clear path forward through the glass doorway into a corridor (L013), which serves as the best structural route anchor to continue progress toward the target zone."
+      }
+    },
+    {
+      "step": 7,
+      "action_agreement": false,
+      "confidence_agreement": false,
+      "valid_agreement": true,
+      "evidence_score_delta_b_minus_a": -0.25450000000000006,
+      "run_A": {
+        "action": "ALIGN_WITH_LANDMARK",
+        "confidence": "medium",
+        "evidence_score": 0.6095,
+        "is_valid": true,
+        "evidence_view": "FRONT",
+        "elapsed_since_prev_s": 83.0,
+        "reason": "Selected landmark is not centred and must be visually aligned before forward movement."
+      },
+      "run_B": {
+        "action": "NAVIGATE_TO_LANDMARK",
+        "confidence": "low",
+        "evidence_score": 0.355,
+        "is_valid": true,
+        "evidence_view": "RIGHT",
+        "elapsed_since_prev_s": 82.0,
+        "reason": "The current front view is blocked by a closed glass door, but the right view shows an open glass doorway (L008) that serves as a route continuation into the office area, which is the most logical path toward the target room."
+      }
+    },
+    {
+      "step": 8,
+      "action_agreement": true,
+      "confidence_agreement": true,
+      "valid_agreement": true,
+      "evidence_score_delta_b_minus_a": -0.034500000000000086,
+      "run_A": {
+        "action": "NAVIGATE_TO_LANDMARK",
+        "confidence": "low",
+        "evidence_score": 0.35950000000000004,
+        "is_valid": true,
+        "evidence_view": "FRONT",
+        "elapsed_since_prev_s": 87.0,
+        "reason": "The current view is a corridor (L021) that continues forward, and since the target room C0.004 is not in the range of the sign pointing right (C0.016-C0.020), the goal is likely further down the corridor or in a different branch, making the corridor the best route anchor."
+      },
+      "run_B": {
+        "action": "NAVIGATE_TO_LANDMARK",
+        "confidence": "low",
+        "evidence_score": 0.32499999999999996,
+        "is_valid": true,
+        "evidence_view": "FRONT",
+        "elapsed_since_prev_s": 68.0,
+        "reason": "The front view shows closed double doors with a sign above, which is the most likely entrance to the target room C0.004 based on the 'C' zone evidence; navigating to this landmark allows for checking the door label to confirm the room number."
+      }
+    },
+    {
+      "step": 9,
+      "action_agreement": false,
+      "confidence_agreement": true,
+      "valid_agreement": false,
+      "evidence_score_delta_b_minus_a": -0.35950000000000004,
+      "run_A": {
+        "action": "NAVIGATE_TO_LANDMARK",
+        "confidence": "low",
+        "evidence_score": 0.35950000000000004,
+        "is_valid": true,
+        "evidence_view": "FRONT",
+        "elapsed_since_prev_s": 87.0,
+        "reason": "The current view is sparse, but the remembered corridor landmark (L021) supports continued progress toward the target room C0.004, which is indicated to be in the forward direction by the recent sign L023."
+      },
+      "run_B": {
+        "action": "CHECK_DOOR_LABEL",
+        "confidence": "low",
+        "evidence_score": 0.0,
+        "is_valid": false,
+        "evidence_view": "FRONT",
+        "elapsed_since_prev_s": 70.0,
+        "reason": "The closed double doors in the front view (L016) are the most likely entrance to the target room C0.004, and checking the door label is necessary to confirm the room number."
+      }
+    },
+    {
+      "step": 10,
+      "action_agreement": false,
+      "confidence_agreement": false,
+      "valid_agreement": true,
+      "evidence_score_delta_b_minus_a": -0.13449999999999995,
+      "run_A": {
+        "action": "ALIGN_WITH_LANDMARK",
+        "confidence": "medium",
+        "evidence_score": 0.617,
+        "is_valid": true,
+        "evidence_view": "FRONT",
+        "elapsed_since_prev_s": 79.0,
+        "reason": "Selected landmark is not centred and must be visually aligned before forward movement."
+      },
+      "run_B": {
+        "action": "CHECK_DOOR_LABEL",
+        "confidence": "low",
+        "evidence_score": 0.48250000000000004,
+        "is_valid": true,
+        "evidence_view": "FRONT",
+        "elapsed_since_prev_s": 95.0,
+        "reason": "The closed double doors in the front view are the most likely entrance to the target room C0.004, and checking the door label is the necessary step to confirm the room number."
+      }
+    },
+    {
+      "step": 11,
+      "action_agreement": false,
+      "confidence_agreement": false,
+      "valid_agreement": true,
+      "evidence_score_delta_b_minus_a": 0.25,
+      "run_A": {
+        "action": "NAVIGATE_TO_LANDMARK",
+        "confidence": "low",
+        "evidence_score": 0.367,
+        "is_valid": true,
+        "evidence_view": "FRONT",
+        "elapsed_since_prev_s": 107.0,
+        "reason": "The current view is a corridor (L029) that continues forward, which is the most reliable structural route anchor available to progress toward the target room C0.004."
+      },
+      "run_B": {
+        "action": "ALIGN_WITH_LANDMARK",
+        "confidence": "medium",
+        "evidence_score": 0.617,
+        "is_valid": true,
+        "evidence_view": "LEFT",
+        "elapsed_since_prev_s": 96.0,
+        "reason": "Selected landmark is not centred and must be visually aligned before forward movement."
+      }
+    },
+    {
+      "step": 12,
+      "action_agreement": true,
+      "confidence_agreement": true,
+      "valid_agreement": true,
+      "evidence_score_delta_b_minus_a": -0.007499999999999951,
+      "run_A": {
+        "action": "NAVIGATE_TO_LANDMARK",
+        "confidence": "low",
+        "evidence_score": 0.367,
+        "is_valid": true,
+        "evidence_view": "FRONT",
+        "elapsed_since_prev_s": 82.0,
+        "reason": "The current view is sparse with wooden slat walls, but the remembered route landmark L031 (corridor extending forward) supports continued progress toward the target room range C0.004-C0.008 indicated by the sign in the previous step."
+      },
+      "run_B": {
+        "action": "NAVIGATE_TO_LANDMARK",
+        "confidence": "low",
+        "evidence_score": 0.35950000000000004,
+        "is_valid": true,
+        "evidence_view": "FRONT",
+        "elapsed_since_prev_s": 76.0,
+        "reason": "The current view is sparse, but the remembered route landmark L026 (corridor with mailboxes) provides a clear path forward to continue searching for the target room C0.004."
+      }
+    },
+    {
+      "step": 13,
+      "action_agreement": true,
+      "confidence_agreement": true,
+      "valid_agreement": true,
+      "evidence_score_delta_b_minus_a": 0.0,
+      "run_A": {
+        "action": "NAVIGATE_TO_LANDMARK",
+        "confidence": "low",
+        "evidence_score": 0.367,
+        "is_valid": true,
+        "evidence_view": "FRONT",
+        "elapsed_since_prev_s": 85.0,
+        "reason": "The current view is sparse with a wall on the right, but the remembered corridor landmark (L031) visible in the front view provides a clear, traversable path forward towards the exit sign, which is the most logical route to continue searching for room C0004."
+      },
+      "run_B": {
+        "action": "NAVIGATE_TO_LANDMARK",
+        "confidence": "low",
+        "evidence_score": 0.367,
+        "is_valid": true,
+        "evidence_view": "FRONT",
+        "elapsed_since_prev_s": 83.0,
+        "reason": "The current view is sparse (wooden slats), but the remembered route landmark L029 indicates the corridor continues forward, which is the most logical path to find the target room C0.004."
+      }
+    },
+    {
+      "step": 14,
+      "action_agreement": true,
+      "confidence_agreement": false,
+      "valid_agreement": true,
+      "evidence_score_delta_b_minus_a": -0.39049999999999996,
+      "run_A": {
+        "action": "NAVIGATE_TO_LANDMARK",
+        "confidence": "medium",
+        "evidence_score": 0.75,
+        "is_valid": true,
+        "evidence_view": "FRONT",
+        "elapsed_since_prev_s": 86.0,
+        "reason": "The robot is currently facing a directory sign (L036) that indicates the target room C0.004 is to the left; navigating to this sign will allow for a precise reading of the room range and confirmation of the correct path."
+      },
+      "run_B": {
+        "action": "NAVIGATE_TO_LANDMARK",
+        "confidence": "low",
+        "evidence_score": 0.35950000000000004,
+        "is_valid": true,
+        "evidence_view": "FRONT",
+        "elapsed_since_prev_s": 76.0,
+        "reason": "The current view is sparse, but the remembered route landmark L031 indicates the corridor continues forward, which is the most logical path to find the target room C0.004."
+      }
+    },
+    {
+      "step": 15,
+      "action_agreement": true,
+      "confidence_agreement": true,
+      "valid_agreement": true,
+      "evidence_score_delta_b_minus_a": -0.0030000000000000027,
+      "run_A": {
+        "action": "NAVIGATE_TO_LANDMARK",
+        "confidence": "low",
+        "evidence_score": 0.36250000000000004,
+        "is_valid": true,
+        "evidence_view": "FRONT",
+        "elapsed_since_prev_s": 95.0,
+        "reason": "The robot is currently blocked by an obstacle in the forward path, but the left side is clear. A directory sign (L036) and a corresponding open doorway (L037) are visible in the front view, indicating the target room C0.004 is to the left. Navigating to the doorway allows the robot to bypass the obstacle and enter the correct room."
+      },
+      "run_B": {
+        "action": "NAVIGATE_TO_LANDMARK",
+        "confidence": "low",
+        "evidence_score": 0.35950000000000004,
+        "is_valid": true,
+        "evidence_view": "FRONT",
+        "elapsed_since_prev_s": 76.0,
+        "reason": "The current view is sparse with wooden slat walls, but the remembered route landmark L033 indicates the corridor continues forward, supporting continued progress toward the target."
+      }
+    },
+    {
+      "step": 16,
+      "action_agreement": false,
+      "confidence_agreement": true,
+      "valid_agreement": true,
+      "evidence_score_delta_b_minus_a": -0.20799999999999996,
+      "run_A": {
+        "action": "ALIGN_WITH_LANDMARK",
+        "confidence": "low",
+        "evidence_score": 0.5675,
+        "is_valid": true,
+        "evidence_view": "LEFT",
+        "elapsed_since_prev_s": 112.0,
+        "reason": "Selected landmark is not centred and must be visually aligned before forward movement."
+      },
+      "run_B": {
+        "action": "NAVIGATE_TO_LANDMARK",
+        "confidence": "low",
+        "evidence_score": 0.35950000000000004,
+        "is_valid": true,
+        "evidence_view": "FRONT",
+        "elapsed_since_prev_s": 77.0,
+        "reason": "The current view is sparse with wooden slat walls, but the remembered route landmark L035 indicates the corridor continues forward, providing the best available structural evidence to continue progress toward the goal."
+      }
+    },
+    {
+      "step": 17,
+      "action_agreement": false,
+      "confidence_agreement": true,
+      "valid_agreement": true,
+      "evidence_score_delta_b_minus_a": -0.22299999999999998,
+      "run_A": {
+        "action": "ALIGN_WITH_LANDMARK",
+        "confidence": "low",
+        "evidence_score": 0.5825,
+        "is_valid": true,
+        "evidence_view": "FRONT",
+        "elapsed_since_prev_s": 77.0,
+        "reason": "Selected landmark is not centred and must be visually aligned before forward movement."
+      },
+      "run_B": {
+        "action": "NAVIGATE_TO_LANDMARK",
+        "confidence": "low",
+        "evidence_score": 0.35950000000000004,
+        "is_valid": true,
+        "evidence_view": "FRONT",
+        "elapsed_since_prev_s": 76.0,
+        "reason": "The current view is sparse with wooden slat walls, and the most recent failed actions indicate a blockage in the immediate forward path; therefore, I will navigate toward the remembered corridor continuation (L029) to find a clearer path or a new navigation cue."
+      }
+    },
+    {
+      "step": 18,
+      "action_agreement": false,
+      "confidence_agreement": true,
+      "valid_agreement": true,
+      "evidence_score_delta_b_minus_a": -0.10799999999999998,
+      "run_A": {
+        "action": "CHECK_DOOR_LABEL",
+        "confidence": "low",
+        "evidence_score": 0.475,
+        "is_valid": true,
+        "evidence_view": "FRONT",
+        "elapsed_since_prev_s": 88.0,
+        "reason": "The robot is positioned directly in front of the closed double doors (L046) which display room labels and a QR code; checking this label is the most direct way to confirm if this is the target room C0.004."
+      },
+      "run_B": {
+        "action": "NAVIGATE_TO_LANDMARK",
+        "confidence": "low",
+        "evidence_score": 0.367,
+        "is_valid": true,
+        "evidence_view": "FRONT",
+        "elapsed_since_prev_s": 82.0,
+        "reason": "The current view is sparse, but the remembered route landmark L029 indicates the corridor continues forward, which is the most logical path to find the target room C0004."
+      }
+    },
+    {
+      "step": 19,
+      "action_agreement": true,
+      "confidence_agreement": true,
+      "valid_agreement": true,
+      "evidence_score_delta_b_minus_a": -0.007499999999999951,
+      "run_A": {
+        "action": "NAVIGATE_TO_LANDMARK",
+        "confidence": "low",
+        "evidence_score": 0.367,
+        "is_valid": true,
+        "evidence_view": "FRONT",
+        "elapsed_since_prev_s": 75.0,
+        "reason": "The current view is blocked by a closed door, but the remembered route landmark L042 indicates a wood-paneled corridor extending forward that likely leads to the target room."
+      },
+      "run_B": {
+        "action": "NAVIGATE_TO_LANDMARK",
+        "confidence": "low",
+        "evidence_score": 0.35950000000000004,
+        "is_valid": true,
+        "evidence_view": "FRONT",
+        "elapsed_since_prev_s": 78.0,
+        "reason": "The current view is sparse with wooden slat walls, and the recent remembered route landmark L033 supports continued progress forward along the corridor to find the target room."
+      }
+    },
+    {
+      "step": 20,
+      "action_agreement": false,
+      "confidence_agreement": false,
+      "valid_agreement": true,
+      "evidence_score_delta_b_minus_a": -0.24549999999999994,
+      "run_A": {
+        "action": "ALIGN_WITH_LANDMARK",
+        "confidence": "medium",
+        "evidence_score": 0.605,
+        "is_valid": true,
+        "evidence_view": "RIGHT",
+        "elapsed_since_prev_s": 76.0,
+        "reason": "Selected landmark is not centred and must be visually aligned before forward movement."
+      },
+      "run_B": {
+        "action": "NAVIGATE_TO_LANDMARK",
+        "confidence": "low",
+        "evidence_score": 0.35950000000000004,
+        "is_valid": true,
+        "evidence_view": "FRONT",
+        "elapsed_since_prev_s": 79.0,
+        "reason": "The current view is sparse with wooden slat walls, and the recent remembered route landmark L044 supports continued progress forward down the corridor to find the target room."
+      }
+    }
+  ]
+}

@@ -313,6 +313,29 @@ class NavigationMemory:
         self._next_id = 1
         self.last_search_direction = ""
 
+        # Floor identity landmarks are tagged with at creation time (see
+        # _build_landmark). Starts as "" (an unconfirmed/starting floor
+        # identity, not a null sentinel) so a run that never uses an
+        # elevator tags every landmark identically and floor-filtering
+        # is a complete no-op -- no behavior change for the common case.
+        # Only set_current_floor() (called once a human confirms exiting
+        # the elevator on a new floor) ever changes this.
+        self.current_floor = ""
+
+    def set_current_floor(self, floor: str) -> None:
+        """Record the floor the robot is now on after a confirmed
+        elevator/stairs transition.
+
+        Landmarks already in memory keep whatever floor they were
+        tagged with -- this does not touch self.landmarks. Per the
+        decided design, floor transitions are not a memory wipe:
+        older-floor landmarks stay available for a possible round trip,
+        they just stop being preferred/selected for the new floor's
+        planning context (see the floor filtering in context_for_planner/
+        update_current_subgoal/_structural_landmark_usable_for_planner).
+        """
+        self.current_floor = str(floor or "").strip()
+
     def update_from_image(
         self,
         image_path: str,
@@ -524,6 +547,7 @@ class NavigationMemory:
                 for k, v in frontier.items()
                 if k not in {"description", "pose", "confidence"}
             }
+            extra["floor"] = extra.get("floor") or self.current_floor
             evidence_score, evidence_breakdown = _score_landmark(
                 category="frontier",
                 text="",
@@ -624,6 +648,12 @@ class NavigationMemory:
             if status == "ignored":
                 continue
             if route_state in {"blocked", "passed"}:
+                continue
+            # Prefer same-floor landmarks for route selection -- an
+            # older floor's remembered corridor/sign must not be
+            # treated as a live subgoal on a different floor. Landmarks
+            # are not deleted (see set_current_floor), just skipped here.
+            if str(extra.get("floor", "")) != str(self.current_floor):
                 continue
             # Current semantic directional evidence.
             if (
@@ -738,9 +768,12 @@ class NavigationMemory:
 
                 # Only retain a previous structural route anchor.
                 # Old semantic signs must not remain active after they
-                # disappear from the current observation.
+                # disappear from the current observation. A floor
+                # transition also invalidates it -- a route anchor from
+                # the old floor is not a live anchor on the new one.
                 if (
                     previous_is_structural
+                    and str(previous_extra.get("floor", "")) == str(self.current_floor)
                     and self._structural_landmark_usable_for_planner(
                         previous
                     )
@@ -773,6 +806,7 @@ class NavigationMemory:
         self,
         n_recent: int = 4,
         n_relevant: int = 4,
+        goal: "NavigationGoal | None" = None,
     ) -> str:
         """Return compact navigation memory for the action planner."""
 
@@ -788,6 +822,10 @@ class NavigationMemory:
         }
         for lm in reversed(self.landmarks):
             extra = lm.extra if isinstance(lm.extra, dict) else {}
+            # Older-floor landmarks stay in memory but drop out of the
+            # current floor's planning context (see set_current_floor).
+            if str(extra.get("floor", "")) != str(self.current_floor):
+                continue
             is_structural = (
                 lm.category in structural_categories
                 or extra.get("landmark_type") == "structural"
@@ -801,7 +839,7 @@ class NavigationMemory:
             if len(recent) >= n_recent:
                 break
         recent = list(reversed(recent))
-        relevant = self._target_relevant_landmarks(n_relevant)
+        relevant = self._target_relevant_landmarks(n_relevant, goal)
         structural = self._recent_structural_landmarks(limit=6)
 
         seen_ids = {lm.id for lm in recent}
@@ -894,6 +932,7 @@ class NavigationMemory:
         data = {
             "image_count": self.image_count,
             "last_search_direction": self.last_search_direction,
+            "current_floor": self.current_floor,
             "landmarks": [asdict(lm) for lm in self.landmarks],
             "observation_summaries": self.observation_summaries,
             "hypotheses": self.hypotheses,
@@ -917,6 +956,7 @@ class NavigationMemory:
         self.image_count = 0
         self._next_id = 1
         self.last_search_direction = ""
+        self.current_floor = ""
 
     # ------------------------------------------------------------------
     # Internal helpers
@@ -941,6 +981,11 @@ class NavigationMemory:
         extra["proximity"] = _normalise_proximity(extra.get("proximity"))
         extra["doorway_state"] = _normalise_doorway_state(extra.get("doorway_state"))
         extra["threshold_state"] = _normalise_threshold_state(extra.get("threshold_state"))
+        # Prefer a genuine model-read floor placard/sign when present;
+        # otherwise tag with the tracked current floor so cross-floor
+        # landmark filtering (context_for_planner, update_current_subgoal)
+        # has something to compare against.
+        extra["floor"] = extra.get("floor") or self.current_floor
 
         if extra.get("path_clear_visual") not in {
             True,
@@ -1106,6 +1151,7 @@ class NavigationMemory:
     def _target_relevant_landmarks(
         self,
         limit: int,
+        goal: "NavigationGoal | None" = None,
     ) -> list[Landmark]:
         relevant: list[Landmark] = []
 
@@ -1124,6 +1170,16 @@ class NavigationMemory:
                 if isinstance(lm.extra, dict)
                 else {}
             )
+            # Older-floor landmarks stay in memory but drop out of the
+            # current floor's planning context (see set_current_floor).
+            if str(extra.get("floor", "")) != str(self.current_floor):
+                continue
+            # A door landmark whose own text names a different exact
+            # room code than the current goal must not keep presenting
+            # as target-relevant just because its extra.target_relevance
+            # was frozen in from an earlier, different goal.
+            if not _door_landmark_room_code_matches_goal(lm, goal):
+                continue
             is_structural = (
                 lm.category in structural_categories
                 or str(
@@ -1222,6 +1278,11 @@ class NavigationMemory:
 
         for lm in reversed(self.landmarks):
             extra = lm.extra if isinstance(lm.extra, dict) else {}
+
+            # Older-floor landmarks stay in memory but drop out of the
+            # current floor's planning context (see set_current_floor).
+            if str(extra.get("floor", "")) != str(self.current_floor):
+                continue
 
             is_structural = (
                 lm.category in structural_categories
@@ -1658,7 +1719,7 @@ def _extract_last_number(text: str) -> int | None:
         return None
 
 
-def _landmark_key(landmark: Landmark) -> tuple[str, str, str, str]:
+def _landmark_key(landmark: Landmark) -> tuple[str, str, str, str, str]:
     text = re.sub(r"\s+", " ", landmark.text.lower()).strip()
     desc = re.sub(r"\s+", " ", landmark.description.lower()).strip()[:80]
 
@@ -1670,7 +1731,19 @@ def _landmark_key(landmark: Landmark) -> tuple[str, str, str, str]:
         except Exception:
             pose_key = ""
 
-    return landmark.category, text, desc, pose_key
+    # Include floor so a generic landmark (e.g. a plain "corridor
+    # extending forward") on a new floor is never merged into an
+    # identical-looking one from a floor visited earlier in the same
+    # run -- that merge would silently overwrite the old landmark's
+    # floor tag via existing.extra.update(landmark.extra).
+    extra = getattr(landmark, "extra", {})
+    floor_key = (
+        str(extra.get("floor", ""))
+        if isinstance(extra, dict)
+        else ""
+    )
+
+    return landmark.category, text, desc, pose_key, floor_key
 
 
 def _extract_json(
@@ -1772,3 +1845,43 @@ def _correct_target_relevance(
             extra["target_relevance"] = "medium"
 
     return extra
+
+
+def _door_landmark_room_code_matches_goal(
+    lm: "Landmark",
+    goal: "NavigationGoal | None",
+) -> bool:
+    """True unless this door landmark's own literal text names a full
+    room code that does not match the currently active goal.
+
+    extra.target_relevance is only ever set once, at landmark-creation
+    time, against whatever goal was active then (_correct_target_relevance
+    above) -- nothing re-checks it later. That's fine for a goal that
+    never changes, but after a continue-goal transition (keep_memory=True)
+    a landmark's frozen "high"/goal_support="direct" flags can silently
+    outlive the goal they were computed for. Real example (2026-07-31,
+    B0.001 -> B0.004 continue-goal run): the door just verified as
+    B0.001 kept presenting as high-relevance for the new B0.004 goal,
+    since nothing had re-derived it.
+
+    Deliberately narrow: only category="door" with a single exact
+    room-code-shaped text (not ranges/directories, e.g. "B0.001 -
+    B0.010", which legitimately stay useful context across a goal
+    change even though the exact number differs) is checked.
+    """
+    if goal is None:
+        return True
+    if str(getattr(lm, "category", "")).lower() != "door":
+        return True
+
+    text = str(getattr(lm, "text", "") or "").strip()
+    if not text or re.search(r"[-–,]", text):
+        return True
+    if not (re.search(r"[A-Za-z]", text) and re.search(r"\d", text)):
+        return True
+
+    goal_norm = _normalise_label(str(getattr(goal, "raw_goal", "")))
+    if not goal_norm:
+        return True
+
+    return _normalise_label(text) == goal_norm

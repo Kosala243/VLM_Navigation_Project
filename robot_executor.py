@@ -295,7 +295,11 @@ YAW_FEEDBACK_ANGLE_TOLERANCE_RAD = math.radians(2.0)
 # multiple of the open-loop nominal duration has elapsed, whether or not
 # the target was reached, so a wrong turn_speed assumption or bad
 # feedback can't spin the robot indefinitely.
-YAW_FEEDBACK_MAX_DURATION_MULTIPLIER = 2.0
+# Raised from 2.0 to 3.0 on 2026-07-30: measured left-turn rate (0.172
+# rad/s, ~57% of commanded) left 2/3 real trials landing exactly at the
+# 2.0x cap (2.60s vs ~2.27s needed) -- not a failure yet, but no margin
+# left for slightly worse conditions (cold motors, floor friction, battery).
+YAW_FEEDBACK_MAX_DURATION_MULTIPLIER = 3.0
 YAW_FEEDBACK_MIN_MAX_DURATION_S = 1.0
 
 
@@ -1141,6 +1145,22 @@ class SafeCmdVelExecutor(object):
             return None
 
         if name == "SEARCH_FOR_CUE":
+            # Vision-grounded (#2-style) when the search direction was
+            # grounded to a specific structural landmark carrying a
+            # usable evidence_view/horizontal_offset_fraction (set by
+            # action_generator's _ensure_search_direction), else falls
+            # back to the fixed exploratory-tier duration as before.
+            vision_turn = self._vision_grounded_turn(
+                evidence_view, horizontal_offset_fraction
+            )
+            if vision_turn is not None:
+                vg_direction, vg_duration = vision_turn
+                return self._turn_cmd(
+                    vg_direction,
+                    vg_duration,
+                    "visual_search",
+                )
+
             search_direction = (
                 direction
                 if direction in {"left", "right"}

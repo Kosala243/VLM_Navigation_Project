@@ -594,6 +594,42 @@ def post_execution_ack(
             "raw_response": result.stdout,
         }
 
+def post_set_floor(api, floor, connect_timeout=10, max_time=30):
+    """Tell the AMD-side NavigationMemory which floor the robot is now
+    on, after a human confirms exiting the elevator/stairs (see
+    handle_elevator_or_stairs). Does not touch existing landmarks --
+    only changes which floor's landmarks are preferred going forward.
+    """
+    url = api.rstrip("/") + "/autonomous/set_floor"
+
+    result = run(
+        [
+            "curl",
+            "-sS",
+            "--connect-timeout", str(connect_timeout),
+            "--max-time", str(max_time),
+            "-X",
+            "POST",
+            url,
+            "-F",
+            "floor={}".format(floor),
+        ],
+        verbose=False,
+        timeout=max_time + 10,
+    )
+
+    try:
+        response = json.loads(result.stdout)
+    except Exception:
+        print("[ERROR] Could not parse set_floor response JSON.")
+        print(result.stdout)
+        return None
+
+    print("[OK] Current floor set to '{}'".format(
+        response.get("current_floor", floor)
+    ))
+    return response
+
 def export_autonomous_session(api, run_dir, connect_timeout=10, max_time=60):
     url = api.rstrip("/") + "/autonomous/export"
 
@@ -1159,6 +1195,178 @@ def _pick_redirect_direction(safety_info):
         return "right"
     return "left" if left >= right else "right"
 
+def handle_elevator_or_stairs(args, response):
+    """Human-in-the-loop pause for USE_ELEVATOR_OR_STAIRS.
+
+    The robot is a legged robot dog with no manipulator -- it cannot
+    press a lift button or climb stairs unassisted, so all physical
+    movement in/out of the elevator/stairs is fully manual (a human
+    drives it via the robot's own remote, outside this script's
+    /cmd_vel pipeline entirely). This function's only job is to pause
+    autonomous stepping for three yes/no confirmations; it issues zero
+    motion commands and never touches SafeCmdVelExecutor/RobotSafetyMonitor.
+
+    Returns (executed, execution_result) with the same shape
+    maybe_execute_robot_action returns, so the normal step-logging path
+    in run_auto_mode works unchanged for this action too.
+    """
+    if args.execute == "false":
+        print(
+            "[ELEVATOR] Dry run only. Not prompting for "
+            "elevator/stairs confirmation."
+        )
+        return (
+            False,
+            {
+                "executed": False,
+                "status": "dry_run",
+                "reason": "Execution disabled.",
+                "command": None,
+                "safety": None,
+            },
+        )
+
+    action = (
+        response.get("action", {})
+        if isinstance(response.get("action"), dict)
+        else {}
+    )
+    params = (
+        action.get("params", {})
+        if isinstance(action.get("params"), dict)
+        else {}
+    )
+
+    direction = str(
+        params.get("direction") or params.get("evidence_view") or ""
+    ).strip().lower()
+    target_description = str(params.get("target_description") or "").strip()
+    landmark_id = str(params.get("landmark_id") or "").strip()
+
+    goal_constraints = (
+        response.get("goal_constraints", {})
+        if isinstance(response.get("goal_constraints"), dict)
+        else {}
+    )
+    floor_guess = (
+        str(params.get("floor")).strip()
+        if params.get("floor") not in (None, "")
+        else str(goal_constraints.get("possible_floor") or "").strip()
+    )
+
+    print("\n========== ELEVATOR / STAIRS PAUSE ==========")
+    print("Evidence landmark:", landmark_id or "(none)")
+    if target_description:
+        print("Description:", target_description)
+    print("Floor hypothesis:", floor_guess or "(unknown -- will ask)")
+    print("===============================================\n")
+
+    def ask(prompt_text):
+        try:
+            return _sanitize_terminal_input(
+                input(prompt_text)
+            ).strip().lower()
+        except EOFError:
+            return ""
+
+    def declined(status, reason):
+        print("[ELEVATOR] {}: {}".format(status, reason))
+        return (
+            False,
+            {
+                "executed": False,
+                "status": status,
+                "reason": reason,
+                "command": None,
+                "safety": None,
+            },
+        )
+
+    prompt1 = (
+        "Lift is detected in {} direction, press the lift button and "
+        "confirm once we're inside the lift [y/N]: "
+    ).format(direction if direction and direction != "none" else "the indicated")
+
+    if ask(prompt1) not in {"y", "yes"}:
+        return declined(
+            "elevator_declined",
+            "User did not confirm entering the lift.",
+        )
+
+    if floor_guess:
+        prompt2 = (
+            "Press the floor {} button to navigate and reach the goal, "
+            "confirm if the floor number button is pressed [y/N]: "
+        ).format(floor_guess)
+    else:
+        prompt2 = (
+            "Press the button for the floor that reaches the goal, "
+            "confirm if the floor number button is pressed [y/N]: "
+        )
+
+    if ask(prompt2) not in {"y", "yes"}:
+        return declined(
+            "elevator_floor_button_declined",
+            "User did not confirm the floor button was pressed.",
+        )
+
+    if floor_guess:
+        prompt3 = (
+            "Confirm we are out of the elevator and on floor {} to resume "
+            "autonomous navigation. Press Enter to confirm floor {}, type "
+            "the correct floor if different, or 'n' to cancel: "
+        ).format(floor_guess, floor_guess)
+    else:
+        prompt3 = (
+            "Confirm we are out of the elevator. Type the floor number "
+            "we're now on to resume autonomous navigation, or 'n' to cancel: "
+        )
+
+    answer3 = ask(prompt3)
+    if answer3 in {"n", "no"}:
+        return declined(
+            "elevator_exit_declined",
+            "User did not confirm exiting the elevator.",
+        )
+
+    if answer3 and answer3 not in {"y", "yes"}:
+        actual_floor = answer3
+    elif floor_guess:
+        actual_floor = floor_guess
+    else:
+        # No floor hypothesis existed and the user left it blank/"y" --
+        # that's ambiguous with "" (the pre-elevator floor sentinel), so
+        # refuse rather than silently mistagging every landmark from
+        # here on as still being on the old floor.
+        return declined(
+            "elevator_floor_unknown",
+            "No floor number was confirmed; current_floor left unchanged.",
+        )
+
+    set_floor_response = post_set_floor(
+        args.api,
+        actual_floor,
+        connect_timeout=args.api_connect_timeout,
+        max_time=args.api_timeout,
+    )
+
+    return (
+        True,
+        {
+            "executed": True,
+            "status": "elevator_transition_complete",
+            "reason": (
+                "Human confirmed elevator/stairs transition to "
+                "floor '{}'.".format(actual_floor)
+            ),
+            "command": None,
+            "safety": None,
+            "landmark_id": landmark_id or None,
+            "new_floor": actual_floor,
+            "set_floor_response": set_floor_response,
+        },
+    )
+
 def maybe_execute_robot_action(
     args,
     response,
@@ -1624,10 +1832,24 @@ def run_auto_mode(args):
                 )
 
             print_action_result(response)
-            executed, execution_result = maybe_execute_robot_action(
-                args,
-                response,
-            )
+
+            action_name = str(
+                (response.get("action", {}) or {}).get("name", "")
+            ).strip().upper()
+
+            if action_name == "USE_ELEVATOR_OR_STAIRS":
+                # Fully human-in-the-loop: no SafeCmdVelExecutor/
+                # RobotSafetyMonitor involvement, zero motion commands
+                # issued from here. See handle_elevator_or_stairs.
+                executed, execution_result = handle_elevator_or_stairs(
+                    args,
+                    response,
+                )
+            else:
+                executed, execution_result = maybe_execute_robot_action(
+                    args,
+                    response,
+                )
 
             safety_info = execution_result.get("safety") or {}
             if (

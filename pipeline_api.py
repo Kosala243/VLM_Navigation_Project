@@ -188,6 +188,9 @@ def action_response(
     result = {
         "mode": mode,
         "goal": goal,
+        "goal_constraints": (
+            nav.goal.constraints if nav.goal is not None else {}
+        ),
         "observation_mode": observation_mode,
         "image_path": str(image_path),
         "image_paths": image_paths,
@@ -384,6 +387,34 @@ async def autonomous_ack(
         )
 
     return acknowledgement
+
+@app.post("/autonomous/set_floor")
+async def autonomous_set_floor(
+    floor: str = Form(...),
+):
+    """
+    Record the floor the robot is now on after a human-confirmed
+    elevator/stairs transition (see thinkpad_robot_capture_to_amd.py's
+    USE_ELEVATOR_OR_STAIRS pause-point flow).
+
+    Does not touch existing landmarks -- see
+    NavigationMemory.set_current_floor for why this is not a memory wipe.
+    """
+    global NAV
+
+    async with NAV_LOCK:
+        if NAV is None:
+            raise HTTPException(
+                status_code=400,
+                detail="No active autonomous session.",
+            )
+
+        NAV.memory.set_current_floor(floor)
+
+        return {
+            "status": "ok",
+            "current_floor": NAV.memory.current_floor,
+        }
 
 @app.get("/autonomous/export")
 def autonomous_export():

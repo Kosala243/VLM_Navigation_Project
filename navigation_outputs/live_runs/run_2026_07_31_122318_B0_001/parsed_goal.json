@@ -1,0 +1,42 @@
+{
+  "raw_goal": "B0.001",
+  "target_type": "room_or_location",
+  "known_tokens": [
+    "B0.001",
+    "B0-001",
+    "B0001",
+    "Room B0001"
+  ],
+  "aliases": [
+    "B0.001",
+    "B0-001",
+    "B0001",
+    "Room B0001"
+  ],
+  "possible_interpretations": [
+    {
+      "interpretation": "May mean Building/Zone B, Floor 0, Room 001.",
+      "evidence_needed": [
+        "building or zone sign for B",
+        "floor indicator 0",
+        "door label matching B0.001 or B0001"
+      ],
+      "confidence": "medium"
+    },
+    {
+      "interpretation": "May simply be the full room label/code 'B0.001' without separable building/floor meaning.",
+      "evidence_needed": [
+        "door label or directory entry exactly matching B0.001"
+      ],
+      "confidence": "medium"
+    }
+  ],
+  "constraints": {
+    "possible_building": "B",
+    "possible_floor": "0",
+    "possible_room": "001",
+    "possible_zone": null,
+    "target_name": null
+  },
+  "search_strategy": "Search for door labels, corridor range signs, directories, or floor/zone indicators matching ['B0.001', 'B0-001', 'B0001', 'Room B0001']; treat building/floor/room structure as a hypothesis until confirmed."
+}

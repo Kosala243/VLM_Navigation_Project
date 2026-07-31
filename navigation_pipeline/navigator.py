@@ -285,6 +285,20 @@ class NavigationSystem:
                 action
             )
 
+        if action.name == "STOP_AND_VERIFY" and action.is_valid:
+            # STOP_AND_VERIFY has no physical motion (robot_executor's
+            # no-motion-mapping set) and is deliberately excluded from
+            # the ack-required pending-action path below -- it has
+            # nothing external to confirm. That means it never reaches
+            # _mark_action_landmark_status via the executed/ack paths
+            # above, so without this the just-verified target landmark
+            # stays "unvisited" forever -- indistinguishable from a
+            # genuinely fresh landmark if a later goal (continue-goal,
+            # keep_memory=True) reuses this memory. Safe to call
+            # unconditionally here even if the executor branch above
+            # already marked it -- mark_landmark is idempotent.
+            self._mark_action_landmark_status(action)
+
         rec = StepRecord(
             image_num=len(self.records) + 1,
             image_path=str(image_path),
