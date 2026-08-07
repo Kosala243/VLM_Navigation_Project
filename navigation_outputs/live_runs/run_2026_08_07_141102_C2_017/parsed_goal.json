@@ -1,0 +1,42 @@
+{
+  "raw_goal": "C2.017",
+  "target_type": "room_or_location",
+  "known_tokens": [
+    "C2.017",
+    "C2-017",
+    "C2017",
+    "Room C2017"
+  ],
+  "aliases": [
+    "C2.017",
+    "C2-017",
+    "C2017",
+    "Room C2017"
+  ],
+  "possible_interpretations": [
+    {
+      "interpretation": "May mean Building/Zone C, Floor 2, Room 017.",
+      "evidence_needed": [
+        "building or zone sign for C",
+        "floor indicator 2",
+        "door label matching C2.017 or C2017"
+      ],
+      "confidence": "medium"
+    },
+    {
+      "interpretation": "May simply be the full room label/code 'C2.017' without separable building/floor meaning.",
+      "evidence_needed": [
+        "door label or directory entry exactly matching C2.017"
+      ],
+      "confidence": "medium"
+    }
+  ],
+  "constraints": {
+    "possible_building": "C",
+    "possible_floor": "2",
+    "possible_room": "017",
+    "possible_zone": null,
+    "target_name": null
+  },
+  "search_strategy": "Search for door labels, corridor range signs, directories, or floor/zone indicators matching ['C2.017', 'C2-017', 'C2017', 'Room C2017']; treat building/floor/room structure as a hypothesis until confirmed."
+}

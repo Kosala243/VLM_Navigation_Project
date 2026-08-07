@@ -336,6 +336,22 @@ class NavigationMemory:
         """
         self.current_floor = str(floor or "").strip()
 
+    def _floor_compatible(self, landmark_floor: Any) -> bool:
+        """True unless a confirmed current floor rules this landmark out.
+
+        Before any human-confirmed elevator/stairs transition
+        (self.current_floor == ""), landmark floor tags are informational
+        only and never exclude anything -- otherwise tagging landmarks
+        with a floor parsed straight from their own visible room-code
+        text (see _extract_floor_from_room_code_text) would silently
+        blind subgoal/context selection the moment that parsing succeeds,
+        despite current_floor never actually having been confirmed.
+        """
+        if not self.current_floor:
+            return True
+        landmark_floor = str(landmark_floor or "")
+        return landmark_floor in ("", str(self.current_floor))
+
     def update_from_image(
         self,
         image_path: str,
@@ -653,7 +669,7 @@ class NavigationMemory:
             # older floor's remembered corridor/sign must not be
             # treated as a live subgoal on a different floor. Landmarks
             # are not deleted (see set_current_floor), just skipped here.
-            if str(extra.get("floor", "")) != str(self.current_floor):
+            if not self._floor_compatible(extra.get("floor")):
                 continue
             # Current semantic directional evidence.
             if (
@@ -773,7 +789,7 @@ class NavigationMemory:
                 # the old floor is not a live anchor on the new one.
                 if (
                     previous_is_structural
-                    and str(previous_extra.get("floor", "")) == str(self.current_floor)
+                    and self._floor_compatible(previous_extra.get("floor"))
                     and self._structural_landmark_usable_for_planner(
                         previous
                     )
@@ -824,7 +840,7 @@ class NavigationMemory:
             extra = lm.extra if isinstance(lm.extra, dict) else {}
             # Older-floor landmarks stay in memory but drop out of the
             # current floor's planning context (see set_current_floor).
-            if str(extra.get("floor", "")) != str(self.current_floor):
+            if not self._floor_compatible(extra.get("floor")):
                 continue
             is_structural = (
                 lm.category in structural_categories
@@ -921,12 +937,60 @@ class NavigationMemory:
                 if self.current_subgoal.status == "active"
                 else None
             ),
+            "floor_status": self._floor_status(goal),
         }
         return json.dumps(
             data,
             ensure_ascii=False,
             separators=(",", ":"),
         )
+
+    def _floor_status(
+        self,
+        goal: "NavigationGoal | None",
+    ) -> dict[str, Any]:
+        """Summarize what floor the goal needs vs. what floor evidence
+        the robot has actually seen, so the planner is told about a
+        floor mismatch explicitly instead of having to re-derive it
+        from scratch, per-step, out of raw sign text in its own prose.
+
+        observed_floor_from_signs is the floor tag (see
+        _extract_floor_from_room_code_text) of the most recent
+        sign/door/directory landmark that carried one -- this is
+        evidence, not a confirmation, and is deliberately kept separate
+        from confirmed_current_floor (which only set_current_floor,
+        i.e. a human-confirmed elevator/stairs transition, ever sets).
+        """
+        goal_floor = None
+        if goal is not None:
+            constraints = getattr(goal, "constraints", {}) or {}
+            goal_floor = constraints.get("possible_floor")
+
+        observed_floor = None
+        for lm in reversed(self.landmarks):
+            if lm.category not in {"sign", "door", "directory"}:
+                continue
+            extra = lm.extra if isinstance(lm.extra, dict) else {}
+            floor = extra.get("floor")
+            if floor:
+                observed_floor = str(floor)
+                break
+
+        current_floor = self.current_floor or None
+        effective_floor = current_floor or observed_floor
+
+        floor_mismatch_likely = bool(
+            goal_floor
+            and effective_floor
+            and str(goal_floor) != str(effective_floor)
+        )
+
+        return {
+            "confirmed_current_floor": current_floor,
+            "observed_floor_from_signs": observed_floor,
+            "goal_floor": goal_floor,
+            "floor_mismatch_likely": floor_mismatch_likely,
+        }
 
     def save(self, path: str) -> None:
         data = {
@@ -982,10 +1046,20 @@ class NavigationMemory:
         extra["doorway_state"] = _normalise_doorway_state(extra.get("doorway_state"))
         extra["threshold_state"] = _normalise_threshold_state(extra.get("threshold_state"))
         # Prefer a genuine model-read floor placard/sign when present;
-        # otherwise tag with the tracked current floor so cross-floor
-        # landmark filtering (context_for_planner, update_current_subgoal)
-        # has something to compare against.
-        extra["floor"] = extra.get("floor") or self.current_floor
+        # next, parse a floor straight out of this landmark's own
+        # room-code-shaped text/room_range/description (a direction
+        # sign or door number like "C0.016-C0.020" or "C2.017" -- see
+        # _extract_floor_from_room_code_text); otherwise fall back to
+        # the tracked current floor so cross-floor landmark filtering
+        # (context_for_planner, update_current_subgoal) has something
+        # to compare against.
+        extra["floor"] = (
+            extra.get("floor")
+            or _extract_floor_from_room_code_text(
+                extra.get("room_range"), text, description
+            )
+            or self.current_floor
+        )
 
         if extra.get("path_clear_visual") not in {
             True,
@@ -1172,7 +1246,7 @@ class NavigationMemory:
             )
             # Older-floor landmarks stay in memory but drop out of the
             # current floor's planning context (see set_current_floor).
-            if str(extra.get("floor", "")) != str(self.current_floor):
+            if not self._floor_compatible(extra.get("floor")):
                 continue
             # A door landmark whose own text names a different exact
             # room code than the current goal must not keep presenting
@@ -1208,6 +1282,13 @@ class NavigationMemory:
                 }
                 and lm.text
             ):
+                relevant.append(lm)
+            # Elevators/stairs rarely carry OCR text of their own, but
+            # they are exactly the evidence needed once a floor mismatch
+            # is suspected -- without this they fall out of context one
+            # step after leaving the current frame (see floor_status in
+            # context_for_planner).
+            elif lm.category in {"elevator", "stairs"}:
                 relevant.append(lm)
             if len(relevant) >= limit:
                 break
@@ -1281,7 +1362,7 @@ class NavigationMemory:
 
             # Older-floor landmarks stay in memory but drop out of the
             # current floor's planning context (see set_current_floor).
-            if str(extra.get("floor", "")) != str(self.current_floor):
+            if not self._floor_compatible(extra.get("floor")):
                 continue
 
             is_structural = (
@@ -1593,6 +1674,44 @@ def _default_navigation_role(category: str) -> str:
         "dead_end": "dead_end",
     }
     return roles.get(category, "none")
+
+_ROOM_CODE_WITH_BUILDING_RE = re.compile(r"\b[A-Za-z]+(\d+)[.\-_]\d+[A-Za-z]*\b")
+_ROOM_CODE_BARE_RE = re.compile(r"\b(\d+)[.\-_]\d+[A-Za-z]*\b")
+
+
+def _extract_floor_from_room_code_text(*texts: Any) -> str:
+    """Best-effort floor number parsed straight out of room-code-shaped
+    text, e.g. a directional sign reading "C0.016-C0.020" or a door
+    number "C2.017" -> floor "0" / "2".
+
+    Mirrors goal_parser.py's own building/floor/room convention (its
+    rule 1: r"([A-Za-z]+)(\\d+)[.\\-_](\\d+[A-Za-z]*)") so a landmark
+    tags itself with a floor the moment its own visible text encodes
+    one, instead of only ever inheriting whatever
+    NavigationMemory.current_floor happens to be -- which stays ""
+    until a human confirms an elevator/stairs transition (see
+    set_current_floor) and would otherwise leave every sign/door
+    landmark's floor blank even when the robot has clearly already
+    read the floor off a sign.
+
+    Building-prefixed codes ("C0.016") are preferred over bare ones
+    ("0.016") when both are present in the given texts, since a bare
+    number is more likely to be a room number fragment than a floor.
+    """
+    for text in texts:
+        if not text:
+            continue
+        m = _ROOM_CODE_WITH_BUILDING_RE.search(str(text))
+        if m:
+            return m.group(1)
+    for text in texts:
+        if not text:
+            continue
+        m = _ROOM_CODE_BARE_RE.search(str(text))
+        if m:
+            return m.group(1)
+    return ""
+
 
 def _looks_like_room_or_range(text: str) -> bool:
     t = str(text)

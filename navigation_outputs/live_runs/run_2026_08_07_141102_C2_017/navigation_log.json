@@ -1,0 +1,490 @@
+{
+  "goal": {
+    "raw_goal": "C2.017",
+    "target_type": "room_or_location",
+    "known_tokens": [
+      "C2.017",
+      "C2-017",
+      "C2017",
+      "Room C2017"
+    ],
+    "aliases": [
+      "C2.017",
+      "C2-017",
+      "C2017",
+      "Room C2017"
+    ],
+    "possible_interpretations": [
+      {
+        "interpretation": "May mean Building/Zone C, Floor 2, Room 017.",
+        "evidence_needed": [
+          "building or zone sign for C",
+          "floor indicator 2",
+          "door label matching C2.017 or C2017"
+        ],
+        "confidence": "medium"
+      },
+      {
+        "interpretation": "May simply be the full room label/code 'C2.017' without separable building/floor meaning.",
+        "evidence_needed": [
+          "door label or directory entry exactly matching C2.017"
+        ],
+        "confidence": "medium"
+      }
+    ],
+    "constraints": {
+      "possible_building": "C",
+      "possible_floor": "2",
+      "possible_room": "017",
+      "possible_zone": null,
+      "target_name": null
+    },
+    "search_strategy": "Search for door labels, corridor range signs, directories, or floor/zone indicators matching ['C2.017', 'C2-017', 'C2017', 'Room C2017']; treat building/floor/room structure as a hypothesis until confirmed."
+  },
+  "status": "Goal=C2.017 | records=2 | memory_landmarks=4 | session_memory_active=True | inherited_previous_memory=False",
+  "total_steps": 2,
+  "records": [
+    {
+      "image_num": 1,
+      "image_path": "live_frames/frame_1786104674059_front.png",
+      "memory_update": {
+        "useful": true,
+        "summary": "Front view shows a directional sign and an open doorway to the right.",
+        "landmarks": [
+          {
+            "id": "L001",
+            "category": "sign",
+            "description": "Dark rectangular sign on the wall with illegible text and symbols.",
+            "text": "",
+            "pose": {},
+            "status": "unvisited",
+            "confidence": "low",
+            "evidence_score": 0.3500000000000001,
+            "evidence_breakdown": {
+              "category_score": 0.7,
+              "confidence_bonus": 0.05,
+              "text_bonus": 0.0,
+              "target_relevance_bonus": 0.05,
+              "direction_bonus": 0.0,
+              "traversable_bonus": 0.0,
+              "route_role_bonus": 0.0,
+              "missing_text_penalty": 0.35,
+              "partial_marker_penalty": 0.0,
+              "irrelevant_sign_penalty": 0.1,
+              "final_score": 0.3500000000000001
+            },
+            "image_path": "live_frames/frame_1786104674059_front.png",
+            "extra": {
+              "direction": "unknown",
+              "room_range": null,
+              "arrow": "unknown",
+              "target_relevance": "medium",
+              "floor": "",
+              "zone": null,
+              "source_view": "FRONT",
+              "horizontal_position": "left",
+              "horizontal_offset_fraction": -0.3,
+              "proximity": "medium",
+              "path_clear_visual": true,
+              "doorway_state": "unknown",
+              "threshold_state": "before",
+              "landmark_type": "semantic",
+              "navigation_role": "none",
+              "traversable": null,
+              "continuation_direction": "unknown",
+              "route_state": "visible_now",
+              "goal_support": "indirect",
+              "target_direction": "unknown",
+              "source_image_index": 1
+            },
+            "observation_count": 1,
+            "selection_count": 0
+          },
+          {
+            "id": "L002",
+            "category": "doorway",
+            "description": "Open doorway with glass panels leading to a lit area on the right.",
+            "text": "",
+            "pose": {},
+            "status": "unvisited",
+            "confidence": "medium",
+            "evidence_score": 0.7000000000000002,
+            "evidence_breakdown": {
+              "category_score": 0.45,
+              "confidence_bonus": 0.1,
+              "text_bonus": 0.0,
+              "target_relevance_bonus": 0.05,
+              "direction_bonus": 0.05,
+              "traversable_bonus": 0.05,
+              "route_role_bonus": 0.0,
+              "missing_text_penalty": 0.0,
+              "partial_marker_penalty": 0.0,
+              "irrelevant_sign_penalty": 0.0,
+              "final_score": 0.7000000000000002
+            },
+            "image_path": "live_frames/frame_1786104674059_front.png",
+            "extra": {
+              "direction": "right",
+              "room_range": null,
+              "arrow": null,
+              "target_relevance": "medium",
+              "floor": "",
+              "zone": null,
+              "source_view": "FRONT",
+              "horizontal_position": "right",
+              "horizontal_offset_fraction": 0.6,
+              "proximity": "medium",
+              "path_clear_visual": true,
+              "doorway_state": "open",
+              "threshold_state": "before",
+              "landmark_type": "structural",
+              "navigation_role": "entrance",
+              "traversable": true,
+              "continuation_direction": "right",
+              "route_state": "visible_now",
+              "goal_support": "indirect",
+              "target_direction": "right",
+              "source_image_index": 1
+            },
+            "observation_count": 1,
+            "selection_count": 1
+          }
+        ],
+        "hypotheses": [
+          "The sign likely indicates room numbers or directions for C2.017."
+        ],
+        "parse_ok": true,
+        "error": "",
+        "parse_attempts": 1,
+        "raw_response": ""
+      },
+      "verification": {
+        "target_visible": true,
+        "target_reached": false,
+        "matched_label": "",
+        "evidence_type": "room_range",
+        "confidence": "medium",
+        "evidence_score": 0.55,
+        "evidence_breakdown": {
+          "evidence_type_score": 0.5,
+          "visual_bonus": 0.0,
+          "label_match_bonus": 0.0,
+          "current_frame_bonus": 0.05,
+          "ambiguity_penalty": 0.0,
+          "final_score": 0.55
+        },
+        "reason": "Current image contains target-relevant navigation evidence, but not the actual target door/entrance.",
+        "landmark_id": "L001",
+        "raw": {
+          "source": "current_memory_relevant_non_stop",
+          "landmark": {
+            "id": "L001",
+            "category": "sign",
+            "description": "Dark rectangular sign on the wall with illegible text and symbols.",
+            "text": "",
+            "pose": {},
+            "status": "unvisited",
+            "confidence": "low",
+            "evidence_score": 0.3500000000000001,
+            "evidence_breakdown": {
+              "category_score": 0.7,
+              "confidence_bonus": 0.05,
+              "text_bonus": 0.0,
+              "target_relevance_bonus": 0.05,
+              "direction_bonus": 0.0,
+              "traversable_bonus": 0.0,
+              "route_role_bonus": 0.0,
+              "missing_text_penalty": 0.35,
+              "partial_marker_penalty": 0.0,
+              "irrelevant_sign_penalty": 0.1,
+              "final_score": 0.3500000000000001
+            },
+            "image_path": "live_frames/frame_1786104674059_front.png",
+            "extra": {
+              "direction": "unknown",
+              "room_range": null,
+              "arrow": "unknown",
+              "target_relevance": "medium",
+              "floor": "",
+              "zone": null,
+              "source_view": "FRONT",
+              "horizontal_position": "left",
+              "horizontal_offset_fraction": -0.3,
+              "proximity": "medium",
+              "path_clear_visual": true,
+              "doorway_state": "unknown",
+              "threshold_state": "before",
+              "landmark_type": "semantic",
+              "navigation_role": "none",
+              "traversable": null,
+              "continuation_direction": "unknown",
+              "route_state": "visible_now",
+              "goal_support": "indirect",
+              "target_direction": "unknown",
+              "source_image_index": 1
+            },
+            "observation_count": 1,
+            "selection_count": 0
+          }
+        }
+      },
+      "action": {
+        "name": "ALIGN_WITH_LANDMARK",
+        "params": {
+          "landmark_id": "L002",
+          "direction": "right",
+          "target": "L002",
+          "target_description": "Open doorway with glass panels leading to a lit area on the right.",
+          "stop_condition": "landmark centred in FRONT camera",
+          "capture_after": true,
+          "evidence_view": "FRONT",
+          "horizontal_position": "right",
+          "horizontal_offset_fraction": 0.6,
+          "proximity": "medium"
+        },
+        "reason": "Selected landmark is not centred and must be visually aligned before forward movement.",
+        "confidence": "medium",
+        "evidence_score": 0.605,
+        "evidence_breakdown": {
+          "action_base_score": 0.65,
+          "supporting_landmark_score": 0.7000000000000002,
+          "supporting_landmark_bonus": 0.10500000000000002,
+          "no_landmark_penalty": 0.0,
+          "partial_marker_penalty": 0.0,
+          "used_landmark_penalty": 0.0,
+          "invalid_penalty": 0.0,
+          "mismatched_room_code_penalty": 0.15,
+          "structural_route_penalty": 0.0,
+          "final_score": 0.605
+        },
+        "goal_reached": false,
+        "needs_verification": false,
+        "raw": {},
+        "is_valid": true,
+        "invalid_reason": ""
+      },
+      "executed": false
+    },
+    {
+      "image_num": 2,
+      "image_path": "live_frames/frame_1786104768059_front.png",
+      "memory_update": {
+        "useful": true,
+        "summary": "Front view shows a directional sign for room range C0.016-C0.020 and an open doorway to the right.",
+        "landmarks": [
+          {
+            "id": "L003",
+            "category": "sign",
+            "description": "Black directional sign on the wall indicating room range C0.016-C0.020 with a right arrow.",
+            "text": "C0.016-C0.020",
+            "pose": {},
+            "status": "unvisited",
+            "confidence": "high",
+            "evidence_score": 1.0,
+            "evidence_breakdown": {
+              "category_score": 0.7,
+              "confidence_bonus": 0.1,
+              "text_bonus": 0.1,
+              "target_relevance_bonus": 0.05,
+              "direction_bonus": 0.05,
+              "traversable_bonus": 0.0,
+              "route_role_bonus": 0.0,
+              "missing_text_penalty": 0.0,
+              "partial_marker_penalty": 0.0,
+              "irrelevant_sign_penalty": 0.0,
+              "final_score": 1.0
+            },
+            "image_path": "live_frames/frame_1786104768059_front.png",
+            "extra": {
+              "direction": "right",
+              "room_range": "C0.016-C0.020",
+              "arrow": "right",
+              "target_relevance": "medium",
+              "floor": "",
+              "zone": null,
+              "source_view": "FRONT",
+              "horizontal_position": "center",
+              "horizontal_offset_fraction": 0.0,
+              "proximity": "near",
+              "path_clear_visual": true,
+              "doorway_state": "unknown",
+              "threshold_state": "before",
+              "landmark_type": "semantic",
+              "navigation_role": "none",
+              "traversable": null,
+              "continuation_direction": "none",
+              "route_state": "visible_now",
+              "goal_support": "indirect",
+              "target_direction": "right",
+              "source_image_index": 2
+            },
+            "observation_count": 1,
+            "selection_count": 0
+          },
+          {
+            "id": "L004",
+            "category": "doorway",
+            "description": "Open glass doorway visible to the right of the sign, leading into a lit area.",
+            "text": "",
+            "pose": {},
+            "status": "unvisited",
+            "confidence": "medium",
+            "evidence_score": 0.7000000000000002,
+            "evidence_breakdown": {
+              "category_score": 0.45,
+              "confidence_bonus": 0.1,
+              "text_bonus": 0.0,
+              "target_relevance_bonus": 0.05,
+              "direction_bonus": 0.05,
+              "traversable_bonus": 0.05,
+              "route_role_bonus": 0.0,
+              "missing_text_penalty": 0.0,
+              "partial_marker_penalty": 0.0,
+              "irrelevant_sign_penalty": 0.0,
+              "final_score": 0.7000000000000002
+            },
+            "image_path": "live_frames/frame_1786104768059_front.png",
+            "extra": {
+              "direction": "right",
+              "room_range": null,
+              "arrow": null,
+              "target_relevance": "medium",
+              "floor": "",
+              "zone": null,
+              "source_view": "FRONT",
+              "horizontal_position": "right",
+              "horizontal_offset_fraction": 0.75,
+              "proximity": "near",
+              "path_clear_visual": true,
+              "doorway_state": "open",
+              "threshold_state": "before",
+              "landmark_type": "structural",
+              "navigation_role": "entrance",
+              "traversable": true,
+              "continuation_direction": "right",
+              "route_state": "visible_now",
+              "goal_support": "indirect",
+              "target_direction": "right",
+              "source_image_index": 2
+            },
+            "observation_count": 1,
+            "selection_count": 1
+          }
+        ],
+        "hypotheses": [
+          "The target C2.017 is likely in the direction indicated by the sign (right), although the sign lists C0 range."
+        ],
+        "parse_ok": true,
+        "error": "",
+        "parse_attempts": 1,
+        "raw_response": ""
+      },
+      "verification": {
+        "target_visible": true,
+        "target_reached": false,
+        "matched_label": "",
+        "evidence_type": "room_range",
+        "confidence": "medium",
+        "evidence_score": 0.65,
+        "evidence_breakdown": {
+          "evidence_type_score": 0.5,
+          "visual_bonus": 0.1,
+          "label_match_bonus": 0.0,
+          "current_frame_bonus": 0.05,
+          "ambiguity_penalty": 0.0,
+          "final_score": 0.65
+        },
+        "reason": "Current image contains target-relevant navigation evidence, but not the actual target door/entrance.",
+        "landmark_id": "L003",
+        "raw": {
+          "source": "current_memory_relevant_non_stop",
+          "landmark": {
+            "id": "L003",
+            "category": "sign",
+            "description": "Black directional sign on the wall indicating room range C0.016-C0.020 with a right arrow.",
+            "text": "C0.016-C0.020",
+            "pose": {},
+            "status": "unvisited",
+            "confidence": "high",
+            "evidence_score": 1.0,
+            "evidence_breakdown": {
+              "category_score": 0.7,
+              "confidence_bonus": 0.1,
+              "text_bonus": 0.1,
+              "target_relevance_bonus": 0.05,
+              "direction_bonus": 0.05,
+              "traversable_bonus": 0.0,
+              "route_role_bonus": 0.0,
+              "missing_text_penalty": 0.0,
+              "partial_marker_penalty": 0.0,
+              "irrelevant_sign_penalty": 0.0,
+              "final_score": 1.0
+            },
+            "image_path": "live_frames/frame_1786104768059_front.png",
+            "extra": {
+              "direction": "right",
+              "room_range": "C0.016-C0.020",
+              "arrow": "right",
+              "target_relevance": "medium",
+              "floor": "",
+              "zone": null,
+              "source_view": "FRONT",
+              "horizontal_position": "center",
+              "horizontal_offset_fraction": 0.0,
+              "proximity": "near",
+              "path_clear_visual": true,
+              "doorway_state": "unknown",
+              "threshold_state": "before",
+              "landmark_type": "semantic",
+              "navigation_role": "none",
+              "traversable": null,
+              "continuation_direction": "none",
+              "route_state": "visible_now",
+              "goal_support": "indirect",
+              "target_direction": "right",
+              "source_image_index": 2
+            },
+            "observation_count": 1,
+            "selection_count": 0
+          }
+        }
+      },
+      "action": {
+        "name": "ALIGN_WITH_LANDMARK",
+        "params": {
+          "landmark_id": "L004",
+          "direction": "right",
+          "target": "L004",
+          "target_description": "Open glass doorway visible to the right of the sign, leading into a lit area.",
+          "stop_condition": "landmark centred in FRONT camera",
+          "capture_after": true,
+          "evidence_view": "FRONT",
+          "horizontal_position": "right",
+          "horizontal_offset_fraction": 0.75,
+          "proximity": "near"
+        },
+        "reason": "Selected landmark is not centred and must be visually aligned before forward movement.",
+        "confidence": "medium",
+        "evidence_score": 0.605,
+        "evidence_breakdown": {
+          "action_base_score": 0.65,
+          "supporting_landmark_score": 0.7000000000000002,
+          "supporting_landmark_bonus": 0.10500000000000002,
+          "no_landmark_penalty": 0.0,
+          "partial_marker_penalty": 0.0,
+          "used_landmark_penalty": 0.0,
+          "invalid_penalty": 0.0,
+          "mismatched_room_code_penalty": 0.15,
+          "structural_route_penalty": 0.0,
+          "final_score": 0.605
+        },
+        "goal_reached": false,
+        "needs_verification": false,
+        "raw": {},
+        "is_valid": true,
+        "invalid_reason": ""
+      },
+      "executed": false
+    }
+  ]
+}

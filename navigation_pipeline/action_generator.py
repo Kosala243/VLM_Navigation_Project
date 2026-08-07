@@ -83,6 +83,7 @@ class ActionGenerator:
         - target_relevant_landmarks: semantic evidence relevant to the goal;
         - remembered_route_landmarks: corridors, bends, junctions, passages, doorways, frontiers, and dead ends observed in current or recent images.
         - failed_actions: reasons the most recent action attempts could not be executed, most recent last. A "Motion blocked" entry means an obstacle-safety sensor stopped that attempt; if it also lists a left/right side clearance, the side with the larger distance is more open.
+        - floor_status: goal_floor (the floor the goal needs, if known), observed_floor_from_signs (the floor most recently read off a room-range sign, door number, or directory -- e.g. "C0.016" or "C0.016-C0.020" means floor "0"), confirmed_current_floor (only ever set after a human confirms an elevator/stairs exit), and floor_mismatch_likely (true when goal_floor and the best available floor evidence disagree).
 
         Current image: provided separately.
 
@@ -144,6 +145,8 @@ class ActionGenerator:
         - Use USE_ELEVATOR_OR_STAIRS only when recent evidence shows a lift/stairs and the goal/floor evidence suggests a floor transition.
         - If both a lift/elevator and stairs are visible or remembered as plausible routes to the needed floor, prefer USE_ELEVATOR_OR_STAIRS toward the elevator over the stairs -- the robot cannot climb stairs unassisted, and elevator entry/floor-selection/exit are human-confirmed, so this action always triggers a human-in-the-loop pause regardless of which one is chosen.
         - For USE_ELEVATOR_OR_STAIRS, include landmark_id of the elevator/stairs evidence, direction/evidence_view for where it is in view, and floor with your best guess of the target floor number if the goal or memory suggests one (otherwise null -- a human will confirm the actual floor before any button is pressed).
+        - If floor_status.floor_mismatch_likely is true, treat reaching the correct floor as the priority over ordinary corridor/doorway progress on the current (wrong) floor: look in target_relevant_landmarks and remembered_route_landmarks for an elevator or stairs landmark -- it does not have to be visible in the current frame, a recently remembered one is enough -- and use USE_ELEVATOR_OR_STAIRS toward it, or SEARCH_FOR_CUE for one if none is remembered. Do not keep exploring the wrong floor's corridors/doorways just because they are visible and convenient.
+        - Do not claim goal_reached, and do not use CHECK_DOOR_LABEL/NAVIGATE_TO_LANDMARK toward a specific door as if it were the target, while floor_status.floor_mismatch_likely is true -- a door on the wrong floor cannot be the goal even if its room number looks superficially similar.
         - Never assume a room-code structure is true until signs/labels/directories confirm it.
         - A landmark marked "used" or "visited" may be reused when it is visible in the current images and remains relevant to the active navigation goal.
         - Prefer a newer cue only when the previous landmark is no longer visible, has already been passed, or no longer provides useful progress.
