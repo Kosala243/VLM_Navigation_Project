@@ -1,0 +1,681 @@
+{
+  "goal": {
+    "raw_goal": "C0.020",
+    "target_type": "room_or_location",
+    "known_tokens": [
+      "C0.020",
+      "C0-020",
+      "C0020",
+      "Room C0020"
+    ],
+    "aliases": [
+      "C0.020",
+      "C0-020",
+      "C0020",
+      "Room C0020"
+    ],
+    "possible_interpretations": [
+      {
+        "interpretation": "May mean Building/Zone C, Floor 0, Room 020.",
+        "evidence_needed": [
+          "building or zone sign for C",
+          "floor indicator 0",
+          "door label matching C0.020 or C0020"
+        ],
+        "confidence": "medium"
+      },
+      {
+        "interpretation": "May simply be the full room label/code 'C0.020' without separable building/floor meaning.",
+        "evidence_needed": [
+          "door label or directory entry exactly matching C0.020"
+        ],
+        "confidence": "medium"
+      }
+    ],
+    "constraints": {
+      "possible_building": "C",
+      "possible_floor": "0",
+      "possible_room": "020",
+      "possible_zone": null,
+      "target_name": null
+    },
+    "search_strategy": "Search for door labels, corridor range signs, directories, or floor/zone indicators matching ['C0.020', 'C0-020', 'C0020', 'Room C0020']; treat building/floor/room structure as a hypothesis until confirmed."
+  },
+  "status": "Goal=C0.020 | records=4 | memory_landmarks=20 | session_memory_active=True | inherited_previous_memory=True",
+  "total_steps": 4,
+  "records": [
+    {
+      "image_num": 1,
+      "image_path": "live_frames/frame_1786212227839_front.png",
+      "memory_update": {
+        "useful": true,
+        "summary": "Navigating to room C0.020 via corridor with wooden paneling.",
+        "landmarks": [
+          {
+            "id": "L016",
+            "category": "door",
+            "description": "White door with handle and room label C0.016 visible.",
+            "text": "C0.016",
+            "pose": {},
+            "status": "unvisited",
+            "confidence": "high",
+            "evidence_score": 0.85,
+            "evidence_breakdown": {
+              "category_score": 0.8,
+              "confidence_bonus": 0.1,
+              "text_bonus": 0.1,
+              "target_relevance_bonus": 0.0,
+              "direction_bonus": 0.0,
+              "traversable_bonus": -0.15,
+              "route_role_bonus": 0.0,
+              "missing_text_penalty": 0.0,
+              "partial_marker_penalty": 0.0,
+              "irrelevant_sign_penalty": 0.0,
+              "final_score": 0.85
+            },
+            "image_path": "live_frames/frame_1786212227839_front.png",
+            "extra": {
+              "direction": "none",
+              "room_range": null,
+              "arrow": null,
+              "target_relevance": "low",
+              "floor": "0",
+              "zone": null,
+              "source_view": "RIGHT",
+              "horizontal_position": "left",
+              "horizontal_offset_fraction": -0.2,
+              "proximity": "near",
+              "path_clear_visual": true,
+              "doorway_state": "closed",
+              "threshold_state": "before",
+              "landmark_type": "semantic",
+              "navigation_role": "none",
+              "traversable": false,
+              "continuation_direction": "none",
+              "route_state": "visible_now",
+              "goal_support": "none",
+              "target_direction": "none",
+              "source_image_index": 15
+            },
+            "observation_count": 1,
+            "selection_count": 0
+          },
+          {
+            "id": "L017",
+            "category": "corridor",
+            "description": "Long corridor with wooden paneling on right and glass windows on left.",
+            "text": "",
+            "pose": {},
+            "status": "unvisited",
+            "confidence": "medium",
+            "evidence_score": 0.8300000000000001,
+            "evidence_breakdown": {
+              "category_score": 0.48,
+              "confidence_bonus": 0.1,
+              "text_bonus": 0.0,
+              "target_relevance_bonus": 0.1,
+              "direction_bonus": 0.05,
+              "traversable_bonus": 0.05,
+              "route_role_bonus": 0.05,
+              "missing_text_penalty": 0.0,
+              "partial_marker_penalty": 0.0,
+              "irrelevant_sign_penalty": 0.0,
+              "final_score": 0.8300000000000001
+            },
+            "image_path": "live_frames/frame_1786212227839_front.png",
+            "extra": {
+              "direction": "forward",
+              "room_range": null,
+              "arrow": null,
+              "target_relevance": "high",
+              "floor": "0",
+              "zone": null,
+              "source_view": "FRONT",
+              "horizontal_position": "center",
+              "horizontal_offset_fraction": 0.0,
+              "proximity": "medium",
+              "path_clear_visual": true,
+              "doorway_state": "unknown",
+              "threshold_state": "before",
+              "landmark_type": "structural",
+              "navigation_role": "continue_route",
+              "traversable": true,
+              "continuation_direction": "forward",
+              "route_state": "visible_now",
+              "goal_support": "indirect",
+              "target_direction": "forward",
+              "source_image_index": 15
+            },
+            "observation_count": 1,
+            "selection_count": 1
+          }
+        ],
+        "hypotheses": [
+          "Room C0.020 is likely ahead in the corridor."
+        ],
+        "parse_ok": true,
+        "error": "",
+        "parse_attempts": 1,
+        "raw_response": ""
+      },
+      "verification": {
+        "target_visible": true,
+        "target_reached": false,
+        "matched_label": "",
+        "evidence_type": "none",
+        "confidence": "low",
+        "evidence_score": 0.05,
+        "evidence_breakdown": {
+          "evidence_type_score": 0.0,
+          "visual_bonus": 0.0,
+          "label_match_bonus": 0.0,
+          "current_frame_bonus": 0.05,
+          "ambiguity_penalty": 0.0,
+          "final_score": 0.05
+        },
+        "reason": "The current image shows a door labeled C0.016, which is not the target C0.020. The target room is not visible in the current frame.",
+        "landmark_id": null,
+        "raw": {
+          "target_visible": true,
+          "target_reached": false,
+          "matched_label": "",
+          "evidence_type": "none",
+          "confidence": "low",
+          "reason": "The current image shows a door labeled C0.016, which is not the target C0.020. The target room is not visible in the current frame.",
+          "landmark_id": null
+        }
+      },
+      "action": {
+        "name": "NAVIGATE_TO_LANDMARK",
+        "params": {
+          "landmark_id": "L017",
+          "direction": "forward",
+          "target": null,
+          "target_description": "Long corridor with wooden paneling on right and glass windows on left.",
+          "floor": "0",
+          "search_for": null,
+          "stop_condition": "capture after advancing toward the remembered corridor",
+          "capture_after": true,
+          "evidence_view": "FRONT",
+          "horizontal_position": "center",
+          "horizontal_offset_fraction": 0.0,
+          "proximity": "medium",
+          "doorway_state": "unknown",
+          "threshold_state": "before",
+          "traversable": true
+        },
+        "reason": "The current view is sparse, and the remembered corridor landmark L017 supports continued progress toward the goal room C0.020.",
+        "confidence": "low",
+        "evidence_score": 0.37449999999999994,
+        "evidence_breakdown": {
+          "action_base_score": 0.6,
+          "supporting_landmark_score": 0.8300000000000001,
+          "supporting_landmark_bonus": 0.1245,
+          "no_landmark_penalty": 0.0,
+          "partial_marker_penalty": 0.0,
+          "used_landmark_penalty": 0.0,
+          "invalid_penalty": 0.0,
+          "mismatched_room_code_penalty": 0.35,
+          "structural_route_penalty": 0.0,
+          "final_score": 0.37449999999999994
+        },
+        "goal_reached": false,
+        "needs_verification": true,
+        "raw": {
+          "action": "NAVIGATE_TO_LANDMARK",
+          "params": {
+            "landmark_id": "L017",
+            "direction": "forward",
+            "target": null,
+            "target_description": "Long corridor with wooden paneling on right and glass windows on left.",
+            "floor": "0",
+            "search_for": null,
+            "stop_condition": "capture after advancing toward the remembered corridor",
+            "capture_after": true,
+            "evidence_view": "FRONT",
+            "horizontal_position": "center",
+            "horizontal_offset_fraction": 0.0,
+            "proximity": "medium",
+            "doorway_state": "unknown",
+            "threshold_state": "before",
+            "traversable": true
+          },
+          "reason": "The current view is sparse, and the remembered corridor landmark L017 supports continued progress toward the goal room C0.020.",
+          "confidence": "high",
+          "goal_reached": false,
+          "needs_verification": true,
+          "_parse_ok": true,
+          "_parse_attempts": 1
+        },
+        "is_valid": true,
+        "invalid_reason": ""
+      },
+      "executed": false
+    },
+    {
+      "image_num": 2,
+      "image_path": "live_frames/frame_1786212287382_front.png",
+      "memory_update": {
+        "useful": true,
+        "summary": "Navigating down a corridor toward a door with a bicycle parking sign.",
+        "landmarks": [
+          {
+            "id": "L018",
+            "category": "door",
+            "description": "White door at end of corridor with bicycle parking sign.",
+            "text": "Bicycle Parking",
+            "pose": {},
+            "status": "unvisited",
+            "confidence": "high",
+            "evidence_score": 1.0,
+            "evidence_breakdown": {
+              "category_score": 0.8,
+              "confidence_bonus": 0.1,
+              "text_bonus": 0.1,
+              "target_relevance_bonus": 0.1,
+              "direction_bonus": 0.05,
+              "traversable_bonus": 0.05,
+              "route_role_bonus": 0.05,
+              "missing_text_penalty": 0.0,
+              "partial_marker_penalty": 0.0,
+              "irrelevant_sign_penalty": 0.0,
+              "final_score": 1.0
+            },
+            "image_path": "live_frames/frame_1786212287382_front.png",
+            "extra": {
+              "direction": "forward",
+              "room_range": null,
+              "arrow": null,
+              "target_relevance": "high",
+              "floor": "0",
+              "zone": null,
+              "source_view": "FRONT",
+              "horizontal_position": "center",
+              "horizontal_offset_fraction": 0.0,
+              "proximity": "far",
+              "path_clear_visual": true,
+              "doorway_state": "closed",
+              "threshold_state": "before",
+              "landmark_type": "semantic",
+              "navigation_role": "continue_route",
+              "traversable": true,
+              "continuation_direction": "forward",
+              "route_state": "visible_now",
+              "goal_support": "direct",
+              "target_direction": "forward",
+              "source_image_index": 16
+            },
+            "observation_count": 1,
+            "selection_count": 0
+          }
+        ],
+        "hypotheses": [
+          "Goal C0.020 is likely beyond this door."
+        ],
+        "parse_ok": true,
+        "error": "",
+        "parse_attempts": 1,
+        "raw_response": ""
+      },
+      "verification": {
+        "target_visible": true,
+        "target_reached": false,
+        "matched_label": "",
+        "evidence_type": "unclear",
+        "confidence": "low",
+        "evidence_score": 0.0,
+        "evidence_breakdown": {
+          "invalid_matched_label": 1.0,
+          "final_score": 0.0
+        },
+        "reason": "The target room label 'C0.020' is not visible in the current image. The image shows a door with a bicycle parking sign, which is not the target room label. Verification rejected: matched_label is not a full target room/entrance label.",
+        "landmark_id": null,
+        "raw": {
+          "target_visible": true,
+          "target_reached": false,
+          "matched_label": "",
+          "evidence_type": "target_door_label",
+          "confidence": "high",
+          "reason": "The target room label 'C0.020' is not visible in the current image. The image shows a door with a bicycle parking sign, which is not the target room label.",
+          "landmark_id": null
+        }
+      },
+      "action": {
+        "name": "NAVIGATE_TO_LANDMARK",
+        "params": {
+          "landmark_id": "L017",
+          "direction": "forward",
+          "target": null,
+          "target_description": "Long corridor with wooden paneling on right and glass windows on left.",
+          "floor": "0",
+          "search_for": null,
+          "stop_condition": "capture after advancing toward the remembered corridor",
+          "capture_after": true,
+          "evidence_view": "FRONT",
+          "horizontal_position": "center",
+          "horizontal_offset_fraction": 0.0,
+          "proximity": "medium",
+          "doorway_state": "unknown",
+          "threshold_state": "before",
+          "traversable": true
+        },
+        "reason": "The current view is sparse, and the remembered corridor landmark L017 supports continued progress toward the goal room C0.020.",
+        "confidence": "low",
+        "evidence_score": 0.37449999999999994,
+        "evidence_breakdown": {
+          "action_base_score": 0.6,
+          "supporting_landmark_score": 0.8300000000000001,
+          "supporting_landmark_bonus": 0.1245,
+          "no_landmark_penalty": 0.0,
+          "partial_marker_penalty": 0.0,
+          "used_landmark_penalty": 0.0,
+          "invalid_penalty": 0.0,
+          "mismatched_room_code_penalty": 0.35,
+          "structural_route_penalty": 0.0,
+          "final_score": 0.37449999999999994
+        },
+        "goal_reached": false,
+        "needs_verification": true,
+        "raw": {
+          "action": "NAVIGATE_TO_LANDMARK",
+          "params": {
+            "landmark_id": "L017",
+            "direction": "forward",
+            "target": null,
+            "target_description": "Long corridor with wooden paneling on right and glass windows on left.",
+            "floor": "0",
+            "search_for": null,
+            "stop_condition": "capture after advancing toward the remembered corridor",
+            "capture_after": true,
+            "evidence_view": "FRONT",
+            "horizontal_position": "center",
+            "horizontal_offset_fraction": 0.0,
+            "proximity": "medium",
+            "doorway_state": "unknown",
+            "threshold_state": "before",
+            "traversable": true
+          },
+          "reason": "The current view is sparse, and the remembered corridor landmark L017 supports continued progress toward the goal room C0.020.",
+          "confidence": "high",
+          "goal_reached": false,
+          "needs_verification": true,
+          "_parse_ok": true,
+          "_parse_attempts": 1
+        },
+        "is_valid": true,
+        "invalid_reason": ""
+      },
+      "executed": false
+    },
+    {
+      "image_num": 3,
+      "image_path": "live_frames/frame_1786212377497_front.png",
+      "memory_update": {
+        "useful": true,
+        "summary": "Target door identified with clear signage.",
+        "landmarks": [
+          {
+            "id": "L019",
+            "category": "door",
+            "description": "White door with bicycle parking sign and room label C0.020.",
+            "text": "PHS BICYCLE PARKING",
+            "pose": {},
+            "status": "unvisited",
+            "confidence": "high",
+            "evidence_score": 1.0,
+            "evidence_breakdown": {
+              "category_score": 0.8,
+              "confidence_bonus": 0.1,
+              "text_bonus": 0.1,
+              "target_relevance_bonus": 0.1,
+              "direction_bonus": 0.0,
+              "traversable_bonus": 0.05,
+              "route_role_bonus": 0.0,
+              "missing_text_penalty": 0.0,
+              "partial_marker_penalty": 0.0,
+              "irrelevant_sign_penalty": 0.0,
+              "final_score": 1.0
+            },
+            "image_path": "live_frames/frame_1786212377497_front.png",
+            "extra": {
+              "direction": "none",
+              "room_range": null,
+              "arrow": null,
+              "target_relevance": "high",
+              "floor": "0",
+              "zone": null,
+              "source_view": "FRONT",
+              "horizontal_position": "center",
+              "horizontal_offset_fraction": 0.0,
+              "proximity": "near",
+              "path_clear_visual": true,
+              "doorway_state": "closed",
+              "threshold_state": "before",
+              "landmark_type": "semantic",
+              "navigation_role": "entrance",
+              "traversable": true,
+              "continuation_direction": "none",
+              "route_state": "visible_now",
+              "goal_support": "direct",
+              "target_direction": "none",
+              "source_image_index": 17
+            },
+            "observation_count": 1,
+            "selection_count": 1
+          }
+        ],
+        "hypotheses": [],
+        "parse_ok": true,
+        "error": "",
+        "parse_attempts": 1,
+        "raw_response": ""
+      },
+      "verification": {
+        "target_visible": true,
+        "target_reached": false,
+        "matched_label": "C0.020",
+        "evidence_type": "unclear",
+        "confidence": "low",
+        "evidence_score": 0.0,
+        "evidence_breakdown": {
+          "missing_current_memory_support": 1.0,
+          "final_score": 0.0
+        },
+        "reason": "The FRONT camera image clearly shows the white door with the visible label 'C0.020' and a bicycle parking sign, matching the goal exactly. Verification rejected: current-frame memory does not support the stop evidence.",
+        "landmark_id": "L019",
+        "raw": {
+          "target_visible": true,
+          "target_reached": true,
+          "matched_label": "C0.020",
+          "evidence_type": "target_door_label",
+          "confidence": "high",
+          "reason": "The FRONT camera image clearly shows the white door with the visible label 'C0.020' and a bicycle parking sign, matching the goal exactly.",
+          "landmark_id": "L019"
+        }
+      },
+      "action": {
+        "name": "APPROACH_LANDMARK",
+        "params": {
+          "landmark_id": "L019",
+          "direction": "forward",
+          "target": "C0.020",
+          "target_description": "White door with bicycle parking sign and room label C0.020.",
+          "stop_condition": "target remains centred and proximity becomes reached",
+          "capture_after": true,
+          "evidence_view": "FRONT",
+          "horizontal_position": "center",
+          "proximity": "near",
+          "horizontal_offset_fraction": 0.0
+        },
+        "reason": "The exact target is centred in FRONT but the robot has not yet reached it.",
+        "confidence": "medium",
+        "evidence_score": 0.8,
+        "evidence_breakdown": {
+          "action_base_score": 0.65,
+          "supporting_landmark_score": 1.0,
+          "supporting_landmark_bonus": 0.15,
+          "no_landmark_penalty": 0.0,
+          "partial_marker_penalty": 0.0,
+          "used_landmark_penalty": 0.0,
+          "invalid_penalty": 0.0,
+          "mismatched_room_code_penalty": 0.0,
+          "structural_route_penalty": 0.0,
+          "final_score": 0.8
+        },
+        "goal_reached": false,
+        "needs_verification": true,
+        "raw": {},
+        "is_valid": true,
+        "invalid_reason": ""
+      },
+      "executed": false
+    },
+    {
+      "image_num": 4,
+      "image_path": "live_frames/frame_1786212469484_front.png",
+      "memory_update": {
+        "useful": true,
+        "summary": "Target room C0.020 door identified with clear signage.",
+        "landmarks": [
+          {
+            "id": "L020",
+            "category": "door",
+            "description": "White door with handle and signs including 'C0.020' and bicycle parking.",
+            "text": "C0.020",
+            "pose": {},
+            "status": "used",
+            "confidence": "high",
+            "evidence_score": 1.0,
+            "evidence_breakdown": {
+              "category_score": 0.8,
+              "confidence_bonus": 0.1,
+              "text_bonus": 0.1,
+              "target_relevance_bonus": 0.1,
+              "direction_bonus": 0.05,
+              "traversable_bonus": 0.05,
+              "route_role_bonus": 0.0,
+              "missing_text_penalty": 0.0,
+              "partial_marker_penalty": 0.0,
+              "irrelevant_sign_penalty": 0.0,
+              "final_score": 1.0
+            },
+            "image_path": "live_frames/frame_1786212469484_front.png",
+            "extra": {
+              "direction": "forward",
+              "room_range": null,
+              "arrow": null,
+              "target_relevance": "high",
+              "floor": "0",
+              "zone": null,
+              "source_view": "FRONT",
+              "horizontal_position": "center",
+              "horizontal_offset_fraction": 0.0,
+              "proximity": "near",
+              "path_clear_visual": true,
+              "doorway_state": "closed",
+              "threshold_state": "before",
+              "landmark_type": "semantic",
+              "navigation_role": "entrance",
+              "traversable": true,
+              "continuation_direction": "forward",
+              "route_state": "visible_now",
+              "goal_support": "direct",
+              "target_direction": "forward",
+              "source_image_index": 18
+            },
+            "observation_count": 1,
+            "selection_count": 1
+          }
+        ],
+        "hypotheses": [
+          "Target room C0.020 is directly ahead, door is closed."
+        ],
+        "parse_ok": true,
+        "error": "",
+        "parse_attempts": 1,
+        "raw_response": ""
+      },
+      "verification": {
+        "target_visible": true,
+        "target_reached": true,
+        "matched_label": "C0.020",
+        "evidence_type": "target_door_label",
+        "confidence": "high",
+        "evidence_score": 1.0,
+        "evidence_breakdown": {
+          "evidence_type_score": 0.95,
+          "visual_bonus": 0.1,
+          "label_match_bonus": 0.1,
+          "current_frame_bonus": 0.05,
+          "ambiguity_penalty": 0.0,
+          "final_score": 1.0
+        },
+        "reason": "The full target label 'C0.020' is clearly visible on the door in the FRONT camera view, centered in the frame, confirming the robot has reached the target entrance.",
+        "landmark_id": "L020",
+        "raw": {
+          "target_visible": true,
+          "target_reached": true,
+          "matched_label": "C0.020",
+          "evidence_type": "target_door_label",
+          "confidence": "high",
+          "reason": "The full target label 'C0.020' is clearly visible on the door in the FRONT camera view, centered in the frame, confirming the robot has reached the target entrance.",
+          "landmark_id": "L020"
+        }
+      },
+      "action": {
+        "name": "STOP_AND_VERIFY",
+        "params": {
+          "landmark_id": "L020",
+          "target": "C0.020",
+          "evidence_type": "target_door_label",
+          "evidence_view": "NONE"
+        },
+        "reason": "The full target label 'C0.020' is clearly visible on the door in the FRONT camera view, centered in the frame, confirming the robot has reached the target entrance.",
+        "confidence": "high",
+        "evidence_score": 1.0,
+        "evidence_breakdown": {
+          "evidence_type_score": 0.95,
+          "visual_bonus": 0.1,
+          "label_match_bonus": 0.1,
+          "current_frame_bonus": 0.05,
+          "ambiguity_penalty": 0.0,
+          "final_score": 1.0
+        },
+        "goal_reached": true,
+        "needs_verification": false,
+        "raw": {
+          "verification": {
+            "target_visible": true,
+            "target_reached": true,
+            "matched_label": "C0.020",
+            "evidence_type": "target_door_label",
+            "confidence": "high",
+            "evidence_score": 1.0,
+            "evidence_breakdown": {
+              "evidence_type_score": 0.95,
+              "visual_bonus": 0.1,
+              "label_match_bonus": 0.1,
+              "current_frame_bonus": 0.05,
+              "ambiguity_penalty": 0.0,
+              "final_score": 1.0
+            },
+            "reason": "The full target label 'C0.020' is clearly visible on the door in the FRONT camera view, centered in the frame, confirming the robot has reached the target entrance.",
+            "landmark_id": "L020",
+            "raw": {
+              "target_visible": true,
+              "target_reached": true,
+              "matched_label": "C0.020",
+              "evidence_type": "target_door_label",
+              "confidence": "high",
+              "reason": "The full target label 'C0.020' is clearly visible on the door in the FRONT camera view, centered in the frame, confirming the robot has reached the target entrance.",
+              "landmark_id": "L020"
+            }
+          }
+        },
+        "is_valid": true,
+        "invalid_reason": ""
+      },
+      "executed": false
+    }
+  ]
+}

@@ -2224,7 +2224,7 @@ def parse_args():
     parser.add_argument(
         "--api-connect-timeout",
         type=int,
-        default=10,
+        default=60,
         help="Max seconds to establish a connection to the AMD API",
     )
     parser.add_argument(
