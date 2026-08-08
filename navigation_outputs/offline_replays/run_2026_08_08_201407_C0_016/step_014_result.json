@@ -1,0 +1,40 @@
+{
+  "step": 14,
+  "timestamp": "2026-08-08T20:30:10.210055",
+  "image_path": "robot_live_frames/step_test_C0.004/step_0014/front.png",
+  "run_settings": {
+    "goal": "C0.016",
+    "mode": "offline_replay",
+    "camera_mode": "separate",
+    "memory": false,
+    "execute": "replay",
+    "model_name": "Qwen/Qwen3-VL-8B-Instruct",
+    "model_backend": "transformers"
+  },
+  "executed": true,
+  "response": {
+    "done": true,
+    "action": {
+      "name": "STOP_AND_VERIFY",
+      "params": {
+        "landmark_id": "L017",
+        "target": "C0.016",
+        "evidence_type": "target_door_label",
+        "evidence_view": "NONE"
+      },
+      "reason": "The full target label 'C0.016' is clearly visible and centered on the white door in the FRONT camera view.",
+      "confidence": "high",
+      "evidence_score": 1.0,
+      "is_valid": true,
+      "invalid_reason": ""
+    }
+  },
+  "execution_result": {
+    "safety": {
+      "sensor_mode": "placeholder",
+      "bypassed": true,
+      "allowed": true,
+      "reason": "Offline replay -- no physical robot/LiDAR involved."
+    }
+  }
+}

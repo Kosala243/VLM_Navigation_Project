@@ -1,0 +1,51 @@
+{
+  "step": 12,
+  "timestamp": "2026-08-08T20:27:50.317703",
+  "image_path": "robot_live_frames/step_test_C0.004/step_0012/front.png",
+  "run_settings": {
+    "goal": "C0.016",
+    "mode": "offline_replay",
+    "camera_mode": "separate",
+    "memory": false,
+    "execute": "replay",
+    "model_name": "Qwen/Qwen3-VL-8B-Instruct",
+    "model_backend": "transformers"
+  },
+  "executed": true,
+  "response": {
+    "done": false,
+    "action": {
+      "name": "FOLLOW_DIRECTION",
+      "params": {
+        "landmark_id": "L009",
+        "direction": "forward",
+        "target": null,
+        "target_description": null,
+        "floor": "0",
+        "search_for": null,
+        "stop_condition": null,
+        "capture_after": true,
+        "evidence_view": "FRONT",
+        "horizontal_position": "center",
+        "horizontal_offset_fraction": 0.0,
+        "proximity": "near",
+        "doorway_state": "unknown",
+        "threshold_state": "before",
+        "traversable": true
+      },
+      "reason": "The current view shows a clear corridor with a sign indicating C0.016-C0.020 forward, which is the most direct and relevant evidence for reaching the target room C0.016.",
+      "confidence": "low",
+      "evidence_score": 0.0,
+      "is_valid": false,
+      "invalid_reason": "FOLLOW_DIRECTION landmark L009 is not visible in the current observation."
+    }
+  },
+  "execution_result": {
+    "safety": {
+      "sensor_mode": "placeholder",
+      "bypassed": true,
+      "allowed": true,
+      "reason": "Offline replay -- no physical robot/LiDAR involved."
+    }
+  }
+}

@@ -1,0 +1,51 @@
+{
+  "step": 2,
+  "timestamp": "2026-08-08T20:35:10.533124",
+  "image_path": "robot_live_frames/step_test_C1.026/step_0002/front.png",
+  "run_settings": {
+    "goal": "C1.015",
+    "mode": "offline_replay",
+    "camera_mode": "separate",
+    "memory": false,
+    "execute": "replay",
+    "model_name": "Qwen/Qwen3-VL-8B-Instruct",
+    "model_backend": "transformers"
+  },
+  "executed": true,
+  "response": {
+    "done": false,
+    "action": {
+      "name": "FOLLOW_DIRECTION",
+      "params": {
+        "landmark_id": "L001",
+        "direction": "right",
+        "target": null,
+        "target_description": "Directional sign above coffee corner indicating Tower B (left) and Tower C (right).",
+        "floor": null,
+        "search_for": null,
+        "stop_condition": null,
+        "capture_after": true,
+        "evidence_view": "FRONT",
+        "horizontal_position": "center",
+        "horizontal_offset_fraction": 0.0,
+        "proximity": "near",
+        "doorway_state": "unknown",
+        "threshold_state": "unknown",
+        "traversable": null
+      },
+      "reason": "The directional sign L001 indicates Tower C is to the right, which is the direction toward the target room C1.015 based on current beliefs.",
+      "confidence": "low",
+      "evidence_score": 0.0,
+      "is_valid": false,
+      "invalid_reason": "FOLLOW_DIRECTION landmark L001 is not visible in the current observation."
+    }
+  },
+  "execution_result": {
+    "safety": {
+      "sensor_mode": "placeholder",
+      "bypassed": true,
+      "allowed": true,
+      "reason": "Offline replay -- no physical robot/LiDAR involved."
+    }
+  }
+}

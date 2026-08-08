@@ -1,0 +1,46 @@
+{
+  "step": 15,
+  "timestamp": "2026-08-08T20:51:33.628782",
+  "image_path": "robot_live_frames/step_test_C1.026/step_0015/front.jpg",
+  "run_settings": {
+    "goal": "C1.015",
+    "mode": "offline_replay",
+    "camera_mode": "separate",
+    "memory": false,
+    "execute": "replay",
+    "model_name": "Qwen/Qwen3-VL-8B-Instruct",
+    "model_backend": "transformers"
+  },
+  "executed": true,
+  "response": {
+    "done": false,
+    "action": {
+      "name": "ALIGN_WITH_LANDMARK",
+      "params": {
+        "landmark_id": "L025",
+        "direction": "left",
+        "target": "C1.015",
+        "target_description": "Glass door with room label C1.015 and binary code visible in LEFT view.",
+        "stop_condition": "target landmark centred in FRONT camera",
+        "capture_after": true,
+        "evidence_view": "LEFT",
+        "horizontal_position": "center",
+        "horizontal_offset_fraction": 0.0,
+        "proximity": "near"
+      },
+      "reason": "The exact target is visible in the LEFT view and must first be turned into the FRONT camera.",
+      "confidence": "medium",
+      "evidence_score": 0.8,
+      "is_valid": true,
+      "invalid_reason": ""
+    }
+  },
+  "execution_result": {
+    "safety": {
+      "sensor_mode": "placeholder",
+      "bypassed": true,
+      "allowed": true,
+      "reason": "Offline replay -- no physical robot/LiDAR involved."
+    }
+  }
+}

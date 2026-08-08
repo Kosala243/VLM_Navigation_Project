@@ -1,0 +1,46 @@
+{
+  "step": 4,
+  "timestamp": "2026-08-08T20:10:18.976449",
+  "image_path": "robot_live_frames/step_test_C0.004/step_0004/front.png",
+  "run_settings": {
+    "goal": "C0.004",
+    "mode": "offline_replay",
+    "camera_mode": "separate",
+    "memory": false,
+    "execute": "replay",
+    "model_name": "Qwen/Qwen3-VL-8B-Instruct",
+    "model_backend": "transformers"
+  },
+  "executed": true,
+  "response": {
+    "done": false,
+    "action": {
+      "name": "ALIGN_WITH_LANDMARK",
+      "params": {
+        "landmark_id": "L003",
+        "direction": "right",
+        "target": "C0.004",
+        "target_description": "White door labeled C0.004 with QR code and informational sticker.",
+        "stop_condition": "target landmark centred in FRONT camera",
+        "capture_after": true,
+        "evidence_view": "RIGHT",
+        "horizontal_position": "center",
+        "horizontal_offset_fraction": 0.0,
+        "proximity": "near"
+      },
+      "reason": "The exact target is visible in the RIGHT view and must first be turned into the FRONT camera.",
+      "confidence": "medium",
+      "evidence_score": 0.8,
+      "is_valid": true,
+      "invalid_reason": ""
+    }
+  },
+  "execution_result": {
+    "safety": {
+      "sensor_mode": "placeholder",
+      "bypassed": true,
+      "allowed": true,
+      "reason": "Offline replay -- no physical robot/LiDAR involved."
+    }
+  }
+}

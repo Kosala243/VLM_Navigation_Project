@@ -1,0 +1,48 @@
+{
+  "step": 5,
+  "timestamp": "2026-08-08T20:20:14.089786",
+  "image_path": "robot_live_frames/step_test_C0.004/step_0005/front.png",
+  "run_settings": {
+    "goal": "C0.016",
+    "mode": "offline_replay",
+    "camera_mode": "separate",
+    "memory": false,
+    "execute": "replay",
+    "model_name": "Qwen/Qwen3-VL-8B-Instruct",
+    "model_backend": "transformers"
+  },
+  "executed": true,
+  "response": {
+    "done": false,
+    "action": {
+      "name": "CHECK_DOOR_LABEL",
+      "params": {
+        "landmark_id": "L007",
+        "target": "C0.004",
+        "target_description": "White door with C0.004 label and QR code, directly ahead.",
+        "stop_condition": "capture after reading the door label",
+        "capture_after": true,
+        "evidence_view": "FRONT",
+        "horizontal_position": "center",
+        "horizontal_offset_fraction": 0.0,
+        "proximity": "near",
+        "doorway_state": "closed",
+        "threshold_state": "before",
+        "traversable": null
+      },
+      "reason": "The current image shows a door labeled C0.004, which is a known landmark. Although it is not the target room C0.016, checking its label confirms the room numbering pattern and helps verify the current location in the corridor, which is necessary before proceeding to find C0.016.",
+      "confidence": "low",
+      "evidence_score": 0.55,
+      "is_valid": true,
+      "invalid_reason": ""
+    }
+  },
+  "execution_result": {
+    "safety": {
+      "sensor_mode": "placeholder",
+      "bypassed": true,
+      "allowed": true,
+      "reason": "Offline replay -- no physical robot/LiDAR involved."
+    }
+  }
+}

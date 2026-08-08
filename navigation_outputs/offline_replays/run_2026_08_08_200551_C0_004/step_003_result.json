@@ -1,0 +1,43 @@
+{
+  "step": 3,
+  "timestamp": "2026-08-08T20:09:02.685186",
+  "image_path": "robot_live_frames/step_test_C0.004/step_0003/front.png",
+  "run_settings": {
+    "goal": "C0.004",
+    "mode": "offline_replay",
+    "camera_mode": "separate",
+    "memory": false,
+    "execute": "replay",
+    "model_name": "Qwen/Qwen3-VL-8B-Instruct",
+    "model_backend": "transformers"
+  },
+  "executed": true,
+  "response": {
+    "done": false,
+    "action": {
+      "name": "FOLLOW_DIRECTION",
+      "params": {
+        "landmark_id": "L002",
+        "direction": "forward",
+        "target": "C0.004",
+        "target_description": "Blue sign with room range C0.004-C0.008 visible on wooden wall.",
+        "stop_condition": "robot aligned with the forward route indicated by the current sign",
+        "capture_after": true,
+        "evidence_view": "FRONT"
+      },
+      "reason": "Current sign L002 indicates forward toward C0.004: C0.004-C0.008",
+      "confidence": "medium",
+      "evidence_score": 0.8,
+      "is_valid": true,
+      "invalid_reason": ""
+    }
+  },
+  "execution_result": {
+    "safety": {
+      "sensor_mode": "placeholder",
+      "bypassed": true,
+      "allowed": true,
+      "reason": "Offline replay -- no physical robot/LiDAR involved."
+    }
+  }
+}

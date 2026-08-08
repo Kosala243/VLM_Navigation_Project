@@ -1,0 +1,43 @@
+{
+  "step": 4,
+  "timestamp": "2026-08-08T20:18:52.544924",
+  "image_path": "robot_live_frames/step_test_C0.004/step_0004/front.png",
+  "run_settings": {
+    "goal": "C0.016",
+    "mode": "offline_replay",
+    "camera_mode": "separate",
+    "memory": false,
+    "execute": "replay",
+    "model_name": "Qwen/Qwen3-VL-8B-Instruct",
+    "model_backend": "transformers"
+  },
+  "executed": true,
+  "response": {
+    "done": false,
+    "action": {
+      "name": "FOLLOW_DIRECTION",
+      "params": {
+        "landmark_id": "L004",
+        "direction": "left",
+        "target": "C0.016",
+        "target_description": "Directional sign mounted on wooden wall. Points left to C0.016-C0.020.",
+        "stop_condition": "robot aligned with the left route indicated by the current sign",
+        "capture_after": true,
+        "evidence_view": "FRONT"
+      },
+      "reason": "Current sign L004 indicates left toward C0.016: ← C0.016-C0.020",
+      "confidence": "medium",
+      "evidence_score": 0.8,
+      "is_valid": true,
+      "invalid_reason": ""
+    }
+  },
+  "execution_result": {
+    "safety": {
+      "sensor_mode": "placeholder",
+      "bypassed": true,
+      "allowed": true,
+      "reason": "Offline replay -- no physical robot/LiDAR involved."
+    }
+  }
+}

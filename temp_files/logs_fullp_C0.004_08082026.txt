@@ -1,0 +1,83 @@
+I6411656@fsesrv-ernis:~/VLM_Office_Navigation$ source /home/I6411656/VLM_Office_Navigation/.venv_vlm/bin/activate
+(.venv_vlm) I6411656@fsesrv-ernis:~/VLM_Office_Navigation$ /home/I6411656/VLM_Office_Navigation/.venv_vlm/bin/python /home/I6411656/VLM_Office_Navigation/run_navigation.py
+[ModelWrapper] Loading with Transformers: Qwen/Qwen3-VL-8B-Instruct
+  qwen-vl-utils found
+Fetching 4 files: 100%|█████████████████████████████████████████████████████████████████████████████████████████████| 4/4 [00:00<00:00, 57852.47it/s]
+Download complete: : 0.00B [00:00, ?B/s]                                                                                       | 0/4 [00:00<?, ?it/s]
+Loading weights: 100%|█████████████████████████████████████████████████████████████████████████████████████████████| 750/750 [00:11<00:00, 66.57it/s]
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+  Loaded via: Qwen3VLForConditionalGeneration
+  Device: cuda:0
+  Parameters: ~8.8B
+robot_live_frames/step_test_C0.004/step_0001/front.png
+robot_live_frames/step_test_C0.004/step_0002/front.png
+robot_live_frames/step_test_C0.004/step_0003/front.png
+robot_live_frames/step_test_C0.004/step_0004/front.png
+robot_live_frames/step_test_C0.004/step_0005/front.png
+robot_live_frames/step_test_C0.004/step_0006/front.png
+robot_live_frames/step_test_C0.004/step_0007/front.png
+robot_live_frames/step_test_C0.004/step_0008/front.png
+robot_live_frames/step_test_C0.004/step_0009/front.png
+robot_live_frames/step_test_C0.004/step_0010/front.png
+Found 18 images
+Camera mode: separate
+Goal: C0.004
+Image dir: robot_live_frames/step_test_C0.004
+[NavigationSystem] Goal parsed:
+{
+  "raw_goal": "C0.004",
+  "target_type": "room_or_location",
+  "known_tokens": [
+    "C0.004",
+    "C0-004",
+    "C0004",
+    "Room C0004"
+  ],
+  "aliases": [
+    "C0-004",
+    "C0.004",
+    "C0004",
+    "C004",
+    "C0.4",
+    "C04",
+    "Room C0004"
+  ],
+  "possible_interpretations": [
+    {
+      "interpretation": "A room or location labeled 'C0.004' in a building with alphanumeric room codes.",
+      "evidence_needed": [
+        "Signage or room plate showing 'C0.004' or any of its aliases",
+        "Floor indicator or directory mentioning 'C' or '0.004'"
+      ],
+      "confidence": "high"
+    }
+  ],
+  "constraints": {
+    "possible_building": "C",
+    "possible_floor": "0",
+    "possible_room": "004",
+    "possible_zone": null,
+    "target_name": null
+  },
+  "search_strategy": "Look for any sign, door plate, or directory that displays 'C0.004' or its aliases such as 'C0-004' or 'C0004' — it may be on a specific floor or in a building labeled with 'C' or '0'."
+}
+[NavigationSystem] Started with cleared memory.
+[Step 1] memory=yes | verify=no (zone_marker, C, score=0.10) | action=FOLLOW_DIRECTION({'landmark_id': 'L001', 'direction': 'right', 'target': None, 'target_description': 'Directional sign above coffee counter points right to Tower C.', 'floor': None, 'search_for': None, 'stop_condition': None, 'capture_after': True, 'evidence_view': 'FRONT', 'horizontal_position': 'center', 'horizontal_offset_fraction': 0.0, 'proximity': 'near', 'doorway_state': 'unknown', 'threshold_state': 'unknown', 'traversable': True}) [low, score=0.58] valid - The directional sign L001 clearly indicates Tower C is to the right, which matches the goal building 'C'. | complete=no
+[Step 2] memory=no | verify=no (none, -, score=0.15) | action=FOLLOW_DIRECTION({'landmark_id': 'L001', 'direction': 'right', 'target': None, 'target_description': 'Directional sign above coffee counter points right to Tower C.', 'floor': None, 'search_for': None, 'stop_condition': None, 'capture_after': True, 'evidence_view': 'FRONT', 'horizontal_position': 'center', 'horizontal_offset_fraction': 0.0, 'proximity': 'near', 'doorway_state': 'unknown', 'threshold_state': 'unknown', 'traversable': None}) [low, score=0.00] INVALID: FOLLOW_DIRECTION landmark L001 is not visible in the current observation. - The directional sign L001 clearly indicates Tower C is to the right, which matches the goal building C0.004. | complete=no
+[Step 3] memory=yes | verify=no (room_range, C0.004, score=0.75) | action=FOLLOW_DIRECTION({'landmark_id': 'L002', 'direction': 'forward', 'target': 'C0.004', 'target_description': 'Blue sign with room range C0.004-C0.008 visible on wooden wall.', 'stop_condition': 'robot aligned with the forward route indicated by the current sign', 'capture_after': True, 'evidence_view': 'FRONT'}) [medium, score=0.80] valid - Current sign L002 indicates forward toward C0.004: C0.004-C0.008 | complete=no
+[Step 4] memory=yes | verify=no (target_door_label, C0.004, score=0.80) | action=ALIGN_WITH_LANDMARK({'landmark_id': 'L003', 'direction': 'right', 'target': 'C0.004', 'target_description': 'White door labeled C0.004 with QR code and informational sticker.', 'stop_condition': 'target landmark centred in FRONT camera', 'capture_after': True, 'evidence_view': 'RIGHT', 'horizontal_position': 'center', 'horizontal_offset_fraction': 0.0, 'proximity': 'near'}) [medium, score=0.80] valid - The exact target is visible in the RIGHT view and must first be turned into the FRONT camera. | complete=no
+[Step 5] memory=yes | verify=yes (target_door_label, C0.004, score=1.00) | action=STOP_AND_VERIFY({'landmark_id': 'L005', 'target': 'C0.004', 'evidence_type': 'target_door_label', 'evidence_view': 'NONE'}) [high, score=1.00] valid - The exact target label 'C0.004' is clearly visible and centered on the door in the FRONT camera view. | complete=yes
+======================================================================
+Navigation goal: C0.004
+Success: True
+Memory kept from previous goal: False
+Images processed: 5
+----------------------------------------------------------------------
+#1 front.png: memory=yes | action=FOLLOW_DIRECTION | conf=low | a_score=0.58 | valid | not-executed | verified=False/zone_marker/C/v_score=0.10 | The directional sign L001 clearly indicates Tower C is to the right, which matches the goal building 'C'.
+#2 front.png: memory=no | action=FOLLOW_DIRECTION | conf=low | a_score=0.00 | INVALID: FOLLOW_DIRECTION landmark L001 is not visible in the current observation. | not-executed | verified=False/none/-/v_score=0.15 | The directional sign L001 clearly indicates Tower C is to the right, which matches the goal building C0.004.
+#3 front.png: memory=yes | action=FOLLOW_DIRECTION | conf=medium | a_score=0.80 | valid | not-executed | verified=False/room_range/C0.004/v_score=0.75 | Current sign L002 indicates forward toward C0.004: C0.004-C0.008
+#4 front.png: memory=yes | action=ALIGN_WITH_LANDMARK | conf=medium | a_score=0.80 | valid | not-executed | verified=False/target_door_label/C0.004/v_score=0.80 | The exact target is visible in the RIGHT view and must first be turned into the FRONT camera.
+#5 front.png: memory=yes | action=STOP_AND_VERIFY | conf=high | a_score=1.00 | valid | not-executed | verified=True/target_door_label/C0.004/v_score=1.00 | The exact target label 'C0.004' is clearly visible and centered on the door in the FRONT camera view.
+======================================================================
+Saved: navigation_outputs/offline_replays/run_2026_08_08_200551_C0_004/navigation_log.json
+Navigation success: True

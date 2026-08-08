@@ -1,0 +1,51 @@
+{
+  "step": 19,
+  "timestamp": "2026-08-08T21:17:21.738277",
+  "image_path": "robot_live_frames/step_test_B0.001-B0.014/step_0019/front.jpg",
+  "run_settings": {
+    "goal": "B0.014",
+    "mode": "offline_replay",
+    "camera_mode": "separate",
+    "memory": false,
+    "execute": "replay",
+    "model_name": "Qwen/Qwen3-VL-8B-Instruct",
+    "model_backend": "transformers"
+  },
+  "executed": true,
+  "response": {
+    "done": false,
+    "action": {
+      "name": "FOLLOW_DIRECTION",
+      "params": {
+        "landmark_id": "L017",
+        "direction": "left",
+        "target": "B0.014",
+        "target_description": "Black sign with arrows and room numbers. Left arrow points to B0.014.",
+        "floor": "0",
+        "search_for": null,
+        "stop_condition": null,
+        "capture_after": true,
+        "evidence_view": "RIGHT",
+        "horizontal_position": "right",
+        "horizontal_offset_fraction": 0.9,
+        "proximity": "near",
+        "doorway_state": "unknown",
+        "threshold_state": "unknown",
+        "traversable": true
+      },
+      "reason": "A directional sign on the right wall (L017) clearly indicates that B0.014 is to the left, providing a direct navigation cue toward the goal.",
+      "confidence": "low",
+      "evidence_score": 0.0,
+      "is_valid": false,
+      "invalid_reason": "FOLLOW_DIRECTION landmark L017 is not visible in the current observation."
+    }
+  },
+  "execution_result": {
+    "safety": {
+      "sensor_mode": "placeholder",
+      "bypassed": true,
+      "allowed": true,
+      "reason": "Offline replay -- no physical robot/LiDAR involved."
+    }
+  }
+}
