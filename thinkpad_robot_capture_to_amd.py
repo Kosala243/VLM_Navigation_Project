@@ -3,6 +3,7 @@
 import argparse
 import hashlib
 import json
+import re
 import shlex
 import subprocess
 import sys
@@ -1263,11 +1264,24 @@ def handle_elevator_or_stairs(args, response):
 
     def ask(prompt_text):
         try:
-            return _sanitize_terminal_input(
+            raw = _sanitize_terminal_input(
                 input(prompt_text)
             ).strip().lower()
         except EOFError:
             return ""
+        if raw in {"y", "yes", "n", "no"}:
+            return raw
+        # Defend against a flooded/garbled terminal buffer prefixing the
+        # real keystroke -- confirmed live 2026-08-07 (run
+        # run_2026_08_07_170054_C2_017, step 27): input() returned
+        # "aaaaaaaaaaqqqqqqqqqqqy" for an intended "y" (stray repeated
+        # keys, not an ANSI escape sequence, so _sanitize_terminal_input
+        # did not catch it), which silently read as a decline and
+        # aborted a genuine elevator-entry confirmation. The real
+        # answer is reliably the last meaningful token typed, so fall
+        # back to that before giving up.
+        match = re.search(r"(yes|no|y|n)$", raw)
+        return match.group(1) if match else raw
 
     def declined(status, reason):
         print("[ELEVATOR] {}: {}".format(status, reason))

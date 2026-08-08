@@ -3006,6 +3006,18 @@ _LANDMARK_GROUNDED_ACTION_NAMES = {
     "ALIGN_WITH_LANDMARK",
     "CHECK_DOOR_LABEL",
     "STOP_AND_VERIFY",
+    # USE_ELEVATOR_OR_STAIRS already has its own strict validation
+    # (_has_vertical_transition_evidence, checked in _validate before
+    # this ever runs) -- without it here, a valid, high-confidence
+    # elevator/stairs choice made specifically to resolve a floor
+    # mismatch (see floor_status in memory.py) was unconditionally
+    # thrown away by the semantic-priority override below and replaced
+    # with a generic FOLLOW_DIRECTION toward whatever sign is in frame,
+    # silently dropping the floor param and the elevator-seeking intent
+    # (confirmed live: run_2026_08_07_160711_C0_004 step 10 planner
+    # chose USE_ELEVATOR_OR_STAIRS with floor=2 for exactly this
+    # reason, and it was overridden to FOLLOW_DIRECTION anyway).
+    "USE_ELEVATOR_OR_STAIRS",
 }
 
 

@@ -347,17 +347,43 @@ class NavigationSystem:
         self,
         raw_goal: str,
         image_sequence: list[str],
+        image_paths_sequence: list[dict[str, str] | None] | None = None,
         save_dir: str = "navigation_outputs",
         keep_memory: bool = False,
     ) -> NavigationLog:
-        """Run navigation over an ordered sequence of images."""
+        """Run navigation over an ordered sequence of images.
+
+        image_paths_sequence is optional and, when given, must be the
+        same length as image_sequence: entry i is the per-step
+        {"LEFT": ..., "FRONT": ..., "RIGHT": ...} dict passed to
+        step()'s image_paths (camera_mode="separate" replay, matching
+        the live robot pipeline's three-camera capture). An entry may
+        be None to fall back to single-image mode for just that step.
+        Omitting the whole parameter preserves the original
+        single-image-per-step behavior unchanged.
+        """
+        if (
+            image_paths_sequence is not None
+            and len(image_paths_sequence) != len(image_sequence)
+        ):
+            raise ValueError(
+                "image_paths_sequence must be the same length as "
+                f"image_sequence ({len(image_paths_sequence)} vs "
+                f"{len(image_sequence)})."
+            )
+
         self.start(raw_goal, keep_memory=keep_memory)
         success = False
-        for image_path in image_sequence:
+        for index, image_path in enumerate(image_sequence):
             if not Path(image_path).exists():
                 print(f"[SKIP] Missing image: {image_path}")
                 continue
-            _, success = self.step(image_path)
+            image_paths = (
+                image_paths_sequence[index]
+                if image_paths_sequence is not None
+                else None
+            )
+            _, success = self.step(image_path, image_paths=image_paths)
             if success:
                 break
 
