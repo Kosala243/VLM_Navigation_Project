@@ -350,6 +350,8 @@ class NavigationSystem:
         image_paths_sequence: list[dict[str, str] | None] | None = None,
         save_dir: str = "navigation_outputs",
         keep_memory: bool = False,
+        save_step_results: bool = False,
+        run_settings: dict[str, Any] | None = None,
     ) -> NavigationLog:
         """Run navigation over an ordered sequence of images.
 
@@ -361,6 +363,21 @@ class NavigationSystem:
         be None to fall back to single-image mode for just that step.
         Omitting the whole parameter preserves the original
         single-image-per-step behavior unchanged.
+
+        save_step_results, when True, additionally writes one
+        step_XXX_result.json per processed image into save_dir. This
+        matters because scripts/aggregate_success_rates.py and
+        scripts/compare_model_backends.py only ever read
+        step_*_result.json (never memory.json/navigation_log.json) --
+        without this, an offline replay run has nothing those tools can
+        compare against a live/quantized run. Off by default so every
+        existing navigate() caller is unaffected.
+
+        run_settings, when given, is copied verbatim into each step
+        file's "run_settings" field (goal/mode/camera_mode/memory/
+        execute, matching the live pipeline's schema). Defaults to a
+        minimal replay-only dict when save_step_results is True and
+        this is omitted.
         """
         if (
             image_paths_sequence is not None
@@ -372,8 +389,22 @@ class NavigationSystem:
                 f"{len(image_sequence)})."
             )
 
+        out_dir = Path(save_dir)
+        out_dir.mkdir(parents=True, exist_ok=True)
+
+        effective_run_settings = run_settings or {
+            "goal": raw_goal,
+            "mode": "offline_replay",
+            "camera_mode": (
+                "separate" if image_paths_sequence is not None else "single"
+            ),
+            "memory": keep_memory,
+            "execute": "replay",
+        }
+
         self.start(raw_goal, keep_memory=keep_memory)
         success = False
+        step_number = 0
         for index, image_path in enumerate(image_sequence):
             if not Path(image_path).exists():
                 print(f"[SKIP] Missing image: {image_path}")
@@ -383,12 +414,22 @@ class NavigationSystem:
                 if image_paths_sequence is not None
                 else None
             )
-            _, success = self.step(image_path, image_paths=image_paths)
+            action, success = self.step(image_path, image_paths=image_paths)
+            step_number += 1
+
+            if save_step_results:
+                self._save_step_result(
+                    out_dir=out_dir,
+                    step_number=step_number,
+                    image_path=image_path,
+                    action=action,
+                    done=success,
+                    run_settings=effective_run_settings,
+                )
+
             if success:
                 break
 
-        out_dir = Path(save_dir)
-        out_dir.mkdir(parents=True, exist_ok=True)
         memory_path = str(out_dir / "memory.json")
         self.memory.save(memory_path)
 
@@ -407,6 +448,68 @@ class NavigationSystem:
         print(log.summary())
         print(f"Saved: {log_path}")
         return log
+
+    def _save_step_result(
+        self,
+        out_dir: Path,
+        step_number: int,
+        image_path: str,
+        action: Action,
+        done: bool,
+        run_settings: dict[str, Any],
+    ) -> None:
+        """Write one step_XXX_result.json.
+
+        Matches the subset of the live pipeline's per-step schema that
+        scripts/aggregate_success_rates.py and
+        scripts/compare_model_backends.py actually read (see their
+        load_run_steps/reconstruct_metrics_from_steps/
+        compute_lidar_metrics): step, timestamp, run_settings, executed,
+        response.action (name/params/confidence/evidence_score/
+        is_valid/reason), response.done, and an explicit
+        execution_result.safety placeholder so an offline replay step
+        is never mistaken for a real LiDAR check.
+
+        executed=True here means "this step's action was fully
+        processed" (there is no confirm/decline or physical-safety gate
+        in offline replay), not "the robot physically moved" -- the
+        live pipeline's own use of executed=False is specifically for
+        declined/blocked/failed physical execution, none of which apply
+        here.
+        """
+        step_result = {
+            "step": step_number,
+            "timestamp": datetime.now().strftime("%Y-%m-%dT%H:%M:%S.%f"),
+            "image_path": image_path,
+            "run_settings": run_settings,
+            "executed": True,
+            "response": {
+                "done": bool(done),
+                "action": {
+                    "name": action.name,
+                    "params": action.params,
+                    "reason": action.reason,
+                    "confidence": action.confidence,
+                    "evidence_score": action.evidence_score,
+                    "is_valid": action.is_valid,
+                    "invalid_reason": action.invalid_reason,
+                },
+            },
+            "execution_result": {
+                "safety": {
+                    "sensor_mode": "placeholder",
+                    "bypassed": True,
+                    "allowed": True,
+                    "reason": (
+                        "Offline replay -- no physical robot/LiDAR involved."
+                    ),
+                },
+            },
+        }
+        path = out_dir / f"step_{step_number:03d}_result.json"
+        path.write_text(
+            json.dumps(step_result, indent=2, ensure_ascii=False)
+        )
 
     def acknowledge_execution(
         self,

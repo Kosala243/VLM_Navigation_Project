@@ -94,8 +94,8 @@ def main():
     model = ModelWrapper(model_name).load()
     nav = NavigationSystem(model)
 
-    goal = os.getenv("NAV_GOAL", "B0.004")
-    image_dir = Path(os.getenv("IMAGE_DIR", "images/seq2"))
+    goal = os.getenv("NAV_GOAL", "C0.004")
+    image_dir = Path(os.getenv("IMAGE_DIR", "robot_live_frames/step_test_C0.004"))
     keep_memory = _env_bool("KEEP_MEMORY", False)
     max_images_env = os.getenv("MAX_IMAGES", "").strip()
     # "single" (default): image_dir is a flat folder of one image per step,
@@ -149,6 +149,16 @@ def main():
         image_paths_sequence=image_paths_sequence,
         save_dir=save_dir,
         keep_memory=keep_memory,
+        save_step_results=True,
+        run_settings={
+            "goal": goal,
+            "mode": "offline_replay",
+            "camera_mode": camera_mode,
+            "memory": keep_memory,
+            "execute": "replay",
+            "model_name": model_name,
+            "model_backend": model.backend,
+        },
     )
     print(f"Navigation success: {log.success}")
 
