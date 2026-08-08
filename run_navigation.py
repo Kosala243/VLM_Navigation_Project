@@ -98,10 +98,12 @@ def main():
     image_dir = Path(os.getenv("IMAGE_DIR", "robot_live_frames/step_test_C0.004"))
     keep_memory = _env_bool("KEEP_MEMORY", False)
     max_images_env = os.getenv("MAX_IMAGES", "").strip()
-    # "single" (default): image_dir is a flat folder of one image per step,
-    # unchanged from before. "separate": image_dir is a robot_live_frames-
-    # style folder of per-step subfolders, each with front/left/right images.
-    camera_mode = os.getenv("CAMERA_MODE", "single").strip().lower()
+    # "separate" (default, matches IMAGE_DIR's default robot_live_frames
+    # layout): image_dir is a folder of per-step subfolders, each with
+    # front/left/right images. "single": image_dir is a flat folder of one
+    # image per step (the original behavior, for a flat IMAGE_DIR like
+    # images/seq2).
+    camera_mode = os.getenv("CAMERA_MODE", "separate").strip().lower()
 
     if not image_dir.exists():
         raise FileNotFoundError(f"Image folder not found: {image_dir.resolve()}")
@@ -135,10 +137,19 @@ def main():
     print(f"Image dir: {image_dir}")
 
     timestamp = datetime.now().strftime("%Y_%m_%d_%H%M%S")
+    # Deliberately NOT navigation_outputs/live_runs/: that's the directory
+    # scripts/aggregate_success_rates.py scans by default, grouping rows by
+    # goal alone (no mode filter). Writing offline replay runs in there
+    # would silently blend them into the same success-rate bucket as real
+    # hardware runs for the same goal. Same run_<timestamp>_<goal> naming
+    # and step_XXX_result.json/memory.json/navigation_log.json contents as
+    # a live run, just under a sibling tree -- pass --live-runs-dir
+    # explicitly to compare/aggregate scripts when you want to look at
+    # these runs together.
     save_dir = os.getenv(
         "SAVE_DIR",
         str(
-            Path("navigation_outputs/live_runs")
+            Path("navigation_outputs/offline_replays")
             / f"run_{timestamp}_{safe_goal_name(goal)}"
         ),
     )
