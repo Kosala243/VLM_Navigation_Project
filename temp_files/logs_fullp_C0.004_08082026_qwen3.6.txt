@@ -1,0 +1,164 @@
+I6411656@fsesrv-ernis:~/VLM_Office_Navigation$ source /home/I6411656/VLM_Office_Navigation/.venv_vlm/bin/activate
+(.venv_vlm) I6411656@fsesrv-ernis:~/VLM_Office_Navigation$ /home/I6411656/VLM_Office_Navigation/.venv_vlm/bin/python /home/I6411656/VLM_Office_Navigation/run_navigation.py
+[ModelWrapper] Loading with Transformers: Qwen/Qwen3.6-35B-A3B
+  qwen-vl-utils found
+config.json: 3.69kB [00:00, 20.1MB/s]
+You are using a model of type `qwen3_5_moe` to instantiate a model of type `qwen3_vl`. This may be expected if you are loading a checkpoint that shares a subset of the architecture (e.g., loading a `sam2_video` checkpoint into `Sam2Model`), but is otherwise not supported and can yield errors. Please verify that the checkpoint is compatible with the model you are instantiating.
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+model.safetensors.index.json: 98.4kB [00:00, 233MB/s]
+Fetching 26 files: 100%|█████████████████████████████████████████████████████████████████████████████████████████████| 26/26 [08:47<00:00, 20.30s/it]
+Download complete: 100%|█████████████████████████████████████████████████████████████████████████████████████████| 71.9G/71.9G [08:47<00:00, 136MB/s]
+Loading weights: 100%|███████████████████████████████████████████████████████████████████████████████████████████| 476/476 [00:00<00:00, 1185.18it/s]
+Qwen3VLForConditionalGeneration LOAD REPORT from: Qwen/Qwen3.6-35B-A3B
+Key                                                                                        | Status     |                                                                                               
+-------------------------------------------------------------------------------------------+------------+-----------------------------------------------------------------------------------------------
+model.layers.{0...38}.linear_attn.in_proj_b.weight                                         | UNEXPECTED |                                                                                               
+model.layers.{0...39}.mlp.shared_expert.gate_proj.weight                                   | UNEXPECTED |                                                                                               
+model.layers.{0...39}.mlp.shared_expert.up_proj.weight                                     | UNEXPECTED |                                                                                               
+model.layers.{0...38}.linear_attn.in_proj_qkv.weight                                       | UNEXPECTED |                                                                                               
+model.layers.{0...39}.mlp.gate.weight                                                      | UNEXPECTED |                                                                                               
+model.layers.{0...38}.linear_attn.out_proj.weight                                          | UNEXPECTED |                                                                                               
+model.layers.{0...39}.mlp.experts.down_proj                                                | UNEXPECTED |                                                                                               
+model.layers.{0...38}.linear_attn.norm.weight                                              | UNEXPECTED |                                                                                               
+model.layers.{0...39}.mlp.shared_expert.down_proj.weight                                   | UNEXPECTED |                                                                                               
+model.layers.{0...38}.linear_attn.A_log                                                    | UNEXPECTED |                                                                                               
+model.layers.{0...39}.mlp.shared_expert_gate.weight                                        | UNEXPECTED |                                                                                               
+model.layers.{0...39}.mlp.experts.gate_up_proj                                             | UNEXPECTED |                                                                                               
+model.layers.{0...38}.linear_attn.in_proj_a.weight                                         | UNEXPECTED |                                                                                               
+mtp.layers.0.mlp.shared_expert.up_proj.weight                                              | UNEXPECTED |                                                                                               
+model.layers.{0...38}.linear_attn.conv1d.weight                                            | UNEXPECTED |                                                                                               
+model.layers.{0...38}.linear_attn.dt_bias                                                  | UNEXPECTED |                                                                                               
+model.layers.{0...38}.linear_attn.in_proj_z.weight                                         | UNEXPECTED |                                                                                               
+mtp.layers.0.self_attn.v_proj.weight                                                       | UNEXPECTED |                                                                                               
+mtp.layers.0.self_attn.k_proj.weight                                                       | UNEXPECTED |                                                                                               
+mtp.layers.0.mlp.shared_expert.down_proj.weight                                            | UNEXPECTED |                                                                                               
+mtp.layers.0.self_attn.q_proj.weight                                                       | UNEXPECTED |                                                                                               
+mtp.layers.0.self_attn.q_norm.weight                                                       | UNEXPECTED |                                                                                               
+mtp.layers.0.self_attn.o_proj.weight                                                       | UNEXPECTED |                                                                                               
+mtp.norm.weight                                                                            | UNEXPECTED |                                                                                               
+mtp.pre_fc_norm_hidden.weight                                                              | UNEXPECTED |                                                                                               
+mtp.layers.0.mlp.shared_expert.gate_proj.weight                                            | UNEXPECTED |                                                                                               
+mtp.pre_fc_norm_embedding.weight                                                           | UNEXPECTED |                                                                                               
+mtp.layers.0.mlp.shared_expert_gate.weight                                                 | UNEXPECTED |                                                                                               
+mtp.layers.0.self_attn.k_norm.weight                                                       | UNEXPECTED |                                                                                               
+mtp.layers.0.post_attention_layernorm.weight                                               | UNEXPECTED |                                                                                               
+mtp.layers.0.mlp.gate.weight                                                               | UNEXPECTED |                                                                                               
+mtp.layers.0.mlp.experts.gate_up_proj                                                      | UNEXPECTED |                                                                                               
+mtp.layers.0.input_layernorm.weight                                                        | UNEXPECTED |                                                                                               
+mtp.layers.0.mlp.experts.down_proj                                                         | UNEXPECTED |                                                                                               
+mtp.fc.weight                                                                              | UNEXPECTED |                                                                                               
+model.language_model.layers.{0...38}.self_attn.o_proj.weight                               | MISSING    |                                                                                               
+model.language_model.layers.{0...38}.self_attn.v_proj.weight                               | MISSING    |                                                                                               
+model.language_model.layers.{0...39}.mlp.gate_proj.weight                                  | MISSING    |                                                                                               
+model.language_model.layers.{0...38}.self_attn.k_norm.weight                               | MISSING    |                                                                                               
+model.language_model.layers.{0...38}.self_attn.q_proj.weight                               | MISSING    |                                                                                               
+model.language_model.layers.{0...39}.mlp.up_proj.weight                                    | MISSING    |                                                                                               
+model.language_model.layers.{0...38}.self_attn.q_norm.weight                               | MISSING    |                                                                                               
+model.language_model.layers.{0...39}.mlp.down_proj.weight                                  | MISSING    |                                                                                               
+model.language_model.layers.{0...38}.self_attn.k_proj.weight                               | MISSING    |                                                                                               
+model.language_model.layers.{3, 7, 11, 15, 19, 23, 27, 31, 35, 39}.self_attn.q_proj.weight | MISMATCH   | Reinit due to size mismatch - ckpt: torch.Size([8192, 2048]) vs model:torch.Size([4096, 2048])
+
+Notes:
+- UNEXPECTED:   can be ignored when loading from different task/architecture; not ok if you expect identical arch.
+- MISSING:      those params were newly initialized because missing from the checkpoint. Consider training on your downstream task.
+- MISMATCH:     ckpt weights were loaded, but they did not match the original empty weight shapes.
+You are using a model of type `qwen3_5_moe` to instantiate a model of type `qwen2_5_vl`. This may be expected if you are loading a checkpoint that shares a subset of the architecture (e.g., loading a `sam2_video` checkpoint into `Sam2Model`), but is otherwise not supported and can yield errors. Please verify that the checkpoint is compatible with the model you are instantiating.
+Unrecognized keys in `rope_parameters` for 'rope_type'='default': {'mrope_interleaved'}
+Fetching 26 files: 100%|██████████████████████████████████████████████████████████████████████████████████████████| 26/26 [00:00<00:00, 74693.08it/s]
+Download complete: : 0.00B [00:00, ?B/s]                                                                                      | 0/26 [00:00<?, ?it/s]
+Loading weights: 100%|████████████████████████████████████████████████████████████████████████████████████████████| 286/286 [00:00<00:00, 839.60it/s]
+Qwen2_5_VLForConditionalGeneration LOAD REPORT from: Qwen/Qwen3.6-35B-A3B
+Key                                                                                        | Status     |                                                                                               
+-------------------------------------------------------------------------------------------+------------+-----------------------------------------------------------------------------------------------
+model.layers.{0...38}.linear_attn.in_proj_b.weight                                         | UNEXPECTED |                                                                                               
+model.visual.blocks.{0...26}.norm1.bias                                                    | UNEXPECTED |                                                                                               
+model.layers.{0...39}.mlp.shared_expert.gate_proj.weight                                   | UNEXPECTED |                                                                                               
+model.layers.{0...39}.mlp.shared_expert.up_proj.weight                                     | UNEXPECTED |                                                                                               
+model.layers.{0...38}.linear_attn.in_proj_qkv.weight                                       | UNEXPECTED |                                                                                               
+model.layers.{0...39}.mlp.gate.weight                                                      | UNEXPECTED |                                                                                               
+model.visual.blocks.{0...26}.mlp.linear_fc2.weight                                         | UNEXPECTED |                                                                                               
+model.layers.{0...38}.linear_attn.out_proj.weight                                          | UNEXPECTED |                                                                                               
+model.visual.blocks.{0...26}.mlp.linear_fc1.bias                                           | UNEXPECTED |                                                                                               
+model.layers.{0...39}.mlp.experts.down_proj                                                | UNEXPECTED |                                                                                               
+model.layers.{0...38}.linear_attn.norm.weight                                              | UNEXPECTED |                                                                                               
+model.layers.{0...39}.mlp.shared_expert.down_proj.weight                                   | UNEXPECTED |                                                                                               
+model.visual.blocks.{0...26}.norm2.bias                                                    | UNEXPECTED |                                                                                               
+model.layers.{0...38}.linear_attn.A_log                                                    | UNEXPECTED |                                                                                               
+model.visual.blocks.{0...26}.mlp.linear_fc1.weight                                         | UNEXPECTED |                                                                                               
+model.visual.blocks.{0...26}.mlp.linear_fc2.bias                                           | UNEXPECTED |                                                                                               
+model.layers.{0...39}.mlp.shared_expert_gate.weight                                        | UNEXPECTED |                                                                                               
+model.layers.{0...39}.mlp.experts.gate_up_proj                                             | UNEXPECTED |                                                                                               
+model.layers.{0...38}.linear_attn.in_proj_a.weight                                         | UNEXPECTED |                                                                                               
+model.layers.{3, 7, 11, 15, 19, 23, 27, 31, 35, 39}.self_attn.k_norm.weight                | UNEXPECTED |                                                                                               
+mtp.layers.0.mlp.shared_expert.up_proj.weight                                              | UNEXPECTED |                                                                                               
+model.layers.{0...38}.linear_attn.conv1d.weight                                            | UNEXPECTED |                                                                                               
+model.layers.{0...38}.linear_attn.dt_bias                                                  | UNEXPECTED |                                                                                               
+model.layers.{0...38}.linear_attn.in_proj_z.weight                                         | UNEXPECTED |                                                                                               
+mtp.layers.0.self_attn.v_proj.weight                                                       | UNEXPECTED |                                                                                               
+model.visual.merger.norm.weight                                                            | UNEXPECTED |                                                                                               
+mtp.layers.0.self_attn.k_proj.weight                                                       | UNEXPECTED |                                                                                               
+model.layers.{3, 7, 11, 15, 19, 23, 27, 31, 35, 39}.self_attn.q_norm.weight                | UNEXPECTED |                                                                                               
+mtp.layers.0.mlp.shared_expert.down_proj.weight                                            | UNEXPECTED |                                                                                               
+mtp.layers.0.self_attn.q_proj.weight                                                       | UNEXPECTED |                                                                                               
+model.visual.merger.linear_fc2.weight                                                      | UNEXPECTED |                                                                                               
+mtp.layers.0.self_attn.q_norm.weight                                                       | UNEXPECTED |                                                                                               
+mtp.layers.0.self_attn.o_proj.weight                                                       | UNEXPECTED |                                                                                               
+model.visual.patch_embed.proj.bias                                                         | UNEXPECTED |                                                                                               
+model.visual.merger.linear_fc2.bias                                                        | UNEXPECTED |                                                                                               
+mtp.norm.weight                                                                            | UNEXPECTED |                                                                                               
+mtp.pre_fc_norm_hidden.weight                                                              | UNEXPECTED |                                                                                               
+mtp.layers.0.mlp.shared_expert.gate_proj.weight                                            | UNEXPECTED |                                                                                               
+model.visual.pos_embed.weight                                                              | UNEXPECTED |                                                                                               
+mtp.pre_fc_norm_embedding.weight                                                           | UNEXPECTED |                                                                                               
+mtp.layers.0.mlp.shared_expert_gate.weight                                                 | UNEXPECTED |                                                                                               
+model.visual.merger.linear_fc1.weight                                                      | UNEXPECTED |                                                                                               
+mtp.layers.0.self_attn.k_norm.weight                                                       | UNEXPECTED |                                                                                               
+mtp.layers.0.post_attention_layernorm.weight                                               | UNEXPECTED |                                                                                               
+mtp.layers.0.mlp.gate.weight                                                               | UNEXPECTED |                                                                                               
+mtp.layers.0.mlp.experts.gate_up_proj                                                      | UNEXPECTED |                                                                                               
+mtp.layers.0.input_layernorm.weight                                                        | UNEXPECTED |                                                                                               
+mtp.layers.0.mlp.experts.down_proj                                                         | UNEXPECTED |                                                                                               
+model.visual.merger.norm.bias                                                              | UNEXPECTED |                                                                                               
+model.visual.merger.linear_fc1.bias                                                        | UNEXPECTED |                                                                                               
+mtp.fc.weight                                                                              | UNEXPECTED |                                                                                               
+model.language_model.layers.{0...39}.self_attn.v_proj.bias                                 | MISSING    |                                                                                               
+model.language_model.layers.{0...38}.self_attn.o_proj.weight                               | MISSING    |                                                                                               
+model.visual.blocks.{0...26}.mlp.down_proj.weight                                          | MISSING    |                                                                                               
+model.language_model.layers.{0...38}.self_attn.v_proj.weight                               | MISSING    |                                                                                               
+model.visual.blocks.{0...26}.mlp.up_proj.weight                                            | MISSING    |                                                                                               
+model.language_model.layers.{0...39}.mlp.gate_proj.weight                                  | MISSING    |                                                                                               
+model.visual.blocks.{0...26}.mlp.down_proj.bias                                            | MISSING    |                                                                                               
+model.language_model.layers.{0...39}.self_attn.k_proj.bias                                 | MISSING    |                                                                                               
+model.language_model.layers.{0...39}.self_attn.q_proj.bias                                 | MISSING    |                                                                                               
+model.visual.blocks.{0...26}.mlp.up_proj.bias                                              | MISSING    |                                                                                               
+model.visual.merger.ln_q.weight                                                            | MISSING    |                                                                                               
+model.visual.blocks.{0...26}.mlp.gate_proj.bias                                            | MISSING    |                                                                                               
+model.language_model.layers.{0...38}.self_attn.q_proj.weight                               | MISSING    |                                                                                               
+model.language_model.layers.{0...39}.mlp.up_proj.weight                                    | MISSING    |                                                                                               
+model.language_model.layers.{0...39}.mlp.down_proj.weight                                  | MISSING    |                                                                                               
+model.language_model.layers.{0...38}.self_attn.k_proj.weight                               | MISSING    |                                                                                               
+model.visual.blocks.{0...26}.mlp.gate_proj.weight                                          | MISSING    |                                                                                               
+model.visual.merger.mlp.{0, 2}.weight                                                      | MISSING    |                                                                                               
+model.visual.merger.mlp.{0, 2}.bias                                                        | MISSING    |                                                                                               
+model.language_model.layers.{3, 7, 11, 15, 19, 23, 27, 31, 35, 39}.self_attn.q_proj.weight | MISMATCH   | Reinit due to size mismatch - ckpt: torch.Size([8192, 2048]) vs model:torch.Size([2048, 2048])
+model.language_model.layers.{3, 7, 11, 15, 19, 23, 27, 31, 35, 39}.self_attn.k_proj.weight | MISMATCH   | Reinit due to size mismatch - ckpt: torch.Size([512, 2048]) vs model:torch.Size([256, 2048])  
+model.language_model.layers.{3, 7, 11, 15, 19, 23, 27, 31, 35, 39}.self_attn.o_proj.weight | MISMATCH   | Reinit due to size mismatch - ckpt: torch.Size([2048, 4096]) vs model:torch.Size([2048, 2048])
+model.language_model.layers.{3, 7, 11, 15, 19, 23, 27, 31, 35, 39}.self_attn.v_proj.weight | MISMATCH   | Reinit due to size mismatch - ckpt: torch.Size([512, 2048]) vs model:torch.Size([256, 2048])  
+
+Notes:
+- UNEXPECTED:   can be ignored when loading from different task/architecture; not ok if you expect identical arch.
+- MISSING:      those params were newly initialized because missing from the checkpoint. Consider training on your downstream task.
+- MISMATCH:     ckpt weights were loaded, but they did not match the original empty weight shapes.
+Traceback (most recent call last):
+  File "/home/I6411656/VLM_Office_Navigation/run_navigation.py", line 178, in <module>
+    main()
+  File "/home/I6411656/VLM_Office_Navigation/run_navigation.py", line 94, in main
+    model = ModelWrapper(model_name).load()
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/I6411656/VLM_Office_Navigation/navigation_pipeline/model_loader.py", line 75, in load
+    return self._load_transformers()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/I6411656/VLM_Office_Navigation/navigation_pipeline/model_loader.py", line 301, in _load_transformers
+    raise RuntimeError(
+RuntimeError: Could not load Qwen/Qwen3.6-35B-A3B. Install/upgrade transformers and qwen-vl-utils. Last error: module transformers has no attribute AutoModelForVision2Seq
+(.venv_vlm) I6411656@fsesrv-ernis:~/VLM_Office_Navigation$ 
