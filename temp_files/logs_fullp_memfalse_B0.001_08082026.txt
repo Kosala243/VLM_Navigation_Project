@@ -1,0 +1,124 @@
+(.venv_vlm) I6411656@fsesrv-ernis:~/VLM_Office_Navigation$ /home/I6411656/VLM_Office_Navigation/.venv_vlm/bin/python /home/I6411656/VLM_Office_Navigation/run_navigation.py
+[ModelWrapper] Loading with Transformers: Qwen/Qwen3-VL-8B-Instruct
+  qwen-vl-utils found
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+Fetching 4 files: 100%|████████████████████████████████████████████████████████████████████████████████████████████████████| 4/4 [00:00<00:00, 18662.09it/s]
+Download complete: : 0.00B [00:00, ?B/s]                                                                                              | 0/4 [00:00<?, ?it/s]
+Loading weights: 100%|███████████████████████████████████████████████████████████████████████████████████████████████████| 750/750 [00:02<00:00, 339.78it/s]
+  Loaded via: Qwen3VLForConditionalGeneration
+  Device: cuda:0
+  Parameters: ~8.8B
+robot_live_frames/step_test_B0.001-B0.014/step_0001/front.jpg
+robot_live_frames/step_test_B0.001-B0.014/step_0002/front.jpg
+robot_live_frames/step_test_B0.001-B0.014/step_0003/front.jpg
+robot_live_frames/step_test_B0.001-B0.014/step_0004/front.jpg
+robot_live_frames/step_test_B0.001-B0.014/step_0005/front.jpg
+robot_live_frames/step_test_B0.001-B0.014/step_0006/front.jpg
+robot_live_frames/step_test_B0.001-B0.014/step_0007/front.jpg
+robot_live_frames/step_test_B0.001-B0.014/step_0008/front.jpg
+robot_live_frames/step_test_B0.001-B0.014/step_0009/front.jpg
+robot_live_frames/step_test_B0.001-B0.014/step_0010/front.jpg
+Found 23 images
+Camera mode: separate
+Memory: False
+Goal: B0.014
+Image dir: robot_live_frames/step_test_B0.001-B0.014
+[NavigationSystem] Goal parsed:
+{
+  "raw_goal": "B0.014",
+  "target_type": "room_or_location",
+  "known_tokens": [
+    "B0.014",
+    "B0-014",
+    "B0014",
+    "Room B0014"
+  ],
+  "aliases": [
+    "B0-014",
+    "B0.014",
+    "B0014",
+    "B0 014",
+    "B0.14",
+    "B014",
+    "Room B0014"
+  ],
+  "possible_interpretations": [
+    {
+      "interpretation": "A room or location identified by the code B0.014, likely in a building with alphanumeric or decimal room coding.",
+      "evidence_needed": [
+        "Signage or room plate showing 'B0.014' or variant",
+        "Floor indicator or directory mentioning 'B0' or '0.014'",
+        "Staff or directory confirming room B0.014 exists"
+      ],
+      "confidence": "medium"
+    }
+  ],
+  "constraints": {
+    "possible_building": "B",
+    "possible_floor": "0",
+    "possible_room": "014",
+    "possible_zone": null,
+    "target_name": null
+  },
+  "search_strategy": "Look for signs or room plates labeled 'B0.014' or its variants (e.g., 'B0-014', 'B0014') on doors, walls, or directories; check floor indicators for 'B0' or similar building/floor markers."
+}
+[NavigationSystem] Started with cleared memory.
+[Step 1] memory=no | verify=no (none, -, score=0.15) | action=FOLLOW_DIRECTION({'landmark_id': None, 'direction': 'left', 'target': None, 'target_description': None, 'floor': None, 'search_for': None, 'stop_condition': None, 'capture_after': True, 'evidence_view': 'LEFT', 'horizontal_position': 'left', 'horizontal_offset_fraction': -0.7, 'proximity': 'far', 'doorway_state': 'unknown', 'threshold_state': 'unknown', 'traversable': True}) [low, score=0.00] INVALID: FOLLOW_DIRECTION requires a current semantic landmark_id. - The LEFT view shows a corridor leading toward a directional sign for Tower B and Tower C, which is relevant to the goal B0.014 (likely in Tower B). Following the left direction is the most direct path toward the target tower. | complete=no
+[Step 2] memory=no | verify=no (none, -, score=0.15) | action=SEARCH_FOR_CUE({'search_for': 'room label or directional sign for B0.014', 'stop_condition': 'capture when a relevant sign or door label is found', 'capture_after': True, 'evidence_view': 'FRONT', 'horizontal_position': 'unknown', 'horizontal_offset_fraction': None, 'proximity': 'far', 'doorway_state': 'unknown', 'threshold_state': 'unknown', 'traversable': True, 'direction': 'left'}) [low, score=0.35] valid - No direct evidence for room B0.014 is visible in the current image. The environment appears to be a public building lobby or common area with seating, recycling stations, and a service counter, but no signs or labels matching the target room code are apparent. A search for a cue is necessary to locate the correct corridor or entrance. | complete=no
+[Step 3] memory=yes | verify=no (zone_marker, B, score=0.10) | action=PASS_THROUGH_DOORWAY({'landmark_id': 'L001', 'direction': 'forward', 'target': None, 'target_description': 'Open glass doors leading into building B lobby.', 'stop_condition': 'capture immediately after crossing the doorway threshold', 'capture_after': True, 'evidence_view': 'FRONT', 'horizontal_position': 'center', 'proximity': 'near', 'doorway_state': 'open', 'threshold_state': 'at', 'traversable': True, 'horizontal_offset_fraction': 0.0}) [low, score=0.25] valid - Current doorway L001 is open, centred in FRONT, and traversable, so the dedicated doorway traversal skill is used. | complete=no
+[Step 4] memory=yes | verify=no (room_range, B0.014, score=0.75) | action=FOLLOW_DIRECTION({'landmark_id': 'L001', 'direction': 'forward', 'target': 'B0.014', 'target_description': 'Wooden wall-mounted sign with room range B0.001-B0.014 and arrow pointing forward.', 'stop_condition': 'robot aligned with the forward route indicated by the current sign', 'capture_after': True, 'evidence_view': 'FRONT'}) [medium, score=0.80] valid - Current sign L001 indicates forward toward B0.014: B0.001
+B0.002
+B0.005-B0.014 | complete=no
+[Step 5] memory=yes | verify=no (room_range, B0.014, score=0.75) | action=FOLLOW_DIRECTION({'landmark_id': 'L001', 'direction': 'forward', 'target': 'B0.014', 'target_description': 'Directional sign showing B0.014 forward, visible in front view.', 'stop_condition': 'robot aligned with the forward route indicated by the current sign', 'capture_after': True, 'evidence_view': 'FRONT'}) [medium, score=0.80] valid - Current sign L001 indicates forward toward B0.014: B0.014 | complete=no
+[Step 6] memory=yes | verify=no (room_range, B0.014, score=0.75) | action=FOLLOW_DIRECTION({'landmark_id': 'L001', 'direction': 'forward', 'target': 'B0.014', 'target_description': 'Directional sign showing B0.014 is forward, with other room directions.', 'stop_condition': 'robot aligned with the forward route indicated by the current sign', 'capture_after': True, 'evidence_view': 'RIGHT'}) [medium, score=0.80] valid - Current sign L001 indicates forward toward B0.014: → B0.014 | complete=no
+[Step 7] memory=yes | verify=no (room_range, B0.014, score=0.75) | action=FOLLOW_DIRECTION({'landmark_id': 'L001', 'direction': 'forward', 'target': 'B0.014', 'target_description': 'Directional sign showing B0.014 forward, visible in front view.', 'stop_condition': 'robot aligned with the forward route indicated by the current sign', 'capture_after': True, 'evidence_view': 'FRONT'}) [medium, score=0.80] valid - Current sign L001 indicates forward toward B0.014: B0.014 | complete=no
+[Step 8] memory=no | verify=no (none, -, score=0.15) | action=SEARCH_FOR_CUE({'search_for': 'room label or sign for B0.014', 'stop_condition': 'capture when a relevant sign or door label is found', 'capture_after': True, 'evidence_view': 'FRONT', 'horizontal_position': 'unknown', 'horizontal_offset_fraction': None, 'proximity': 'far', 'doorway_state': 'unknown', 'threshold_state': 'unknown', 'traversable': True, 'direction': 'left'}) [low, score=0.35] valid - The current view shows a hallway with display cases and doors, but no visible sign or door label matching the target B0.014. The robot needs to search for a relevant cue to proceed. | complete=no
+[Step 9] memory=no | verify=no (none, -, score=0.15) | action=SEARCH_FOR_CUE({'search_for': 'room label B0.014', 'stop_condition': 'capture when a room label matching B0.014 is found', 'capture_after': True, 'evidence_view': 'NONE', 'horizontal_position': 'unknown', 'horizontal_offset_fraction': None, 'proximity': 'unknown', 'doorway_state': 'unknown', 'threshold_state': 'unknown', 'traversable': True, 'direction': 'left'}) [low, score=0.35] valid - The goal room B0.014 is not visible in the current image, and no direct navigation cues or door labels matching the target are present. The robot must search for a sign or label to proceed. | complete=no
+[Step 10] memory=no | verify=no (none, -, score=0.15) | action=CHECK_DOOR_LABEL({'landmark_id': None, 'direction': None, 'target': None, 'target_description': None, 'floor': None, 'search_for': None, 'stop_condition': None, 'capture_after': True, 'evidence_view': 'FRONT', 'horizontal_position': 'center', 'horizontal_offset_fraction': None, 'proximity': 'near', 'doorway_state': 'unknown', 'threshold_state': 'unknown', 'traversable': True}) [low, score=0.00] INVALID: CHECK_DOOR_LABEL requires landmark_id. - The front camera image shows a door with visible labels including 'B0.003' and a QR code for 'Lecture halls', which is relevant to the goal of finding room B0.014. The door label is clearly readable and directly relevant to the navigation task. | complete=no
+[Step 11] memory=no | verify=no (none, -, score=0.15) | action=SEARCH_FOR_CUE({'search_for': 'room label or sign for B0.014', 'stop_condition': 'capture when a relevant sign or door label is found', 'capture_after': True, 'evidence_view': 'FRONT', 'horizontal_position': 'center', 'horizontal_offset_fraction': None, 'proximity': 'far', 'doorway_state': 'unknown', 'threshold_state': 'unknown', 'traversable': True, 'direction': 'left'}) [low, score=0.35] valid - The current view shows a hallway with doors and a bulletin board, but no visible sign or door label for B0.014. The robot needs to search for a navigation cue to proceed toward the goal. | complete=no
+[Step 12] memory=yes | verify=no (none, -, score=0.15) | action=ALIGN_WITH_LANDMARK({'landmark_id': 'L001', 'direction': 'right', 'target': 'door B0.004', 'target_description': 'White door with B0.004 sign and wheelchair symbol visible on the wall.', 'stop_condition': 'landmark centred in FRONT camera', 'capture_after': True, 'evidence_view': 'RIGHT', 'horizontal_position': 'left', 'horizontal_offset_fraction': -0.3, 'proximity': 'near'}) [medium, score=0.64] valid - Selected landmark is not centred and must be visually aligned before forward movement. | complete=no
+[Step 13] memory=yes | verify=no (none, -, score=0.15) | action=ALIGN_WITH_LANDMARK({'landmark_id': 'L002', 'direction': 'right', 'target': None, 'target_description': 'Wooden slat wall on left, corridor continues forward into another slat wall.', 'stop_condition': 'landmark centred in FRONT camera', 'capture_after': True, 'evidence_view': 'RIGHT', 'horizontal_position': 'left', 'horizontal_offset_fraction': -0.4, 'proximity': 'medium'}) [medium, score=0.62] valid - Selected landmark is not centred and must be visually aligned before forward movement. | complete=no
+[Step 14] memory=yes | verify=no (none, -, score=0.15) | action=ALIGN_WITH_LANDMARK({'landmark_id': 'L002', 'direction': 'right', 'target': None, 'target_description': 'Wooden slat walls on both sides, corridor continues forward into a larger open space.', 'stop_condition': 'landmark centred in FRONT camera', 'capture_after': True, 'evidence_view': 'RIGHT', 'horizontal_position': 'center', 'horizontal_offset_fraction': 0.0, 'proximity': 'near'}) [medium, score=0.62] valid - Selected landmark is not centred and must be visually aligned before forward movement. | complete=no
+[Step 15] memory=no | verify=no (none, -, score=0.15) | action=SEARCH_FOR_CUE({'search_for': 'room label or directory with B0.014', 'stop_condition': 'capture when a relevant sign is found or the robot has explored a significant area', 'capture_after': True, 'evidence_view': 'FRONT', 'horizontal_position': 'center', 'horizontal_offset_fraction': None, 'proximity': 'far', 'doorway_state': 'unknown', 'threshold_state': 'unknown', 'traversable': True, 'direction': 'left'}) [low, score=0.35] valid - The current view is sparse and no direct evidence for room B0.014 is visible. The robot should search for a sign or directory that might contain the target room code. | complete=no
+[Step 16] memory=yes | verify=no (room_range, B0.014, score=0.75) | action=FOLLOW_DIRECTION({'landmark_id': 'L001', 'direction': 'forward', 'target': 'B0.014', 'target_description': 'Blue sign with room numbers on wooden wall ahead.', 'stop_condition': 'robot aligned with the forward route indicated by the current sign', 'capture_after': True, 'evidence_view': 'FRONT'}) [medium, score=0.80] valid - Current sign L001 indicates forward toward B0.014: B0.010 B0.09a-B0.09d B0.014 | complete=no
+[Step 17] memory=yes | verify=no (room_range, B0.014, score=0.75) | action=FOLLOW_DIRECTION({'landmark_id': 'L001', 'direction': 'left', 'target': 'B0.014', 'target_description': 'Directional sign on wooden wall indicates B0.014 is left.', 'stop_condition': 'robot aligned with the left route indicated by the current sign', 'capture_after': True, 'evidence_view': 'RIGHT'}) [medium, score=0.80] valid - Current sign L001 indicates left toward B0.014: B0.009a - B0.009d B0.014 | complete=no
+[Step 18] memory=yes | verify=no (room_range, B0.014, score=0.75) | action=FOLLOW_DIRECTION({'landmark_id': 'L001', 'direction': 'left', 'target': 'B0.014', 'target_description': 'Black sign with arrows and room numbers. Left arrow points to B0.014.', 'stop_condition': 'robot aligned with the left route indicated by the current sign', 'capture_after': True, 'evidence_view': 'RIGHT'}) [medium, score=0.80] valid - Current sign L001 indicates left toward B0.014: ← | ⚠️ | B0.014 | complete=no
+[Step 19] memory=no | verify=no (none, -, score=0.15) | action=SEARCH_FOR_CUE({'search_for': 'room label or sign for B0.014', 'stop_condition': 'capture when a relevant sign or door label is found', 'capture_after': True, 'evidence_view': 'FRONT', 'horizontal_position': 'unknown', 'horizontal_offset_fraction': None, 'proximity': 'far', 'doorway_state': 'unknown', 'threshold_state': 'unknown', 'traversable': True, 'direction': 'left'}) [low, score=0.35] valid - The current view shows a long corridor with display cases and windows, but no visible sign or door label matching the goal B0.014. The robot needs to search for a relevant cue to proceed. | complete=no
+[Step 20] memory=yes | verify=no (unclear, -, score=0.00) | action=ALIGN_WITH_LANDMARK({'landmark_id': 'L001', 'direction': 'right', 'target': 'B0.014', 'target_description': 'Glass door with room label B0.012 and gender-neutral symbol visible in the right camera view.', 'stop_condition': 'landmark centred in FRONT camera', 'capture_after': True, 'evidence_view': 'RIGHT', 'horizontal_position': 'left', 'horizontal_offset_fraction': -0.4, 'proximity': 'near'}) [medium, score=0.65] valid - Selected landmark is not centred and must be visually aligned before forward movement. | complete=no
+[Step 21] memory=yes | verify=no (unclear, -, score=0.00) | action=NAVIGATE_TO_LANDMARK({'landmark_id': 'L001', 'direction': 'left', 'target': 'B0.012 door', 'target_description': 'White door with B0.012 label and menstrual products sign.', 'floor': '0', 'search_for': None, 'stop_condition': 'capture after advancing toward the remembered junction', 'capture_after': True, 'evidence_view': 'FRONT', 'horizontal_position': 'center', 'horizontal_offset_fraction': 0.0, 'proximity': 'near', 'doorway_state': 'unknown', 'threshold_state': 'unknown', 'traversable': None}) [low, score=0.40] valid - The current view is sparse, and the recently remembered landmark L001 (B0.012 door) is compatible with the goal B0.014, which is likely on the same corridor. Continuing toward this landmark supports progress toward the goal. | complete=no
+[Step 22] memory=yes | verify=no (target_door_label, B0.014, score=0.80) | action=ALIGN_WITH_LANDMARK({'landmark_id': 'L001', 'direction': 'right', 'target': 'B0.014', 'target_description': 'White door with B0.014 label and bicycle parking sign.', 'stop_condition': 'target landmark centred in FRONT camera', 'capture_after': True, 'evidence_view': 'RIGHT', 'horizontal_position': 'left', 'horizontal_offset_fraction': -0.4, 'proximity': 'near'}) [medium, score=0.80] valid - The exact target is visible in the RIGHT view and must first be turned into the FRONT camera. | complete=no
+[Step 23] memory=yes | verify=yes (target_door_label, B0.014, score=1.00) | action=STOP_AND_VERIFY({'landmark_id': 'L001', 'target': 'B0.014', 'evidence_type': 'target_door_label', 'evidence_view': 'NONE'}) [high, score=1.00] valid - The exact target label 'B0.014' is clearly visible and centered on the white door in the FRONT camera view. | complete=yes
+======================================================================
+Navigation goal: B0.014
+Success: True
+Memory kept from previous goal: False
+Images processed: 23
+----------------------------------------------------------------------
+#1 front.jpg: memory=no | action=FOLLOW_DIRECTION | conf=low | a_score=0.00 | INVALID: FOLLOW_DIRECTION requires a current semantic landmark_id. | not-executed | verified=False/none/-/v_score=0.15 | The LEFT view shows a corridor leading toward a directional sign for Tower B and Tower C, which is relevant to the goal B0.014 (likely in Tower B). Following the left direction is the most direct path toward the target tower.
+#2 front.jpg: memory=no | action=SEARCH_FOR_CUE | conf=low | a_score=0.35 | valid | not-executed | verified=False/none/-/v_score=0.15 | No direct evidence for room B0.014 is visible in the current image. The environment appears to be a public building lobby or common area with seating, recycling stations, and a service counter, but no signs or labels matching the target room code are apparent. A search for a cue is necessary to locate the correct corridor or entrance.
+#3 front.jpg: memory=yes | action=PASS_THROUGH_DOORWAY | conf=low | a_score=0.25 | valid | not-executed | verified=False/zone_marker/B/v_score=0.10 | Current doorway L001 is open, centred in FRONT, and traversable, so the dedicated doorway traversal skill is used.
+#4 front.jpg: memory=yes | action=FOLLOW_DIRECTION | conf=medium | a_score=0.80 | valid | not-executed | verified=False/room_range/B0.014/v_score=0.75 | Current sign L001 indicates forward toward B0.014: B0.001
+B0.002
+B0.005-B0.014
+#5 front.jpg: memory=yes | action=FOLLOW_DIRECTION | conf=medium | a_score=0.80 | valid | not-executed | verified=False/room_range/B0.014/v_score=0.75 | Current sign L001 indicates forward toward B0.014: B0.014
+#6 front.jpg: memory=yes | action=FOLLOW_DIRECTION | conf=medium | a_score=0.80 | valid | not-executed | verified=False/room_range/B0.014/v_score=0.75 | Current sign L001 indicates forward toward B0.014: → B0.014
+#7 front.jpg: memory=yes | action=FOLLOW_DIRECTION | conf=medium | a_score=0.80 | valid | not-executed | verified=False/room_range/B0.014/v_score=0.75 | Current sign L001 indicates forward toward B0.014: B0.014
+#8 front.jpg: memory=no | action=SEARCH_FOR_CUE | conf=low | a_score=0.35 | valid | not-executed | verified=False/none/-/v_score=0.15 | The current view shows a hallway with display cases and doors, but no visible sign or door label matching the target B0.014. The robot needs to search for a relevant cue to proceed.
+#9 front.jpg: memory=no | action=SEARCH_FOR_CUE | conf=low | a_score=0.35 | valid | not-executed | verified=False/none/-/v_score=0.15 | The goal room B0.014 is not visible in the current image, and no direct navigation cues or door labels matching the target are present. The robot must search for a sign or label to proceed.
+#10 front.jpg: memory=no | action=CHECK_DOOR_LABEL | conf=low | a_score=0.00 | INVALID: CHECK_DOOR_LABEL requires landmark_id. | not-executed | verified=False/none/-/v_score=0.15 | The front camera image shows a door with visible labels including 'B0.003' and a QR code for 'Lecture halls', which is relevant to the goal of finding room B0.014. The door label is clearly readable and directly relevant to the navigation task.
+#11 front.jpg: memory=no | action=SEARCH_FOR_CUE | conf=low | a_score=0.35 | valid | not-executed | verified=False/none/-/v_score=0.15 | The current view shows a hallway with doors and a bulletin board, but no visible sign or door label for B0.014. The robot needs to search for a navigation cue to proceed toward the goal.
+#12 front.jpg: memory=yes | action=ALIGN_WITH_LANDMARK | conf=medium | a_score=0.64 | valid | not-executed | verified=False/none/-/v_score=0.15 | Selected landmark is not centred and must be visually aligned before forward movement.
+#13 front.jpg: memory=yes | action=ALIGN_WITH_LANDMARK | conf=medium | a_score=0.62 | valid | not-executed | verified=False/none/-/v_score=0.15 | Selected landmark is not centred and must be visually aligned before forward movement.
+#14 front.jpg: memory=yes | action=ALIGN_WITH_LANDMARK | conf=medium | a_score=0.62 | valid | not-executed | verified=False/none/-/v_score=0.15 | Selected landmark is not centred and must be visually aligned before forward movement.
+#15 front.jpg: memory=no | action=SEARCH_FOR_CUE | conf=low | a_score=0.35 | valid | not-executed | verified=False/none/-/v_score=0.15 | The current view is sparse and no direct evidence for room B0.014 is visible. The robot should search for a sign or directory that might contain the target room code.
+#16 front.jpg: memory=yes | action=FOLLOW_DIRECTION | conf=medium | a_score=0.80 | valid | not-executed | verified=False/room_range/B0.014/v_score=0.75 | Current sign L001 indicates forward toward B0.014: B0.010 B0.09a-B0.09d B0.014
+#17 front.jpg: memory=yes | action=FOLLOW_DIRECTION | conf=medium | a_score=0.80 | valid | not-executed | verified=False/room_range/B0.014/v_score=0.75 | Current sign L001 indicates left toward B0.014: B0.009a - B0.009d B0.014
+#18 front.jpg: memory=yes | action=FOLLOW_DIRECTION | conf=medium | a_score=0.80 | valid | not-executed | verified=False/room_range/B0.014/v_score=0.75 | Current sign L001 indicates left toward B0.014: ← | ⚠️ | B0.014
+#19 front.jpg: memory=no | action=SEARCH_FOR_CUE | conf=low | a_score=0.35 | valid | not-executed | verified=False/none/-/v_score=0.15 | The current view shows a long corridor with display cases and windows, but no visible sign or door label matching the goal B0.014. The robot needs to search for a relevant cue to proceed.
+#20 front.jpg: memory=yes | action=ALIGN_WITH_LANDMARK | conf=medium | a_score=0.65 | valid | not-executed | verified=False/unclear/-/v_score=0.00 | Selected landmark is not centred and must be visually aligned before forward movement.
+#21 front.jpg: memory=yes | action=NAVIGATE_TO_LANDMARK | conf=low | a_score=0.40 | valid | not-executed | verified=False/unclear/-/v_score=0.00 | The current view is sparse, and the recently remembered landmark L001 (B0.012 door) is compatible with the goal B0.014, which is likely on the same corridor. Continuing toward this landmark supports progress toward the goal.
+#22 front.jpg: memory=yes | action=ALIGN_WITH_LANDMARK | conf=medium | a_score=0.80 | valid | not-executed | verified=False/target_door_label/B0.014/v_score=0.80 | The exact target is visible in the RIGHT view and must first be turned into the FRONT camera.
+#23 front.jpg: memory=yes | action=STOP_AND_VERIFY | conf=high | a_score=1.00 | valid | not-executed | verified=True/target_door_label/B0.014/v_score=1.00 | The exact target label 'B0.014' is clearly visible and centered on the white door in the FRONT camera view.
+======================================================================
+Saved: navigation_outputs/offline_replays/run_2026_08_09_112534_B0_014/navigation_log.json
+Navigation success: True

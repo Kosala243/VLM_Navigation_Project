@@ -1,0 +1,47 @@
+{
+  "step": 16,
+  "timestamp": "2026-08-09T11:15:27.193440",
+  "image_path": "robot_live_frames/step_test_C1.026/step_0016/front.jpg",
+  "run_settings": {
+    "goal": "C1.026",
+    "mode": "offline_replay",
+    "camera_mode": "separate",
+    "memory": false,
+    "execute": "replay",
+    "model_name": "Qwen/Qwen3-VL-8B-Instruct",
+    "model_backend": "transformers"
+  },
+  "executed": true,
+  "response": {
+    "done": false,
+    "action": {
+      "name": "SEARCH_FOR_CUE",
+      "params": {
+        "search_for": "room label or sign for C1.026",
+        "stop_condition": "capture when a relevant sign or door label is found",
+        "capture_after": true,
+        "evidence_view": "NONE",
+        "horizontal_position": "unknown",
+        "horizontal_offset_fraction": null,
+        "proximity": "unknown",
+        "doorway_state": "unknown",
+        "threshold_state": "unknown",
+        "traversable": true,
+        "direction": "left"
+      },
+      "reason": "No direct evidence for C1.026 is visible in the current images. The corridor shows room labels like C1.014 and C1.015, but C1.026 is not visible. The robot must search for a sign or door label matching the goal.",
+      "confidence": "low",
+      "evidence_score": 0.35,
+      "is_valid": true,
+      "invalid_reason": ""
+    }
+  },
+  "execution_result": {
+    "safety": {
+      "sensor_mode": "placeholder",
+      "bypassed": true,
+      "allowed": true,
+      "reason": "Offline replay -- no physical robot/LiDAR involved."
+    }
+  }
+}

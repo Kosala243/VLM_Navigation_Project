@@ -1,0 +1,51 @@
+{
+  "step": 12,
+  "timestamp": "2026-08-09T11:10:22.385667",
+  "image_path": "robot_live_frames/step_test_C1.026/step_0012/front.jpg",
+  "run_settings": {
+    "goal": "C1.026",
+    "mode": "offline_replay",
+    "camera_mode": "separate",
+    "memory": false,
+    "execute": "replay",
+    "model_name": "Qwen/Qwen3-VL-8B-Instruct",
+    "model_backend": "transformers"
+  },
+  "executed": true,
+  "response": {
+    "done": false,
+    "action": {
+      "name": "NAVIGATE_TO_LANDMARK",
+      "params": {
+        "landmark_id": "L002",
+        "direction": "forward",
+        "target": null,
+        "target_description": "Long corridor extending forward with wooden slat wall on right.",
+        "floor": null,
+        "search_for": null,
+        "stop_condition": "capture after advancing toward the remembered junction",
+        "capture_after": true,
+        "evidence_view": "STITCHED_UNKNOWN",
+        "horizontal_position": "center",
+        "horizontal_offset_fraction": 0.0,
+        "proximity": "far",
+        "doorway_state": "unknown",
+        "threshold_state": "unknown",
+        "traversable": true
+      },
+      "reason": "The current view is sparse, and the remembered route landmark L002 (a long corridor extending forward) is compatible with the active goal and remains the best route anchor for continued progress toward C1.026.",
+      "confidence": "low",
+      "evidence_score": 0.37449999999999994,
+      "is_valid": true,
+      "invalid_reason": ""
+    }
+  },
+  "execution_result": {
+    "safety": {
+      "sensor_mode": "placeholder",
+      "bypassed": true,
+      "allowed": true,
+      "reason": "Offline replay -- no physical robot/LiDAR involved."
+    }
+  }
+}

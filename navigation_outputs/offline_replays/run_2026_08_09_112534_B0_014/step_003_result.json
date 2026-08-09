@@ -1,0 +1,49 @@
+{
+  "step": 3,
+  "timestamp": "2026-08-09T11:28:46.699537",
+  "image_path": "robot_live_frames/step_test_B0.001-B0.014/step_0003/front.jpg",
+  "run_settings": {
+    "goal": "B0.014",
+    "mode": "offline_replay",
+    "camera_mode": "separate",
+    "memory": false,
+    "execute": "replay",
+    "model_name": "Qwen/Qwen3-VL-8B-Instruct",
+    "model_backend": "transformers"
+  },
+  "executed": true,
+  "response": {
+    "done": false,
+    "action": {
+      "name": "PASS_THROUGH_DOORWAY",
+      "params": {
+        "landmark_id": "L001",
+        "direction": "forward",
+        "target": null,
+        "target_description": "Open glass doors leading into building B lobby.",
+        "stop_condition": "capture immediately after crossing the doorway threshold",
+        "capture_after": true,
+        "evidence_view": "FRONT",
+        "horizontal_position": "center",
+        "proximity": "near",
+        "doorway_state": "open",
+        "threshold_state": "at",
+        "traversable": true,
+        "horizontal_offset_fraction": 0.0
+      },
+      "reason": "Current doorway L001 is open, centred in FRONT, and traversable, so the dedicated doorway traversal skill is used.",
+      "confidence": "low",
+      "evidence_score": 0.25249999999999995,
+      "is_valid": true,
+      "invalid_reason": ""
+    }
+  },
+  "execution_result": {
+    "safety": {
+      "sensor_mode": "placeholder",
+      "bypassed": true,
+      "allowed": true,
+      "reason": "Offline replay -- no physical robot/LiDAR involved."
+    }
+  }
+}

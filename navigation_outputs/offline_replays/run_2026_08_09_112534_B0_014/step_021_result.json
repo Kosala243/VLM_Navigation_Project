@@ -1,0 +1,51 @@
+{
+  "step": 21,
+  "timestamp": "2026-08-09T11:48:31.914864",
+  "image_path": "robot_live_frames/step_test_B0.001-B0.014/step_0021/front.jpg",
+  "run_settings": {
+    "goal": "B0.014",
+    "mode": "offline_replay",
+    "camera_mode": "separate",
+    "memory": false,
+    "execute": "replay",
+    "model_name": "Qwen/Qwen3-VL-8B-Instruct",
+    "model_backend": "transformers"
+  },
+  "executed": true,
+  "response": {
+    "done": false,
+    "action": {
+      "name": "NAVIGATE_TO_LANDMARK",
+      "params": {
+        "landmark_id": "L001",
+        "direction": "left",
+        "target": "B0.012 door",
+        "target_description": "White door with B0.012 label and menstrual products sign.",
+        "floor": "0",
+        "search_for": null,
+        "stop_condition": "capture after advancing toward the remembered junction",
+        "capture_after": true,
+        "evidence_view": "FRONT",
+        "horizontal_position": "center",
+        "horizontal_offset_fraction": 0.0,
+        "proximity": "near",
+        "doorway_state": "unknown",
+        "threshold_state": "unknown",
+        "traversable": null
+      },
+      "reason": "The current view is sparse, and the recently remembered landmark L001 (B0.012 door) is compatible with the goal B0.014, which is likely on the same corridor. Continuing toward this landmark supports progress toward the goal.",
+      "confidence": "low",
+      "evidence_score": 0.4,
+      "is_valid": true,
+      "invalid_reason": ""
+    }
+  },
+  "execution_result": {
+    "safety": {
+      "sensor_mode": "placeholder",
+      "bypassed": true,
+      "allowed": true,
+      "reason": "Offline replay -- no physical robot/LiDAR involved."
+    }
+  }
+}

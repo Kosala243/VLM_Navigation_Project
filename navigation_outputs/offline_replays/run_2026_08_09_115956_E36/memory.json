@@ -1,0 +1,127 @@
+{
+  "image_count": 1,
+  "last_search_direction": "",
+  "current_floor": "",
+  "landmarks": [
+    {
+      "id": "L001",
+      "category": "door",
+      "description": "Dark grey door with label 50E36 visible on the wall beside it.",
+      "text": "50E36",
+      "pose": {},
+      "status": "unvisited",
+      "confidence": "high",
+      "evidence_score": 0.9500000000000001,
+      "evidence_breakdown": {
+        "category_score": 0.8,
+        "confidence_bonus": 0.1,
+        "text_bonus": 0.1,
+        "target_relevance_bonus": 0.1,
+        "direction_bonus": 0.0,
+        "traversable_bonus": -0.15,
+        "route_role_bonus": 0.0,
+        "missing_text_penalty": 0.0,
+        "partial_marker_penalty": 0.0,
+        "irrelevant_sign_penalty": 0.0,
+        "final_score": 0.9500000000000001
+      },
+      "image_path": "robot_live_frames/step_test_E36/step_0015/front.jpg",
+      "extra": {
+        "direction": "none",
+        "room_range": null,
+        "arrow": null,
+        "target_relevance": "high",
+        "floor": "",
+        "zone": "E",
+        "source_view": "FRONT",
+        "horizontal_position": "center",
+        "horizontal_offset_fraction": 0.0,
+        "proximity": "near",
+        "path_clear_visual": true,
+        "doorway_state": "closed",
+        "threshold_state": "before",
+        "landmark_type": "semantic",
+        "navigation_role": "none",
+        "traversable": false,
+        "continuation_direction": "none",
+        "route_state": "visible_now",
+        "goal_support": "direct",
+        "target_direction": "none",
+        "source_image_index": 1
+      },
+      "observation_count": 1,
+      "selection_count": 1
+    },
+    {
+      "id": "L002",
+      "category": "corridor",
+      "description": "Long corridor with wooden floor and multiple doors on both sides.",
+      "text": "",
+      "pose": {},
+      "status": "unvisited",
+      "confidence": "medium",
+      "evidence_score": 0.7800000000000001,
+      "evidence_breakdown": {
+        "category_score": 0.48,
+        "confidence_bonus": 0.1,
+        "text_bonus": 0.0,
+        "target_relevance_bonus": 0.05,
+        "direction_bonus": 0.05,
+        "traversable_bonus": 0.05,
+        "route_role_bonus": 0.05,
+        "missing_text_penalty": 0.0,
+        "partial_marker_penalty": 0.0,
+        "irrelevant_sign_penalty": 0.0,
+        "final_score": 0.7800000000000001
+      },
+      "image_path": "robot_live_frames/step_test_E36/step_0015/front.jpg",
+      "extra": {
+        "direction": "forward",
+        "room_range": null,
+        "arrow": null,
+        "target_relevance": "medium",
+        "floor": "",
+        "zone": null,
+        "source_view": "STITCHED_UNKNOWN",
+        "horizontal_position": "center",
+        "horizontal_offset_fraction": 0.0,
+        "proximity": "far",
+        "path_clear_visual": true,
+        "doorway_state": "unknown",
+        "threshold_state": "unknown",
+        "landmark_type": "structural",
+        "navigation_role": "continue_route",
+        "traversable": true,
+        "continuation_direction": "forward",
+        "route_state": "visible_now",
+        "goal_support": "indirect",
+        "target_direction": "forward",
+        "source_image_index": 1
+      },
+      "observation_count": 1,
+      "selection_count": 0
+    }
+  ],
+  "observation_summaries": [
+    "Image 1: Target door identified by label 50E36. Corridor continues forward with multiple doors."
+  ],
+  "hypotheses": [
+    "Target room 50E36 is directly ahead. Corridor continues forward with multiple doors."
+  ],
+  "failed_actions": [],
+  "current_subgoal": {
+    "description": "Long corridor with wooden floor and multiple doors on both sides.",
+    "landmark_id": "L002",
+    "landmark_category": "corridor",
+    "direction": "forward",
+    "source": "structural",
+    "status": "active",
+    "image_index": 1
+  },
+  "limits": {
+    "max_landmarks": 120,
+    "max_summaries": 80,
+    "max_hypotheses": 40,
+    "max_failed_actions": 20
+  }
+}

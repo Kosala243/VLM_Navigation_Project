@@ -1,0 +1,46 @@
+{
+  "step": 17,
+  "timestamp": "2026-08-09T11:16:54.036153",
+  "image_path": "robot_live_frames/step_test_C1.026/step_0018/front.jpg",
+  "run_settings": {
+    "goal": "C1.026",
+    "mode": "offline_replay",
+    "camera_mode": "separate",
+    "memory": false,
+    "execute": "replay",
+    "model_name": "Qwen/Qwen3-VL-8B-Instruct",
+    "model_backend": "transformers"
+  },
+  "executed": true,
+  "response": {
+    "done": false,
+    "action": {
+      "name": "ALIGN_WITH_LANDMARK",
+      "params": {
+        "landmark_id": "L001",
+        "direction": "right",
+        "target": null,
+        "target_description": "Glass door to project workspace C1.022 visible on right.",
+        "stop_condition": "landmark centred in FRONT camera",
+        "capture_after": true,
+        "evidence_view": "RIGHT",
+        "horizontal_position": "right",
+        "horizontal_offset_fraction": 0.9,
+        "proximity": "near"
+      },
+      "reason": "Selected landmark is not centred and must be visually aligned before forward movement.",
+      "confidence": "medium",
+      "evidence_score": 0.65,
+      "is_valid": true,
+      "invalid_reason": ""
+    }
+  },
+  "execution_result": {
+    "safety": {
+      "sensor_mode": "placeholder",
+      "bypassed": true,
+      "allowed": true,
+      "reason": "Offline replay -- no physical robot/LiDAR involved."
+    }
+  }
+}

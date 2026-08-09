@@ -1,0 +1,49 @@
+{
+  "step": 7,
+  "timestamp": "2026-08-09T12:07:29.573197",
+  "image_path": "robot_live_frames/step_test_E36/step_0007/front.jpg",
+  "run_settings": {
+    "goal": "E36",
+    "mode": "offline_replay",
+    "camera_mode": "separate",
+    "memory": false,
+    "execute": "replay",
+    "model_name": "Qwen/Qwen3-VL-8B-Instruct",
+    "model_backend": "transformers"
+  },
+  "executed": true,
+  "response": {
+    "done": false,
+    "action": {
+      "name": "READ_SIGN",
+      "params": {
+        "landmark_id": "L001",
+        "target": "Directory sign on left wall listing room ranges and facilities.",
+        "target_description": "Directory sign on left wall listing room ranges and facilities.",
+        "floor": "0",
+        "stop_condition": "capture after reading the sign",
+        "capture_after": true,
+        "evidence_view": "LEFT",
+        "horizontal_position": "left",
+        "horizontal_offset_fraction": -0.4,
+        "proximity": "far",
+        "doorway_state": "unknown",
+        "threshold_state": "unknown",
+        "traversable": null
+      },
+      "reason": "The directory sign on the left wall (L001) is the most relevant semantic evidence for navigating to room E36, as it lists room ranges and facilities. Reading it will help determine the correct path.",
+      "confidence": "medium",
+      "evidence_score": 0.6774999999999999,
+      "is_valid": true,
+      "invalid_reason": ""
+    }
+  },
+  "execution_result": {
+    "safety": {
+      "sensor_mode": "placeholder",
+      "bypassed": true,
+      "allowed": true,
+      "reason": "Offline replay -- no physical robot/LiDAR involved."
+    }
+  }
+}

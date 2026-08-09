@@ -1,0 +1,51 @@
+{
+  "step": 10,
+  "timestamp": "2026-08-09T11:07:35.355500",
+  "image_path": "robot_live_frames/step_test_C1.026/step_0010/front.jpg",
+  "run_settings": {
+    "goal": "C1.026",
+    "mode": "offline_replay",
+    "camera_mode": "separate",
+    "memory": false,
+    "execute": "replay",
+    "model_name": "Qwen/Qwen3-VL-8B-Instruct",
+    "model_backend": "transformers"
+  },
+  "executed": true,
+  "response": {
+    "done": false,
+    "action": {
+      "name": "NAVIGATE_TO_LANDMARK",
+      "params": {
+        "landmark_id": "L002",
+        "direction": "forward",
+        "target": null,
+        "target_description": "Glass door with 'PUSH' and emergency number visible.",
+        "floor": null,
+        "search_for": null,
+        "stop_condition": "capture after advancing toward the remembered junction",
+        "capture_after": true,
+        "evidence_view": "FRONT",
+        "horizontal_position": "center",
+        "horizontal_offset_fraction": 0.0,
+        "proximity": "near",
+        "doorway_state": "open",
+        "threshold_state": "at",
+        "traversable": true
+      },
+      "reason": "The current view is sparse, and the remembered landmark L002 (a glass door with 'PUSH' and emergency number) supports continued progress toward the goal room C1.026, which is likely on floor 1 near this door.",
+      "confidence": "low",
+      "evidence_score": 0.0,
+      "is_valid": false,
+      "invalid_reason": "Doorway landmark L002 is not linked to the active goal or route."
+    }
+  },
+  "execution_result": {
+    "safety": {
+      "sensor_mode": "placeholder",
+      "bypassed": true,
+      "allowed": true,
+      "reason": "Offline replay -- no physical robot/LiDAR involved."
+    }
+  }
+}

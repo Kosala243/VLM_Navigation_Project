@@ -1,0 +1,47 @@
+{
+  "step": 2,
+  "timestamp": "2026-08-09T10:56:34.259196",
+  "image_path": "robot_live_frames/step_test_C1.026/step_0002/front.png",
+  "run_settings": {
+    "goal": "C1.026",
+    "mode": "offline_replay",
+    "camera_mode": "separate",
+    "memory": false,
+    "execute": "replay",
+    "model_name": "Qwen/Qwen3-VL-8B-Instruct",
+    "model_backend": "transformers"
+  },
+  "executed": true,
+  "response": {
+    "done": false,
+    "action": {
+      "name": "SEARCH_FOR_CUE",
+      "params": {
+        "search_for": "sign, directory, room label, elevator, stairs, target, reception/help desk",
+        "stop_condition": "capture after searching for a useful cue",
+        "capture_after": true,
+        "evidence_view": "FRONT",
+        "horizontal_position": "center",
+        "horizontal_offset_fraction": null,
+        "proximity": "medium",
+        "doorway_state": "unknown",
+        "threshold_state": "unknown",
+        "traversable": true,
+        "direction": "left"
+      },
+      "reason": "No clear directional sign, room label, or elevator/stairs evidence is visible in the current FRONT view to confirm the target room or guide navigation toward it.",
+      "confidence": "low",
+      "evidence_score": 0.35,
+      "is_valid": true,
+      "invalid_reason": ""
+    }
+  },
+  "execution_result": {
+    "safety": {
+      "sensor_mode": "placeholder",
+      "bypassed": true,
+      "allowed": true,
+      "reason": "Offline replay -- no physical robot/LiDAR involved."
+    }
+  }
+}

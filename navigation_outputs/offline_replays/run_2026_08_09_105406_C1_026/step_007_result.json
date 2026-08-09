@@ -1,0 +1,44 @@
+{
+  "step": 7,
+  "timestamp": "2026-08-09T11:03:06.945223",
+  "image_path": "robot_live_frames/step_test_C1.026/step_0007/front.png",
+  "run_settings": {
+    "goal": "C1.026",
+    "mode": "offline_replay",
+    "camera_mode": "separate",
+    "memory": false,
+    "execute": "replay",
+    "model_name": "Qwen/Qwen3-VL-8B-Instruct",
+    "model_backend": "transformers"
+  },
+  "executed": true,
+  "response": {
+    "done": false,
+    "action": {
+      "name": "USE_ELEVATOR_OR_STAIRS",
+      "params": {
+        "landmark_id": "L001",
+        "direction": "left",
+        "floor": 1,
+        "evidence_view": "LEFT",
+        "doorway_state": "unknown",
+        "threshold_state": "unknown",
+        "traversable": true,
+        "capture_after": true
+      },
+      "reason": "The LEFT camera view shows two elevators, and the goal floor is 1, so using the elevator is the most direct way to reach the target floor.",
+      "confidence": "low",
+      "evidence_score": 0.0,
+      "is_valid": false,
+      "invalid_reason": "USE_ELEVATOR_OR_STAIRS requires recent elevator or stairs evidence."
+    }
+  },
+  "execution_result": {
+    "safety": {
+      "sensor_mode": "placeholder",
+      "bypassed": true,
+      "allowed": true,
+      "reason": "Offline replay -- no physical robot/LiDAR involved."
+    }
+  }
+}

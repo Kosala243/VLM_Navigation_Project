@@ -1,0 +1,128 @@
+{
+  "image_count": 1,
+  "last_search_direction": "",
+  "current_floor": "",
+  "landmarks": [
+    {
+      "id": "L001",
+      "category": "door",
+      "description": "Glass door with label C1.026 and binary code 010001 visible in front view.",
+      "text": "C1.026",
+      "pose": {},
+      "status": "used",
+      "confidence": "high",
+      "evidence_score": 1.0,
+      "evidence_breakdown": {
+        "category_score": 0.8,
+        "confidence_bonus": 0.1,
+        "text_bonus": 0.1,
+        "target_relevance_bonus": 0.1,
+        "direction_bonus": 0.0,
+        "traversable_bonus": 0.05,
+        "route_role_bonus": 0.0,
+        "missing_text_penalty": 0.0,
+        "partial_marker_penalty": 0.0,
+        "irrelevant_sign_penalty": 0.0,
+        "final_score": 1.0
+      },
+      "image_path": "robot_live_frames/step_test_C1.026/step_0022/front.jpg",
+      "extra": {
+        "direction": "none",
+        "room_range": null,
+        "arrow": null,
+        "target_relevance": "high",
+        "floor": "1",
+        "zone": null,
+        "source_view": "FRONT",
+        "horizontal_position": "center",
+        "horizontal_offset_fraction": 0.0,
+        "proximity": "near",
+        "path_clear_visual": true,
+        "doorway_state": "open",
+        "threshold_state": "at",
+        "landmark_type": "semantic",
+        "navigation_role": "entrance",
+        "traversable": true,
+        "continuation_direction": "none",
+        "route_state": "visible_now",
+        "goal_support": "direct",
+        "target_direction": "none",
+        "source_image_index": 1
+      },
+      "observation_count": 1,
+      "selection_count": 1
+    },
+    {
+      "id": "L002",
+      "category": "sign",
+      "description": "Project Workspace sign visible on glass door in front view.",
+      "text": "Project Workspace\nThis project workspace is meant for project group work, not for individual use and is for DACS students only!",
+      "pose": {},
+      "status": "unvisited",
+      "confidence": "high",
+      "evidence_score": 0.85,
+      "evidence_breakdown": {
+        "category_score": 0.7,
+        "confidence_bonus": 0.1,
+        "text_bonus": 0.1,
+        "target_relevance_bonus": 0.05,
+        "direction_bonus": 0.0,
+        "traversable_bonus": 0.0,
+        "route_role_bonus": 0.0,
+        "missing_text_penalty": 0.0,
+        "partial_marker_penalty": 0.0,
+        "irrelevant_sign_penalty": 0.1,
+        "final_score": 0.85
+      },
+      "image_path": "robot_live_frames/step_test_C1.026/step_0022/front.jpg",
+      "extra": {
+        "direction": "none",
+        "room_range": null,
+        "arrow": null,
+        "target_relevance": "medium",
+        "floor": "",
+        "zone": null,
+        "source_view": "FRONT",
+        "horizontal_position": "left",
+        "horizontal_offset_fraction": -0.3,
+        "proximity": "near",
+        "path_clear_visual": true,
+        "doorway_state": "unknown",
+        "threshold_state": "unknown",
+        "landmark_type": "semantic",
+        "navigation_role": "none",
+        "traversable": null,
+        "continuation_direction": "none",
+        "route_state": "visible_now",
+        "goal_support": "none",
+        "target_direction": "none",
+        "source_image_index": 1
+      },
+      "observation_count": 1,
+      "selection_count": 0
+    }
+  ],
+  "observation_summaries": [
+    "Image 1: Target room C1.026 identified via door label and binary code on glass door."
+  ],
+  "hypotheses": [
+    "Room C1.026 is a project workspace for DACS students only.",
+    "The binary code 010001 on the door may relate to the room's function or identity."
+  ],
+  "failed_actions": [],
+  "current_subgoal": {
+    "description": "",
+    "landmark_id": "",
+    "landmark_category": "",
+    "direction": "",
+    "source": "",
+    "status": "inactive",
+    "image_index": -1
+  },
+  "limits": {
+    "max_landmarks": 120,
+    "max_summaries": 80,
+    "max_hypotheses": 40,
+    "max_failed_actions": 20
+  }
+}

@@ -1,0 +1,51 @@
+{
+  "step": 10,
+  "timestamp": "2026-08-09T11:36:08.003137",
+  "image_path": "robot_live_frames/step_test_B0.001-B0.014/step_0010/front.jpg",
+  "run_settings": {
+    "goal": "B0.014",
+    "mode": "offline_replay",
+    "camera_mode": "separate",
+    "memory": false,
+    "execute": "replay",
+    "model_name": "Qwen/Qwen3-VL-8B-Instruct",
+    "model_backend": "transformers"
+  },
+  "executed": true,
+  "response": {
+    "done": false,
+    "action": {
+      "name": "CHECK_DOOR_LABEL",
+      "params": {
+        "landmark_id": null,
+        "direction": null,
+        "target": null,
+        "target_description": null,
+        "floor": null,
+        "search_for": null,
+        "stop_condition": null,
+        "capture_after": true,
+        "evidence_view": "FRONT",
+        "horizontal_position": "center",
+        "horizontal_offset_fraction": null,
+        "proximity": "near",
+        "doorway_state": "unknown",
+        "threshold_state": "unknown",
+        "traversable": true
+      },
+      "reason": "The front camera image shows a door with visible labels including 'B0.003' and a QR code for 'Lecture halls', which is relevant to the goal of finding room B0.014. The door label is clearly readable and directly relevant to the navigation task.",
+      "confidence": "low",
+      "evidence_score": 0.0,
+      "is_valid": false,
+      "invalid_reason": "CHECK_DOOR_LABEL requires landmark_id."
+    }
+  },
+  "execution_result": {
+    "safety": {
+      "sensor_mode": "placeholder",
+      "bypassed": true,
+      "allowed": true,
+      "reason": "Offline replay -- no physical robot/LiDAR involved."
+    }
+  }
+}

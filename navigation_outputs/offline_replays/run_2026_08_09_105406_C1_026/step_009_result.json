@@ -1,0 +1,47 @@
+{
+  "step": 9,
+  "timestamp": "2026-08-09T11:05:57.284646",
+  "image_path": "robot_live_frames/step_test_C1.026/step_0009/front.jpg",
+  "run_settings": {
+    "goal": "C1.026",
+    "mode": "offline_replay",
+    "camera_mode": "separate",
+    "memory": false,
+    "execute": "replay",
+    "model_name": "Qwen/Qwen3-VL-8B-Instruct",
+    "model_backend": "transformers"
+  },
+  "executed": true,
+  "response": {
+    "done": false,
+    "action": {
+      "name": "USE_ELEVATOR_OR_STAIRS",
+      "params": {
+        "landmark_id": "L001",
+        "direction": "up",
+        "floor": 4,
+        "evidence_view": "LEFT",
+        "horizontal_position": "center",
+        "horizontal_offset_fraction": 0.0,
+        "proximity": "near",
+        "doorway_state": "unknown",
+        "threshold_state": "unknown",
+        "traversable": null,
+        "capture_after": true
+      },
+      "reason": "The elevator is at floor 1 and heading to floor 4, which is the target floor for goal C1.026. Using the elevator is the most direct way to reach the target floor.",
+      "confidence": "low",
+      "evidence_score": 0.5549999999999999,
+      "is_valid": true,
+      "invalid_reason": ""
+    }
+  },
+  "execution_result": {
+    "safety": {
+      "sensor_mode": "placeholder",
+      "bypassed": true,
+      "allowed": true,
+      "reason": "Offline replay -- no physical robot/LiDAR involved."
+    }
+  }
+}

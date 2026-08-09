@@ -1,0 +1,137 @@
+(.venv_vlm) I6411656@fsesrv-ernis:~/VLM_Office_Navigation$ /home/I6411656/VLM_Office_Navigation/.venv_vlm/bin/python /home/I6411656/VLM_Office_Navigation/run_navigation.py
+[ModelWrapper] Loading with Transformers: Qwen/Qwen3-VL-8B-Instruct
+  qwen-vl-utils found
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+Fetching 4 files: 100%|████████████████████████████████████████████████████████████████████████████████████████████████████| 4/4 [00:00<00:00, 83055.52it/s]
+Download complete: : 0.00B [00:00, ?B/s]                                                                                              | 0/4 [00:00<?, ?it/s]
+Loading weights: 100%|███████████████████████████████████████████████████████████████████████████████████████████████████| 750/750 [00:02<00:00, 335.36it/s]
+  Loaded via: Qwen3VLForConditionalGeneration
+  Device: cuda:0
+  Parameters: ~8.8B
+[SKIP] robot_live_frames/step_test_C1.026/step_0017: no front.png/.jpg found
+robot_live_frames/step_test_C1.026/step_0001/front.png
+robot_live_frames/step_test_C1.026/step_0002/front.png
+robot_live_frames/step_test_C1.026/step_0003/front.png
+robot_live_frames/step_test_C1.026/step_0004/front.png
+robot_live_frames/step_test_C1.026/step_0005/front.png
+robot_live_frames/step_test_C1.026/step_0006/front.png
+robot_live_frames/step_test_C1.026/step_0007/front.png
+robot_live_frames/step_test_C1.026/step_0008/front.jpg
+robot_live_frames/step_test_C1.026/step_0009/front.jpg
+robot_live_frames/step_test_C1.026/step_0010/front.jpg
+Found 21 images
+Camera mode: separate
+Memory: False
+Goal: C1.026
+Image dir: robot_live_frames/step_test_C1.026
+[NavigationSystem] Goal parsed:
+{
+  "raw_goal": "C1.026",
+  "target_type": "room_or_location",
+  "known_tokens": [
+    "C1.026",
+    "C1-026",
+    "C1026",
+    "Room C1026"
+  ],
+  "aliases": [
+    "C1-026",
+    "C1026",
+    "C1.26",
+    "C1-26",
+    "C10.26",
+    "C1.026a",
+    "C1.026b",
+    "C1.026",
+    "Room C1026"
+  ],
+  "possible_interpretations": [
+    {
+      "interpretation": "A room located in building C, possibly on floor 1, room 026.",
+      "evidence_needed": [
+        "Signage showing 'C1.026' on a door or wall plate",
+        "Floor indicator showing '1' near the room",
+        "Building directory listing 'C' as a building code"
+      ],
+      "confidence": "high"
+    },
+    {
+      "interpretation": "A room in a building labeled 'C' with a hybrid floor/room code format (e.g., '1.026' meaning floor 1, room 026).",
+      "evidence_needed": [
+        "Room plate showing 'C1.026' with '1' indicating floor",
+        "Directory listing 'C' as building and '1.026' as room identifier",
+        "Signage with 'C' and '1.026' together"
+      ],
+      "confidence": "medium"
+    },
+    {
+      "interpretation": "A room in a building labeled 'C' with a non-standard format where '1.026' is a single room identifier (not floor + room).",
+      "evidence_needed": [
+        "No floor indicator visible",
+        "Room plate showing 'C1.026' as a single unit",
+        "Building directory listing 'C1.026' as a single room code"
+      ],
+      "confidence": "low"
+    }
+  ],
+  "constraints": {
+    "possible_building": "C",
+    "possible_floor": "1",
+    "possible_room": "026",
+    "possible_zone": null,
+    "target_name": null
+  },
+  "search_strategy": "Look for signs or door plates labeled 'C1.026' or its variants like 'C1-026' or 'C1026' — check for building 'C' and floor '1' indicators nearby if available."
+}
+[NavigationSystem] Started with cleared memory.
+[Step 1] memory=yes | verify=no (zone_marker, C, score=0.10) | action=FOLLOW_DIRECTION({'landmark_id': 'L001', 'direction': 'right', 'target': None, 'target_description': 'Directional sign above coffee corner indicating Tower B and Tower C.', 'floor': None, 'search_for': None, 'stop_condition': None, 'capture_after': True, 'evidence_view': 'FRONT', 'horizontal_position': 'center', 'horizontal_offset_fraction': 0.0, 'proximity': 'near', 'doorway_state': 'unknown', 'threshold_state': 'unknown', 'traversable': True}) [low, score=0.00] INVALID: FOLLOW_DIRECTION landmark L001 does not provide grounded support for direction=right. - The directional sign (L001) in the FRONT view indicates Tower C to the right, which is the direction toward the goal building C. | complete=no
+[Step 2] memory=no | verify=no (none, -, score=0.15) | action=SEARCH_FOR_CUE({'search_for': 'sign, directory, room label, elevator, stairs, target, reception/help desk', 'stop_condition': 'capture after searching for a useful cue', 'capture_after': True, 'evidence_view': 'FRONT', 'horizontal_position': 'center', 'horizontal_offset_fraction': None, 'proximity': 'medium', 'doorway_state': 'unknown', 'threshold_state': 'unknown', 'traversable': True, 'direction': 'left'}) [low, score=0.35] valid - No clear directional sign, room label, or elevator/stairs evidence is visible in the current FRONT view to confirm the target room or guide navigation toward it. | complete=no
+[Step 3] memory=yes | verify=no (room_range, C1.026, score=0.75) | action=FOLLOW_DIRECTION({'landmark_id': 'L001', 'direction': 'forward', 'target': 'C1.026', 'target_description': 'Blue digital sign with room range indicators mounted on wooden wall.', 'stop_condition': 'robot aligned with the forward route indicated by the current sign', 'capture_after': True, 'evidence_view': 'FRONT'}) [medium, score=0.80] valid - Current sign L001 indicates forward toward C1.026: C1.026-C1.030 | complete=no
+[Step 4] memory=yes | verify=no (none, -, score=0.15) | action=FOLLOW_DIRECTION({'landmark_id': 'L001', 'direction': 'left', 'target': None, 'target_description': 'Directional sign indicating C0.016-C0.020 is left', 'floor': '0', 'search_for': None, 'stop_condition': None, 'capture_after': True, 'evidence_view': 'FRONT', 'horizontal_position': 'center', 'horizontal_offset_fraction': 0.0, 'proximity': 'near', 'doorway_state': 'unknown', 'threshold_state': 'unknown', 'traversable': True}) [medium, score=0.65] valid - The directional sign L001 indicates that rooms C0.016-C0.020 are to the left, and the goal room C1.026 is likely in this range based on the room code pattern. Following this direction is the most direct path toward the goal. | complete=no
+[Step 5] memory=no | verify=no (none, -, score=0.15) | action=SEARCH_FOR_CUE({'search_for': 'room label or directional sign for C1.026', 'stop_condition': 'capture when a relevant sign or door label is found', 'capture_after': True, 'evidence_view': 'FRONT', 'horizontal_position': 'unknown', 'horizontal_offset_fraction': None, 'proximity': 'far', 'doorway_state': 'unknown', 'threshold_state': 'unknown', 'traversable': True, 'direction': 'left'}) [low, score=0.35] valid - The current view shows a corridor with wooden paneling and a door on the left, but no visible sign or label for room C1.026. The robot needs to search for a directional sign or room label to proceed toward the goal. | complete=no
+[Step 6] memory=yes | verify=no (room_range, -, score=0.65) | action=FOLLOW_DIRECTION({'landmark_id': 'L001', 'direction': 'left', 'target': None, 'target_description': "Black sign with room icons and text 'C0.016 - C0.020' visible on left wall.", 'floor': '0', 'search_for': None, 'stop_condition': None, 'capture_after': True, 'evidence_view': 'FRONT', 'horizontal_position': 'left', 'horizontal_offset_fraction': -0.4, 'proximity': 'near', 'doorway_state': 'unknown', 'threshold_state': 'unknown', 'traversable': True}) [medium, score=0.65] valid - The sign L001 indicates rooms C0.016-C0.020, which are on floor 0, while the goal is C1.026 on floor 1. Following the direction to the left is the most direct path toward the target room range, even though the floor mismatch is likely. | complete=no
+[Step 7] memory=no | verify=no (none, -, score=0.15) | action=USE_ELEVATOR_OR_STAIRS({'landmark_id': 'L001', 'direction': 'left', 'floor': 1, 'evidence_view': 'LEFT', 'doorway_state': 'unknown', 'threshold_state': 'unknown', 'traversable': True, 'capture_after': True}) [low, score=0.00] INVALID: USE_ELEVATOR_OR_STAIRS requires recent elevator or stairs evidence. - The LEFT camera view shows two elevators, and the goal floor is 1, so using the elevator is the most direct way to reach the target floor. | complete=no
+[Step 8] memory=yes | verify=no (directory, -, score=0.70) | action=USE_ELEVATOR_OR_STAIRS({'landmark_id': 'L001', 'direction': 'forward', 'floor': 1, 'evidence_view': 'FRONT', 'stop_condition': 'capture after entering the elevator', 'capture_after': True}) [low, score=0.57] valid - The directory indicates floor 1 is the target floor, and the elevator is visible and accessible in the front view. Using the elevator is the most direct way to reach the correct floor. | complete=no
+[Step 9] memory=yes | verify=no (none, -, score=0.15) | action=USE_ELEVATOR_OR_STAIRS({'landmark_id': 'L001', 'direction': 'up', 'floor': 4, 'evidence_view': 'LEFT', 'horizontal_position': 'center', 'horizontal_offset_fraction': 0.0, 'proximity': 'near', 'doorway_state': 'unknown', 'threshold_state': 'unknown', 'traversable': None, 'capture_after': True}) [low, score=0.55] valid - The elevator is at floor 1 and heading to floor 4, which is the target floor for goal C1.026. Using the elevator is the most direct way to reach the target floor. | complete=no
+[Step 10] memory=yes | verify=no (directory, -, score=0.70) | action=NAVIGATE_TO_LANDMARK({'landmark_id': 'L002', 'direction': 'forward', 'target': None, 'target_description': "Glass door with 'PUSH' and emergency number visible.", 'floor': None, 'search_for': None, 'stop_condition': 'capture after advancing toward the remembered junction', 'capture_after': True, 'evidence_view': 'FRONT', 'horizontal_position': 'center', 'horizontal_offset_fraction': 0.0, 'proximity': 'near', 'doorway_state': 'open', 'threshold_state': 'at', 'traversable': True}) [low, score=0.00] INVALID: Doorway landmark L002 is not linked to the active goal or route. - The current view is sparse, and the remembered landmark L002 (a glass door with 'PUSH' and emergency number) supports continued progress toward the goal room C1.026, which is likely on floor 1 near this door. | complete=no
+[Step 11] memory=yes | verify=no (room_range, -, score=0.65) | action=FOLLOW_DIRECTION({'landmark_id': 'L003', 'direction': 'forward', 'target': None, 'target_description': 'Ceiling-mounted sign indicating room ranges C1.015-C1.036 and C1.001-C1.012', 'floor': '1', 'search_for': None, 'stop_condition': None, 'capture_after': True, 'evidence_view': 'FRONT', 'horizontal_position': 'center', 'horizontal_offset_fraction': 0.0, 'proximity': 'far', 'doorway_state': 'unknown', 'threshold_state': 'unknown', 'traversable': True}) [medium, score=0.63] valid - The ceiling-mounted sign (L003) indicates that room C1.026 is within the C1.015-C1.036 range, making it a direct semantic cue to proceed forward toward the goal. This is the strongest current evidence for direction. | complete=no
+[Step 12] memory=yes | verify=no (none, -, score=0.15) | action=NAVIGATE_TO_LANDMARK({'landmark_id': 'L002', 'direction': 'forward', 'target': None, 'target_description': 'Long corridor extending forward with wooden slat wall on right.', 'floor': None, 'search_for': None, 'stop_condition': 'capture after advancing toward the remembered junction', 'capture_after': True, 'evidence_view': 'STITCHED_UNKNOWN', 'horizontal_position': 'center', 'horizontal_offset_fraction': 0.0, 'proximity': 'far', 'doorway_state': 'unknown', 'threshold_state': 'unknown', 'traversable': True}) [low, score=0.37] valid - The current view is sparse, and the remembered route landmark L002 (a long corridor extending forward) is compatible with the active goal and remains the best route anchor for continued progress toward C1.026. | complete=no
+[Step 13] memory=yes | verify=no (none, -, score=0.05) | action=NAVIGATE_TO_LANDMARK({'landmark_id': 'L002', 'direction': 'forward', 'target': None, 'target_description': 'Long, straight corridor with glass doors on right and wooden slat wall on left.', 'floor': None, 'search_for': None, 'stop_condition': 'capture after advancing toward the remembered junction', 'capture_after': True, 'evidence_view': 'FRONT', 'horizontal_position': 'center', 'horizontal_offset_fraction': 0.0, 'proximity': 'far', 'doorway_state': 'unknown', 'threshold_state': 'before', 'traversable': True}) [low, score=0.37] valid - The current view is sparse, and the remembered corridor landmark L002 supports continued progress toward the goal room C1.026, which is likely further down this corridor. | complete=no
+[Step 14] memory=yes | verify=no (none, -, score=0.05) | action=NAVIGATE_TO_LANDMARK({'landmark_id': 'L002', 'direction': 'forward', 'target': None, 'target_description': 'Long corridor with glass doors on right, continuing forward.', 'floor': None, 'search_for': None, 'stop_condition': 'capture after advancing toward the remembered junction', 'capture_after': True, 'evidence_view': 'FRONT', 'horizontal_position': 'center', 'horizontal_offset_fraction': None, 'proximity': 'medium', 'doorway_state': 'unknown', 'threshold_state': 'unknown', 'traversable': True}) [low, score=0.37] valid - The current view is sparse, and the remembered corridor landmark L002 supports continued progress toward the goal room C1.026, which is likely further down this corridor. | complete=no
+[Step 15] memory=yes | verify=no (none, -, score=0.15) | action=NAVIGATE_TO_LANDMARK({'landmark_id': 'L003', 'direction': 'forward', 'target': None, 'target_description': 'Long corridor with posters on left wall and glass doors on right.', 'floor': None, 'search_for': None, 'stop_condition': 'capture after advancing toward the remembered junction', 'capture_after': True, 'evidence_view': 'FRONT', 'horizontal_position': 'center', 'horizontal_offset_fraction': 0.0, 'proximity': 'far', 'doorway_state': 'unknown', 'threshold_state': 'before', 'traversable': True}) [low, score=0.37] valid - The current view is sparse, and the remembered corridor landmark L003 supports continued progress toward the goal room C1.026, which is likely further down the corridor past C1.020. | complete=no
+[Step 16] memory=no | verify=no (none, -, score=0.15) | action=SEARCH_FOR_CUE({'search_for': 'room label or sign for C1.026', 'stop_condition': 'capture when a relevant sign or door label is found', 'capture_after': True, 'evidence_view': 'NONE', 'horizontal_position': 'unknown', 'horizontal_offset_fraction': None, 'proximity': 'unknown', 'doorway_state': 'unknown', 'threshold_state': 'unknown', 'traversable': True, 'direction': 'left'}) [low, score=0.35] valid - No direct evidence for C1.026 is visible in the current images. The corridor shows room labels like C1.014 and C1.015, but C1.026 is not visible. The robot must search for a sign or door label matching the goal. | complete=no
+[Step 17] memory=yes | verify=no (none, -, score=0.15) | action=ALIGN_WITH_LANDMARK({'landmark_id': 'L001', 'direction': 'right', 'target': None, 'target_description': 'Glass door to project workspace C1.022 visible on right.', 'stop_condition': 'landmark centred in FRONT camera', 'capture_after': True, 'evidence_view': 'RIGHT', 'horizontal_position': 'right', 'horizontal_offset_fraction': 0.9, 'proximity': 'near'}) [medium, score=0.65] valid - Selected landmark is not centred and must be visually aligned before forward movement. | complete=no
+[Step 18] memory=no | verify=no (none, -, score=0.15) | action=SEARCH_FOR_CUE({'search_for': 'room label or sign for C1.026', 'stop_condition': 'capture when a relevant sign or door label is found', 'capture_after': True, 'evidence_view': 'FRONT', 'horizontal_position': 'center', 'horizontal_offset_fraction': None, 'proximity': 'medium', 'doorway_state': 'unknown', 'threshold_state': 'unknown', 'traversable': True, 'direction': 'left'}) [low, score=0.35] valid - The current view shows a room labeled C1.022, which is not the target C1.026. No other direct cues for C1.026 are visible in the current image, so a search for a relevant sign or door label is required. | complete=no
+[Step 19] memory=yes | verify=no (none, -, score=0.05) | action=NAVIGATE_TO_LANDMARK({'landmark_id': 'L002', 'direction': 'forward', 'target': None, 'target_description': 'Long corridor with glass-walled rooms on right and posters on left wall.', 'floor': None, 'search_for': None, 'stop_condition': 'capture after advancing toward the remembered junction', 'capture_after': True, 'evidence_view': 'FRONT', 'horizontal_position': 'center', 'horizontal_offset_fraction': None, 'proximity': 'medium', 'doorway_state': 'unknown', 'threshold_state': 'unknown', 'traversable': True}) [low, score=0.37] valid - The current view is sparse, and the remembered corridor landmark L002 supports continued progress toward the goal room C1.026, which is likely ahead in this corridor. | complete=no
+[Step 20] memory=yes | verify=no (target_door_label, C1.026, score=0.80) | action=ALIGN_WITH_LANDMARK({'landmark_id': 'L001', 'direction': 'right', 'target': 'C1.026', 'target_description': 'Glass door with label C1.026 and binary code visible in right view.', 'stop_condition': 'target landmark centred in FRONT camera', 'capture_after': True, 'evidence_view': 'RIGHT', 'horizontal_position': 'center', 'horizontal_offset_fraction': 0.0, 'proximity': 'near'}) [medium, score=0.80] valid - The exact target is visible in the RIGHT view and must first be turned into the FRONT camera. | complete=no
+[Step 21] memory=yes | verify=yes (target_door_label, C1.026, score=1.00) | action=STOP_AND_VERIFY({'landmark_id': 'L001', 'target': 'C1.026', 'evidence_type': 'target_door_label', 'evidence_view': 'NONE'}) [high, score=1.00] valid - The full target label 'C1.026' is clearly visible and centered on the door in the FRONT camera view. | complete=yes
+======================================================================
+Navigation goal: C1.026
+Success: True
+Memory kept from previous goal: False
+Images processed: 21
+----------------------------------------------------------------------
+#1 front.png: memory=yes | action=FOLLOW_DIRECTION | conf=low | a_score=0.00 | INVALID: FOLLOW_DIRECTION landmark L001 does not provide grounded support for direction=right. | not-executed | verified=False/zone_marker/C/v_score=0.10 | The directional sign (L001) in the FRONT view indicates Tower C to the right, which is the direction toward the goal building C.
+#2 front.png: memory=no | action=SEARCH_FOR_CUE | conf=low | a_score=0.35 | valid | not-executed | verified=False/none/-/v_score=0.15 | No clear directional sign, room label, or elevator/stairs evidence is visible in the current FRONT view to confirm the target room or guide navigation toward it.
+#3 front.png: memory=yes | action=FOLLOW_DIRECTION | conf=medium | a_score=0.80 | valid | not-executed | verified=False/room_range/C1.026/v_score=0.75 | Current sign L001 indicates forward toward C1.026: C1.026-C1.030
+#4 front.png: memory=yes | action=FOLLOW_DIRECTION | conf=medium | a_score=0.65 | valid | not-executed | verified=False/none/-/v_score=0.15 | The directional sign L001 indicates that rooms C0.016-C0.020 are to the left, and the goal room C1.026 is likely in this range based on the room code pattern. Following this direction is the most direct path toward the goal.
+#5 front.png: memory=no | action=SEARCH_FOR_CUE | conf=low | a_score=0.35 | valid | not-executed | verified=False/none/-/v_score=0.15 | The current view shows a corridor with wooden paneling and a door on the left, but no visible sign or label for room C1.026. The robot needs to search for a directional sign or room label to proceed toward the goal.
+#6 front.png: memory=yes | action=FOLLOW_DIRECTION | conf=medium | a_score=0.65 | valid | not-executed | verified=False/room_range/-/v_score=0.65 | The sign L001 indicates rooms C0.016-C0.020, which are on floor 0, while the goal is C1.026 on floor 1. Following the direction to the left is the most direct path toward the target room range, even though the floor mismatch is likely.
+#7 front.png: memory=no | action=USE_ELEVATOR_OR_STAIRS | conf=low | a_score=0.00 | INVALID: USE_ELEVATOR_OR_STAIRS requires recent elevator or stairs evidence. | not-executed | verified=False/none/-/v_score=0.15 | The LEFT camera view shows two elevators, and the goal floor is 1, so using the elevator is the most direct way to reach the target floor.
+#8 front.jpg: memory=yes | action=USE_ELEVATOR_OR_STAIRS | conf=low | a_score=0.57 | valid | not-executed | verified=False/directory/-/v_score=0.70 | The directory indicates floor 1 is the target floor, and the elevator is visible and accessible in the front view. Using the elevator is the most direct way to reach the correct floor.
+#9 front.jpg: memory=yes | action=USE_ELEVATOR_OR_STAIRS | conf=low | a_score=0.55 | valid | not-executed | verified=False/none/-/v_score=0.15 | The elevator is at floor 1 and heading to floor 4, which is the target floor for goal C1.026. Using the elevator is the most direct way to reach the target floor.
+#10 front.jpg: memory=yes | action=NAVIGATE_TO_LANDMARK | conf=low | a_score=0.00 | INVALID: Doorway landmark L002 is not linked to the active goal or route. | not-executed | verified=False/directory/-/v_score=0.70 | The current view is sparse, and the remembered landmark L002 (a glass door with 'PUSH' and emergency number) supports continued progress toward the goal room C1.026, which is likely on floor 1 near this door.
+#11 front.jpg: memory=yes | action=FOLLOW_DIRECTION | conf=medium | a_score=0.63 | valid | not-executed | verified=False/room_range/-/v_score=0.65 | The ceiling-mounted sign (L003) indicates that room C1.026 is within the C1.015-C1.036 range, making it a direct semantic cue to proceed forward toward the goal. This is the strongest current evidence for direction.
+#12 front.jpg: memory=yes | action=NAVIGATE_TO_LANDMARK | conf=low | a_score=0.37 | valid | not-executed | verified=False/none/-/v_score=0.15 | The current view is sparse, and the remembered route landmark L002 (a long corridor extending forward) is compatible with the active goal and remains the best route anchor for continued progress toward C1.026.
+#13 front.jpg: memory=yes | action=NAVIGATE_TO_LANDMARK | conf=low | a_score=0.37 | valid | not-executed | verified=False/none/-/v_score=0.05 | The current view is sparse, and the remembered corridor landmark L002 supports continued progress toward the goal room C1.026, which is likely further down this corridor.
+#14 front.jpg: memory=yes | action=NAVIGATE_TO_LANDMARK | conf=low | a_score=0.37 | valid | not-executed | verified=False/none/-/v_score=0.05 | The current view is sparse, and the remembered corridor landmark L002 supports continued progress toward the goal room C1.026, which is likely further down this corridor.
+#15 front.jpg: memory=yes | action=NAVIGATE_TO_LANDMARK | conf=low | a_score=0.37 | valid | not-executed | verified=False/none/-/v_score=0.15 | The current view is sparse, and the remembered corridor landmark L003 supports continued progress toward the goal room C1.026, which is likely further down the corridor past C1.020.
+#16 front.jpg: memory=no | action=SEARCH_FOR_CUE | conf=low | a_score=0.35 | valid | not-executed | verified=False/none/-/v_score=0.15 | No direct evidence for C1.026 is visible in the current images. The corridor shows room labels like C1.014 and C1.015, but C1.026 is not visible. The robot must search for a sign or door label matching the goal.
+#17 front.jpg: memory=yes | action=ALIGN_WITH_LANDMARK | conf=medium | a_score=0.65 | valid | not-executed | verified=False/none/-/v_score=0.15 | Selected landmark is not centred and must be visually aligned before forward movement.
+#18 front.jpg: memory=no | action=SEARCH_FOR_CUE | conf=low | a_score=0.35 | valid | not-executed | verified=False/none/-/v_score=0.15 | The current view shows a room labeled C1.022, which is not the target C1.026. No other direct cues for C1.026 are visible in the current image, so a search for a relevant sign or door label is required.
+#19 front.jpg: memory=yes | action=NAVIGATE_TO_LANDMARK | conf=low | a_score=0.37 | valid | not-executed | verified=False/none/-/v_score=0.05 | The current view is sparse, and the remembered corridor landmark L002 supports continued progress toward the goal room C1.026, which is likely ahead in this corridor.
+#20 front.jpg: memory=yes | action=ALIGN_WITH_LANDMARK | conf=medium | a_score=0.80 | valid | not-executed | verified=False/target_door_label/C1.026/v_score=0.80 | The exact target is visible in the RIGHT view and must first be turned into the FRONT camera.
+#21 front.jpg: memory=yes | action=STOP_AND_VERIFY | conf=high | a_score=1.00 | valid | not-executed | verified=True/target_door_label/C1.026/v_score=1.00 | The full target label 'C1.026' is clearly visible and centered on the door in the FRONT camera view.
+======================================================================
+Saved: navigation_outputs/offline_replays/run_2026_08_09_105406_C1_026/navigation_log.json
+Navigation success: True

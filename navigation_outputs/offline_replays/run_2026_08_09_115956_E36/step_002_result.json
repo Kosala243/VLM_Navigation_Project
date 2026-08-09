@@ -1,0 +1,47 @@
+{
+  "step": 2,
+  "timestamp": "2026-08-09T12:01:49.566829",
+  "image_path": "robot_live_frames/step_test_E36/step_0002/front.jpg",
+  "run_settings": {
+    "goal": "E36",
+    "mode": "offline_replay",
+    "camera_mode": "separate",
+    "memory": false,
+    "execute": "replay",
+    "model_name": "Qwen/Qwen3-VL-8B-Instruct",
+    "model_backend": "transformers"
+  },
+  "executed": true,
+  "response": {
+    "done": false,
+    "action": {
+      "name": "SEARCH_FOR_CUE",
+      "params": {
+        "search_for": "room label or sign for E36",
+        "stop_condition": "capture when a relevant sign or door label is found",
+        "capture_after": true,
+        "evidence_view": "FRONT",
+        "horizontal_position": "center",
+        "horizontal_offset_fraction": null,
+        "proximity": "far",
+        "doorway_state": "unknown",
+        "threshold_state": "unknown",
+        "traversable": true,
+        "direction": "left"
+      },
+      "reason": "The current view shows a wall with a painting and a bulletin board, but no visible sign or door label for E36. The robot needs to search for a navigation cue related to the goal.",
+      "confidence": "low",
+      "evidence_score": 0.35,
+      "is_valid": true,
+      "invalid_reason": ""
+    }
+  },
+  "execution_result": {
+    "safety": {
+      "sensor_mode": "placeholder",
+      "bypassed": true,
+      "allowed": true,
+      "reason": "Offline replay -- no physical robot/LiDAR involved."
+    }
+  }
+}

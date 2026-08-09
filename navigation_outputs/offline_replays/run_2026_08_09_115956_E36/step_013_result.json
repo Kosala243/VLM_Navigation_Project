@@ -1,0 +1,46 @@
+{
+  "step": 13,
+  "timestamp": "2026-08-09T12:15:06.054678",
+  "image_path": "robot_live_frames/step_test_E36/step_0013/front.jpg",
+  "run_settings": {
+    "goal": "E36",
+    "mode": "offline_replay",
+    "camera_mode": "separate",
+    "memory": false,
+    "execute": "replay",
+    "model_name": "Qwen/Qwen3-VL-8B-Instruct",
+    "model_backend": "transformers"
+  },
+  "executed": true,
+  "response": {
+    "done": false,
+    "action": {
+      "name": "ALIGN_WITH_LANDMARK",
+      "params": {
+        "landmark_id": "L004",
+        "direction": "right",
+        "target": "50E14",
+        "target_description": "Black door with white label '50E14' and house icon.",
+        "stop_condition": "landmark centred in FRONT camera",
+        "capture_after": true,
+        "evidence_view": "RIGHT",
+        "horizontal_position": "right",
+        "horizontal_offset_fraction": 0.5,
+        "proximity": "near"
+      },
+      "reason": "Selected landmark is not centred and must be visually aligned before forward movement.",
+      "confidence": "medium",
+      "evidence_score": 0.65,
+      "is_valid": true,
+      "invalid_reason": ""
+    }
+  },
+  "execution_result": {
+    "safety": {
+      "sensor_mode": "placeholder",
+      "bypassed": true,
+      "allowed": true,
+      "reason": "Offline replay -- no physical robot/LiDAR involved."
+    }
+  }
+}

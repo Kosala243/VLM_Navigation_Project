@@ -1,0 +1,76 @@
+{
+  "image_count": 1,
+  "last_search_direction": "",
+  "current_floor": "",
+  "landmarks": [
+    {
+      "id": "L001",
+      "category": "door",
+      "description": "White door with B0.014 label and QR code for lecture halls.",
+      "text": "B0.014",
+      "pose": {},
+      "status": "used",
+      "confidence": "high",
+      "evidence_score": 1.0,
+      "evidence_breakdown": {
+        "category_score": 0.8,
+        "confidence_bonus": 0.1,
+        "text_bonus": 0.1,
+        "target_relevance_bonus": 0.1,
+        "direction_bonus": 0.0,
+        "traversable_bonus": 0.0,
+        "route_role_bonus": 0.0,
+        "missing_text_penalty": 0.0,
+        "partial_marker_penalty": 0.0,
+        "irrelevant_sign_penalty": 0.0,
+        "final_score": 1.0
+      },
+      "image_path": "robot_live_frames/step_test_B0.001-B0.014/step_0023/front.jpg",
+      "extra": {
+        "direction": "none",
+        "room_range": null,
+        "arrow": null,
+        "target_relevance": "high",
+        "floor": "0",
+        "zone": null,
+        "source_view": "FRONT",
+        "horizontal_position": "center",
+        "horizontal_offset_fraction": 0.0,
+        "proximity": "near",
+        "path_clear_visual": null,
+        "doorway_state": "unknown",
+        "threshold_state": "before",
+        "landmark_type": "semantic",
+        "navigation_role": "none",
+        "traversable": null,
+        "continuation_direction": "none",
+        "route_state": "visible_now",
+        "goal_support": "direct",
+        "target_direction": "none",
+        "source_image_index": 1
+      },
+      "observation_count": 1,
+      "selection_count": 1
+    }
+  ],
+  "observation_summaries": [
+    "Image 1: Target door B0.014 identified with QR code and label."
+  ],
+  "hypotheses": [],
+  "failed_actions": [],
+  "current_subgoal": {
+    "description": "",
+    "landmark_id": "",
+    "landmark_category": "",
+    "direction": "",
+    "source": "",
+    "status": "inactive",
+    "image_index": -1
+  },
+  "limits": {
+    "max_landmarks": 120,
+    "max_summaries": 80,
+    "max_hypotheses": 40,
+    "max_failed_actions": 20
+  }
+}

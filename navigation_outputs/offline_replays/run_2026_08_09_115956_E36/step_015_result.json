@@ -1,0 +1,46 @@
+{
+  "step": 15,
+  "timestamp": "2026-08-09T12:17:34.099496",
+  "image_path": "robot_live_frames/step_test_E36/step_0015/front.jpg",
+  "run_settings": {
+    "goal": "E36",
+    "mode": "offline_replay",
+    "camera_mode": "separate",
+    "memory": false,
+    "execute": "replay",
+    "model_name": "Qwen/Qwen3-VL-8B-Instruct",
+    "model_backend": "transformers"
+  },
+  "executed": true,
+  "response": {
+    "done": false,
+    "action": {
+      "name": "APPROACH_LANDMARK",
+      "params": {
+        "landmark_id": "L001",
+        "direction": "forward",
+        "target": "E36",
+        "target_description": "Dark grey door with label 50E36 visible on the wall beside it.",
+        "stop_condition": "target remains centred and proximity becomes reached",
+        "capture_after": true,
+        "evidence_view": "FRONT",
+        "horizontal_position": "center",
+        "proximity": "near",
+        "horizontal_offset_fraction": 0.0
+      },
+      "reason": "The exact target is centred in FRONT but the robot has not yet reached it.",
+      "confidence": "medium",
+      "evidence_score": 0.6425,
+      "is_valid": true,
+      "invalid_reason": ""
+    }
+  },
+  "execution_result": {
+    "safety": {
+      "sensor_mode": "placeholder",
+      "bypassed": true,
+      "allowed": true,
+      "reason": "Offline replay -- no physical robot/LiDAR involved."
+    }
+  }
+}
