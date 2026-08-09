@@ -1,0 +1,368 @@
+{
+  "goal": {
+    "raw_goal": "B0.014",
+    "target_type": "room_or_location",
+    "known_tokens": [
+      "B0.014",
+      "B0-014",
+      "B0014",
+      "Room B0014"
+    ],
+    "aliases": [
+      "B0.014",
+      "B0-014",
+      "B0014",
+      "Room B0014"
+    ],
+    "possible_interpretations": [
+      {
+        "interpretation": "May mean Building/Zone B, Floor 0, Room 014.",
+        "evidence_needed": [
+          "building or zone sign for B",
+          "floor indicator 0",
+          "door label matching B0.014 or B0014"
+        ],
+        "confidence": "medium"
+      },
+      {
+        "interpretation": "May simply be the full room label/code 'B0.014' without separable building/floor meaning.",
+        "evidence_needed": [
+          "door label or directory entry exactly matching B0.014"
+        ],
+        "confidence": "medium"
+      }
+    ],
+    "constraints": {
+      "possible_building": "B",
+      "possible_floor": "0",
+      "possible_room": "014",
+      "possible_zone": null,
+      "target_name": null
+    },
+    "search_strategy": "Search for door labels, corridor range signs, directories, or floor/zone indicators matching ['B0.014', 'B0-014', 'B0014', 'Room B0014']; treat building/floor/room structure as a hypothesis until confirmed."
+  },
+  "status": "Goal=B0.014 | records=2 | memory_landmarks=30 | session_memory_active=True | inherited_previous_memory=True",
+  "total_steps": 2,
+  "records": [
+    {
+      "image_num": 1,
+      "image_path": "live_frames/frame_1786262886771_front.png",
+      "memory_update": {
+        "useful": true,
+        "summary": "Target door B0.014 found with clear signage.",
+        "landmarks": [
+          {
+            "id": "L029",
+            "category": "door",
+            "description": "White door with room label B0.014 and bicycle parking sign.",
+            "text": "B0.014",
+            "pose": {},
+            "status": "unvisited",
+            "confidence": "high",
+            "evidence_score": 1.0,
+            "evidence_breakdown": {
+              "category_score": 0.8,
+              "confidence_bonus": 0.1,
+              "text_bonus": 0.1,
+              "target_relevance_bonus": 0.1,
+              "direction_bonus": 0.0,
+              "traversable_bonus": 0.05,
+              "route_role_bonus": 0.0,
+              "missing_text_penalty": 0.0,
+              "partial_marker_penalty": 0.0,
+              "irrelevant_sign_penalty": 0.0,
+              "final_score": 1.0
+            },
+            "image_path": "live_frames/frame_1786262886771_front.png",
+            "extra": {
+              "direction": "none",
+              "room_range": null,
+              "arrow": null,
+              "target_relevance": "high",
+              "floor": "0",
+              "zone": null,
+              "source_view": "RIGHT",
+              "horizontal_position": "left",
+              "horizontal_offset_fraction": -0.4,
+              "proximity": "near",
+              "path_clear_visual": true,
+              "doorway_state": "unknown",
+              "threshold_state": "unknown",
+              "landmark_type": "semantic",
+              "navigation_role": "entrance",
+              "traversable": true,
+              "continuation_direction": "none",
+              "route_state": "visible_now",
+              "goal_support": "direct",
+              "target_direction": "none",
+              "source_image_index": 22
+            },
+            "observation_count": 1,
+            "selection_count": 1
+          }
+        ],
+        "hypotheses": [
+          "Target room B0.014 is directly accessible via the door on the right."
+        ],
+        "parse_ok": true,
+        "error": "",
+        "parse_attempts": 1,
+        "raw_response": ""
+      },
+      "verification": {
+        "target_visible": true,
+        "target_reached": false,
+        "matched_label": "B0.014",
+        "evidence_type": "target_door_label",
+        "confidence": "medium",
+        "evidence_score": 0.8,
+        "evidence_breakdown": {
+          "evidence_type_score": 0.95,
+          "visual_bonus": 0.1,
+          "label_match_bonus": 0.1,
+          "current_frame_bonus": 0.05,
+          "ambiguity_penalty": 0.0,
+          "final_score": 0.8,
+          "side_view_alignment_required": 1.0
+        },
+        "reason": "Exact target door 'B0.014' is visible, but arrival is not confirmed: source_view=RIGHT, horizontal_position=left, proximity=near.",
+        "landmark_id": "L029",
+        "raw": {
+          "source": "current_memory_side_view",
+          "landmark": {
+            "id": "L029",
+            "category": "door",
+            "description": "White door with room label B0.014 and bicycle parking sign.",
+            "text": "B0.014",
+            "pose": {},
+            "status": "unvisited",
+            "confidence": "high",
+            "evidence_score": 1.0,
+            "evidence_breakdown": {
+              "category_score": 0.8,
+              "confidence_bonus": 0.1,
+              "text_bonus": 0.1,
+              "target_relevance_bonus": 0.1,
+              "direction_bonus": 0.0,
+              "traversable_bonus": 0.05,
+              "route_role_bonus": 0.0,
+              "missing_text_penalty": 0.0,
+              "partial_marker_penalty": 0.0,
+              "irrelevant_sign_penalty": 0.0,
+              "final_score": 1.0
+            },
+            "image_path": "live_frames/frame_1786262886771_front.png",
+            "extra": {
+              "direction": "none",
+              "room_range": null,
+              "arrow": null,
+              "target_relevance": "high",
+              "floor": "0",
+              "zone": null,
+              "source_view": "RIGHT",
+              "horizontal_position": "left",
+              "horizontal_offset_fraction": -0.4,
+              "proximity": "near",
+              "path_clear_visual": true,
+              "doorway_state": "unknown",
+              "threshold_state": "unknown",
+              "landmark_type": "semantic",
+              "navigation_role": "entrance",
+              "traversable": true,
+              "continuation_direction": "none",
+              "route_state": "visible_now",
+              "goal_support": "direct",
+              "target_direction": "none",
+              "source_image_index": 22
+            },
+            "observation_count": 1,
+            "selection_count": 0
+          }
+        }
+      },
+      "action": {
+        "name": "ALIGN_WITH_LANDMARK",
+        "params": {
+          "landmark_id": "L029",
+          "direction": "right",
+          "target": "B0.014",
+          "target_description": "White door with room label B0.014 and bicycle parking sign.",
+          "stop_condition": "target landmark centred in FRONT camera",
+          "capture_after": true,
+          "evidence_view": "RIGHT",
+          "horizontal_position": "left",
+          "horizontal_offset_fraction": -0.4,
+          "proximity": "near"
+        },
+        "reason": "The exact target is visible in the RIGHT view and must first be turned into the FRONT camera.",
+        "confidence": "medium",
+        "evidence_score": 0.8,
+        "evidence_breakdown": {
+          "action_base_score": 0.65,
+          "supporting_landmark_score": 1.0,
+          "supporting_landmark_bonus": 0.15,
+          "no_landmark_penalty": 0.0,
+          "partial_marker_penalty": 0.0,
+          "used_landmark_penalty": 0.0,
+          "invalid_penalty": 0.0,
+          "mismatched_room_code_penalty": 0.0,
+          "structural_route_penalty": 0.0,
+          "final_score": 0.8
+        },
+        "goal_reached": false,
+        "needs_verification": true,
+        "raw": {},
+        "is_valid": true,
+        "invalid_reason": ""
+      },
+      "executed": false
+    },
+    {
+      "image_num": 2,
+      "image_path": "live_frames/frame_1786262984901_front.png",
+      "memory_update": {
+        "useful": true,
+        "summary": "Target door B0.014 found with clear label and QR code.",
+        "landmarks": [
+          {
+            "id": "L030",
+            "category": "door",
+            "description": "White door with room label B0.014 and QR code for lecture halls.",
+            "text": "B0.014",
+            "pose": {},
+            "status": "used",
+            "confidence": "high",
+            "evidence_score": 1.0,
+            "evidence_breakdown": {
+              "category_score": 0.8,
+              "confidence_bonus": 0.1,
+              "text_bonus": 0.1,
+              "target_relevance_bonus": 0.0,
+              "direction_bonus": 0.0,
+              "traversable_bonus": 0.05,
+              "route_role_bonus": 0.0,
+              "missing_text_penalty": 0.0,
+              "partial_marker_penalty": 0.0,
+              "irrelevant_sign_penalty": 0.0,
+              "final_score": 1.0
+            },
+            "image_path": "live_frames/frame_1786262984901_front.png",
+            "extra": {
+              "direction": "none",
+              "room_range": null,
+              "arrow": null,
+              "target_relevance": "direct",
+              "floor": "0",
+              "zone": null,
+              "source_view": "FRONT",
+              "horizontal_position": "center",
+              "horizontal_offset_fraction": 0.0,
+              "proximity": "near",
+              "path_clear_visual": true,
+              "doorway_state": "unknown",
+              "threshold_state": "before",
+              "landmark_type": "semantic",
+              "navigation_role": "none",
+              "traversable": true,
+              "continuation_direction": "none",
+              "route_state": "visible_now",
+              "goal_support": "direct",
+              "target_direction": "none",
+              "source_image_index": 23
+            },
+            "observation_count": 1,
+            "selection_count": 1
+          }
+        ],
+        "hypotheses": [
+          "Target room B0.014 is directly ahead, confirmed by door label."
+        ],
+        "parse_ok": true,
+        "error": "",
+        "parse_attempts": 1,
+        "raw_response": ""
+      },
+      "verification": {
+        "target_visible": true,
+        "target_reached": true,
+        "matched_label": "B0.014",
+        "evidence_type": "target_door_label",
+        "confidence": "high",
+        "evidence_score": 1.0,
+        "evidence_breakdown": {
+          "evidence_type_score": 0.95,
+          "visual_bonus": 0.1,
+          "label_match_bonus": 0.1,
+          "current_frame_bonus": 0.05,
+          "ambiguity_penalty": 0.0,
+          "final_score": 1.0
+        },
+        "reason": "The full target label 'B0.014' is clearly visible and centered on the white door in the FRONT camera view.",
+        "landmark_id": "L030",
+        "raw": {
+          "target_visible": true,
+          "target_reached": true,
+          "matched_label": "B0.014",
+          "evidence_type": "target_door_label",
+          "confidence": "high",
+          "reason": "The full target label 'B0.014' is clearly visible and centered on the white door in the FRONT camera view.",
+          "landmark_id": "L030"
+        }
+      },
+      "action": {
+        "name": "STOP_AND_VERIFY",
+        "params": {
+          "landmark_id": "L030",
+          "target": "B0.014",
+          "evidence_type": "target_door_label",
+          "evidence_view": "NONE"
+        },
+        "reason": "The full target label 'B0.014' is clearly visible and centered on the white door in the FRONT camera view.",
+        "confidence": "high",
+        "evidence_score": 1.0,
+        "evidence_breakdown": {
+          "evidence_type_score": 0.95,
+          "visual_bonus": 0.1,
+          "label_match_bonus": 0.1,
+          "current_frame_bonus": 0.05,
+          "ambiguity_penalty": 0.0,
+          "final_score": 1.0
+        },
+        "goal_reached": true,
+        "needs_verification": false,
+        "raw": {
+          "verification": {
+            "target_visible": true,
+            "target_reached": true,
+            "matched_label": "B0.014",
+            "evidence_type": "target_door_label",
+            "confidence": "high",
+            "evidence_score": 1.0,
+            "evidence_breakdown": {
+              "evidence_type_score": 0.95,
+              "visual_bonus": 0.1,
+              "label_match_bonus": 0.1,
+              "current_frame_bonus": 0.05,
+              "ambiguity_penalty": 0.0,
+              "final_score": 1.0
+            },
+            "reason": "The full target label 'B0.014' is clearly visible and centered on the white door in the FRONT camera view.",
+            "landmark_id": "L030",
+            "raw": {
+              "target_visible": true,
+              "target_reached": true,
+              "matched_label": "B0.014",
+              "evidence_type": "target_door_label",
+              "confidence": "high",
+              "reason": "The full target label 'B0.014' is clearly visible and centered on the white door in the FRONT camera view.",
+              "landmark_id": "L030"
+            }
+          }
+        },
+        "is_valid": true,
+        "invalid_reason": ""
+      },
+      "executed": false
+    }
+  ]
+}

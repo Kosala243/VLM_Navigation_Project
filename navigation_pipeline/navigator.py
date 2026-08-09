@@ -352,6 +352,7 @@ class NavigationSystem:
         keep_memory: bool = False,
         save_step_results: bool = False,
         run_settings: dict[str, Any] | None = None,
+        reset_memory_each_step: bool = False,
     ) -> NavigationLog:
         """Run navigation over an ordered sequence of images.
 
@@ -378,6 +379,18 @@ class NavigationSystem:
         execute, matching the live pipeline's schema). Defaults to a
         minimal replay-only dict when save_step_results is True and
         this is omitted.
+
+        reset_memory_each_step, when True, clears self.memory before
+        every step instead of letting landmarks accumulate across the
+        run -- mirroring pipeline_api.py's /single_step endpoint
+        (new_navigation_system(goal, keep_memory=False) on every call),
+        so a "no memory" ablation can be run offline the same way it
+        already can live via --memory false. self.goal is left alone
+        (it's the parsed goal, not accumulated landmark memory, and
+        re-parsing it every step would be pure overhead for no
+        behavioral difference). Off by default so every existing
+        navigate() caller keeps accumulating memory across steps
+        exactly as before.
         """
         if (
             image_paths_sequence is not None
@@ -414,6 +427,8 @@ class NavigationSystem:
                 if image_paths_sequence is not None
                 else None
             )
+            if reset_memory_each_step:
+                self.memory.clear()
             action, success = self.step(image_path, image_paths=image_paths)
             step_number += 1
 

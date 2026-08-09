@@ -97,6 +97,12 @@ def main():
     goal = os.getenv("NAV_GOAL", "C0.004")
     image_dir = Path(os.getenv("IMAGE_DIR", "robot_live_frames/step_test_C0.004"))
     keep_memory = _env_bool("KEEP_MEMORY", False)
+    # "true" (default): landmarks accumulate across steps within this run,
+    # same as always. "false": memory is cleared before every step, mirroring
+    # pipeline_api.py's /single_step (used by thinkpad_robot_capture_to_amd.py's
+    # --memory false) -- for a memory-on/off ablation on full precision, same
+    # as the one already possible live on the quantized backend.
+    memory_enabled = _env_bool("MEMORY", True)
     max_images_env = os.getenv("MAX_IMAGES", "").strip()
     # "separate" (default, matches IMAGE_DIR's default robot_live_frames
     # layout): image_dir is a folder of per-step subfolders, each with
@@ -133,6 +139,7 @@ def main():
 
     print(f"Found {len(image_sequence)} images")
     print(f"Camera mode: {camera_mode}")
+    print(f"Memory: {memory_enabled}")
     print(f"Goal: {goal}")
     print(f"Image dir: {image_dir}")
 
@@ -161,11 +168,18 @@ def main():
         save_dir=save_dir,
         keep_memory=keep_memory,
         save_step_results=True,
+        reset_memory_each_step=not memory_enabled,
         run_settings={
             "goal": goal,
             "mode": "offline_replay",
             "camera_mode": camera_mode,
-            "memory": keep_memory,
+            # This is the memory-on/off ablation flag (landmarks
+            # persisting across steps within this run), not KEEP_MEMORY
+            # (which is about carrying memory over from a *previous*
+            # goal -- meaningless for this single-goal-per-process
+            # script). scripts/aggregate_success_rates.py already groups
+            # by (goal, memory), so this slots straight into it.
+            "memory": memory_enabled,
             "execute": "replay",
             "model_name": model_name,
             "model_backend": model.backend,

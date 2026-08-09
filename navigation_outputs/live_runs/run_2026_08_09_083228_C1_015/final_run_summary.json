@@ -1,0 +1,101 @@
+{
+  "run_settings": {
+    "started_at": "2026-08-09T08:32:28",
+    "goal": "C1.015",
+    "mode": "auto",
+    "camera_mode": "separate",
+    "api": "http://ernis-amd395:8001",
+    "robot_user": "unitree",
+    "robot_ip": "192.168.123.14",
+    "camera_device": "/dev/video3",
+    "front_device": "/dev/video2",
+    "left_device": "/dev/video4",
+    "right_device": "/dev/video3",
+    "capture_size": "960x720",
+    "execute": "false",
+    "cmd_vel_topic": "/cmd_vel",
+    "forward_speed": 0.12,
+    "turn_speed": 0.2,
+    "move_duration": 0.4,
+    "forward_pulse_duration": 0.4,
+    "turn_pulse_duration": 0.35,
+    "exploration_turn_pulse_duration": 1.3,
+    "approach_pulse_duration": 0.3,
+    "doorway_pulse_duration": 0.25,
+    "search_pulse_duration": 1.3,
+    "max_alignment_pulses": 8,
+    "max_approach_pulses": 12,
+    "max_doorway_pulses": 8,
+    "max_search_pulses": 6,
+    "safety_mode": "placeholder",
+    "allow_motion_without_safety_sensor": false,
+    "use_yaw_feedback": false,
+    "high_state_topic": "/high_state",
+    "auto_redirect_after_blocks": 0,
+    "invert_turn": false,
+    "memory": "true",
+    "interval": 5.0,
+    "max_steps": 50,
+    "max_no_progress_retries": 1,
+    "stitch_width": 960,
+    "stitch_height": 720,
+    "min_evidence_score": 0.3,
+    "allow_low_confidence": false
+  },
+  "ended_at": "2026-08-09T09:14:35",
+  "goal": "C1.015",
+  "final_goal": "C1.026",
+  "legs": [
+    {
+      "goal": "C1.015",
+      "start_step": 1,
+      "end_step": 13,
+      "steps": 13,
+      "success": true
+    },
+    {
+      "goal": "C1.020",
+      "start_step": 14,
+      "end_step": 17,
+      "steps": 4,
+      "success": true
+    },
+    {
+      "goal": "C1.026",
+      "start_step": 18,
+      "end_step": 22,
+      "steps": 5,
+      "success": true
+    }
+  ],
+  "steps": 22,
+  "success": true,
+  "metrics": {
+    "success": true,
+    "success_rate_single_run": 1.0,
+    "failure_rate_single_run": 0.0,
+    "total_steps": 22,
+    "steps_to_success": 22,
+    "executed_steps": 0,
+    "non_executed_steps": 22,
+    "low_confidence_actions": 11,
+    "invalid_actions": 2,
+    "average_action_evidence_score": 0.5866818181818182,
+    "action_counts": {
+      "FOLLOW_DIRECTION": 4,
+      "NAVIGATE_TO_LANDMARK": 5,
+      "ALIGN_WITH_LANDMARK": 6,
+      "USE_ELEVATOR_OR_STAIRS": 4,
+      "STOP_AND_VERIFY": 3
+    },
+    "evidence_view_counts": {
+      "FRONT": 9,
+      "RIGHT": 5,
+      "LEFT": 4,
+      "NONE": 3,
+      "STITCHED_UNKNOWN": 1
+    },
+    "obstacle_avoided": null,
+    "obstacle_note": "Obstacle avoidance is not measured automatically yet. Add manual annotations or sensor-based obstacle logging later."
+  }
+}
