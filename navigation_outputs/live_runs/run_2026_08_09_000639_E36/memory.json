@@ -1,0 +1,13 @@
+{
+  "image_count": 0,
+  "landmarks": [],
+  "observation_summaries": [],
+  "hypotheses": [],
+  "failed_actions": [],
+  "latest_perception": {
+    "parse_ok": null,
+    "error": "",
+    "parse_attempts": 0,
+    "raw_response": ""
+  }
+}

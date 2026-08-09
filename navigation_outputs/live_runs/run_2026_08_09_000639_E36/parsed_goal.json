@@ -1,0 +1,35 @@
+{
+  "raw_goal": "E36",
+  "target_type": "room_or_location",
+  "known_tokens": [
+    "E36",
+    "E-36",
+    "Room E36",
+    "Unit E36"
+  ],
+  "aliases": [
+    "E36",
+    "E-36",
+    "Room E36",
+    "Unit E36"
+  ],
+  "possible_interpretations": [
+    {
+      "interpretation": "May be a full room/unit label 'E36', or Zone E with unit/room 36.",
+      "evidence_needed": [
+        "door label E36",
+        "zone/block sign E",
+        "unit/room label 36"
+      ],
+      "confidence": "medium"
+    }
+  ],
+  "constraints": {
+    "possible_building": null,
+    "possible_floor": null,
+    "possible_room": "36",
+    "possible_zone": "E",
+    "target_name": null
+  },
+  "search_strategy": "Search for door labels, corridor range signs, directories, or floor/zone indicators matching ['E36', 'E-36', 'Room E36', 'Unit E36']; treat building/floor/room structure as a hypothesis until confirmed."
+}
