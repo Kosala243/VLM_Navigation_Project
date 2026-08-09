@@ -1,0 +1,1386 @@
+Everything related to LiDAR measurements:
+
+On the numbers themselves: both runs are telling the same story, which is useful for ruling things out.
+
+- Range: 1.745 m and 1.762 m — nearly identical between runs.
+- Position: (x≈1.62–1.66, y≈-0.59 to -0.60) — also nearly identical, and bearing = atan2(y,x) ≈ -20°, i.e. right at the edge of your ±20° forward cone, not dead-ahead.
+- z / elevation: 0.09–0.27 m, elevation 2.9–8.8° — small and shallow, not the strongly-negative/steep-downward signature the probe script calls out for floor pickup.
+
+Per the probe script's own diagnostic (z close to 0, shallow elevation → structure, not floor), this reads as a real, fixed feature — not floor bleed-through. But "self-occlusion from the robot's own structure" would normally mean something within centimeters of the LiDAR, not 1.75 m out, so I'd hold off on that specific label. Two more consistent explanations fit better:
+
+1. Something genuinely at that bearing (~20° to the right) that a straight-ahead photo wouldn't catch — a wall, doorframe, or furniture edge just outside the camera's frame but inside the LiDAR's cone.
+2. A robot-mounted fixture (antenna, camera post, handle, carry strap) that extends far enough right-and-forward to intrude into the cone at that range — less common at 1.75 m but not impossible depending on your platform.
+
+Given it's landing right at the cone's edge angularly, my first guess is (1) — can you check what's ~1.7 m out and ~20° to the robot's right (not straight ahead) in that same spot? If it's consistently empty there too, then it's worth checking the robot's own hardware for anything protruding to the right at LiDAR height.
+
+Want to also share the image once you re-attach it, or keep iterating on calibration constants (mounting height / stop distance / cone half-angle) for the LiDAR gate work?
+**************************************************************************************************************************************************************************************
+After referring the correct image:
+
+That photo changes the read on the first batch. The robot (Unitree with the mast-mounted sensor) is facing toward the cluttered area — cardboard box, pallet jack, and the gray crate stack sit roughly 1.5–2 m out in that direction. So the consistent 1.75 m hit isn't self-occlusion or floor bleed — it's real: the LiDAR is correctly seeing that box/pallet-jack cluster. "Nothing in front" was true for the immediate few feet, but there's clutter right at the range the probe reported.
+
+The second batch (you standing front-right) confirms this nicely:
+
+- Run 1: 0.734 m, elevation 14.3° — that's you, standing close.
+- Runs 2–4: back to 1.755–1.757 m, elevation 4.9° — once you weren't the nearest thing, it reverted to the same box/crate hit as before (x/y essentially identical to the first batch: 1.644–1.646, -0.596).
+
+That's actually a good sign for the gate: the sensor is tracking the true nearest object each time, not sticking to a fixed artifact, and it correctly picked up a person up close before falling back to the static background.
+
+It's also useful for the height-band filter specifically: every real-object hit here (box, pallet jack, person) landed at shallow positive elevation (2.9°–14.3°) — well clear of the steep negative elevation (down near -14.8°, the most downward channel) that floor pickup would show. So there's a wide, easy separation window between "floor" and "real obstacle" in this data, which de-risks that part of the filter design.
+
+Given this resolves the self-occlusion question cleanly (it isn't self-occlusion), do you want to:
+1. Use this same setup to nail down the two still-open calibration constants (LiDAR mounting height above floor, stop-distance threshold), or
+2. Move on to writing lidar_reader.py with the height-band + cone filtering now that the sensor behavior looks sane?
+**************************************************************************************************************************************************************************************
+do you still need to test anything with robot? or we have all the details to start working on LiDAR part?
+
+Not fully — two small things are still missing before the calibration constants are locked in, though neither requires a big new test session:
+
+1. Mounting height above floor — a physical tape-measure reading from the floor to the LiDAR/mast unit. Nothing in the probe data gives you this directly (it's all relative to the sensor itself), and it matters because a height-band filter (excluding floor by absolute height rather than by elevation angle) is more robust across range than an angle cutoff — a flat floor sits at a constant height below the sensor regardless of distance, whereas its elevation angle changes with range. Takes 30 seconds with a tape measure, no robot motion needed.
+2. An actual floor-point z reading — right now the probe only reports the closest point in the forward cone, never a point we've confirmed is floor. All your data so far (box, pallet jack, person) is legitimate obstacles, which is great for showing separation exists, but we haven't looked at the z value floor points actually converge to. I can extend lidar_probe.py to also print stats for the steepest-downward-elevation points (near -14.8°) so you can see the floor's real z band — that's a 5-line script change, then one more probe run in the same spot, no new physical setup.
+3. Stop-distance threshold — this one's a judgment call, not a measurement gap. It depends on how far the robot travels during one motion pulse, which the earlier supervised motion test already exercised (per the backlog). If you already have a feel for pulse travel distance from that test, we can pick a threshold now; if not, it's worth timing once.
+
+Cone half-angle (±20°) I'd call settled — your data shows healthy point density and correctly separates near/far real objects at that width, no more testing needed there.
+
+So: not zero remaining lab work, but small — a tape measurement plus one more probe run (after I add the floor-band print) would close it out. Want me to make that probe script change now?
+**************************************************************************************************************************************************************************************
+yes, add the floor-band print to lidar_probe.py.
+
+  To answer for your questions:
+  1. Mounting height above floor: 38cm (0.38meter), LiDAR is setup 43.5cm (-.435meters) above the floor on top of the robot - Check the image named "20260727_144133.jpg" under /temp_files folder.
+  2. make the chnages in probe scipt, I can check this tomorrow after going to the lab.
+  3. What should I measure here, what do you mean "by how far the robot travels during one motion pulse", you mean the distance travelled in meters from starting point to the ending point? tell me clearly
+
+Let me know how are you planning to proceed with LiDAR implementation. then I'll tell what idea I have in mind.
+Do not make any code changes other than LiDAR probe change.
+
+Probe script updated and syntax-checked. Now, your questions:
+
+Mounting height — got it from the photo: LiDAR unit spans 38cm (base) to 43.5cm (top) above the floor. I'll use the midpoint, ~0.41m, as the sensor origin estimate until tomorrow's floor-band readout gives us the actual measured value directly (that's the whole point of the new section — it'll print the real z instead of us estimating from a photo).
+
+Stop-distance measurement, clarified: yes, exactly what you said — distance traveled from start to stop during a single motion pulse. Concretely: mark the robot's nose position on the floor, trigger one forward pulse through the existing cmd_vel bridge (the one already built and hardware-tested), let it complete, then measure the gap between the start mark and where the nose ends up. That number tells us how much ground the robot commits to covering once a pulse is allowed to start — the safety gate needs to refuse a pulse if the LiDAR shows less clearance than that (plus a margin), since the current design checks before a pulse starts rather than interrupting one mid-flight.
+
+Plan for the LiDAR implementation (no code yet, per your instruction — just laying out the approach):
+
+1. lidar_reader.py as a persistent Python 2 bridge subprocess, same pattern as cmd_vel_bridge.py/PersistentCmdVelBridge — not a fresh one-shot rospy.wait_for_message subprocess per check, since spinning up a new ROS node on every check_motion() call would add latency and is exactly the kind of thing that pattern was built to avoid. It stays subscribed to /rslidar_points and answers on-demand for "nearest range in the forward cone, floor excluded."
+2. Filter logic inside that bridge: cone half-angle ±20° (already validated by today's data — good point density, correctly separates near/far real objects), height-band cutoff by absolute z (not elevation angle) using the mounting height, since z stays ~constant for floor across range while elevation angle doesn't — tomorrow's probe run confirms the exact cutoff.
+3. robot_safety.py: give RobotSafetyMonitor a real "lidar" mode — on init, spawn the bridge subprocess; check_motion() queries nearest forward-cone range and blocks/allows before issuing a pulse. Gates only forward/backward pulses, skips pure turns, per the already-agreed minimal design.
+4. Stop-distance threshold: pulse-travel distance (from the measurement above) plus a safety margin, hardcoded for now — no new CLI flags until this proves out on real hardware.
+
+That's the shape I have in mind. What's your idea?
+**************************************************************************************************************************************************************************************
+ I need a clarification, I noticed one thing today during the test runs I did with my pipeline, turn_duration is little high, and forward moving speed is low, so if left or right turns are triggered, the robot is turning a lot, which makes the navigation tougher, coz next set of images show different view from the previous one and I felt like it stuck in a loop between left and right sometimes. So Is it advisable for the model to decide the distance to travel in the front when no obstacles are detected or it's not safe to hand that decision to model or pipeline? and some steps needs a lot of turning, some needs a little turning, so is there any way to setup that or that's not needed?
+  can the robot decide how much distance it has to travel in the front or side, for example, say the open door is 1 meter ahead, can the robot walk for like 1meter or 0.6 or 0.7meters to walk and then take a picture? - you understand what I mean? I need clarity on this, how the motion decision (how much to turn, how much distance the robot needs to go forward) can be done dynamically so the navigation becoming easier, instead of triggering some non-useful movements. - give me suggestions, how it's done effectively in real world, and tell me whether it can be done for my project. Do not change any code now.
+
+
+Good context to have — I checked the actual numbers instead of guessing, and they clarify what's happening.
+
+Current state (confirmed in code): every turn action fires the exact same pulse — turn_speed=0.20 rad/s × turn_pulse_duration=0.35s ≈ 4° nominal per pulse — whether it's ALIGN_WITH_LANDMARK (meant to be a tiny nudge) or NAVIGATE_TO_FRONTIER/FOLLOW_DIRECTION (meant to explore in a new direction). Forward pulses are similarly fixed and small: 0.12 m/s × 0.40s ≈ 4.8cm. And the prompt in action_generator.py explicitly tells the model not to specify duration/velocity/step-count — it only ever picks direction + qualitative state (near/far, left/center/right), never a magnitude. There's also no odometry/IMU feedback anywhere in the repo — robot_safety.py itself flags that as future work — so every pulse is a blind, open-loop timed guess with no way to confirm how far the robot actually moved.
+
+That combination — one-size-fits-all turn magnitude, tiny forward steps, and zero feedback — is a textbook setup for the left/right hunting you're describing: a fine correction and a "look somewhere completely different" turn get treated identically, so it easily overshoots small corrections and undershoots big reorientations.
+
+Should the model output exact distance/degrees? No — keep that prohibition. VLMs are unreliable at estimating metric distance from a single monocular frame, and because this is open-loop, a bad number isn't caught until the next full image cycle. That's not a limitation specific to your setup; it's why most real VLM/LLM-navigation systems (VLN, LM-Nav, ViNT-style pipelines) keep the model's output categorical and push the actual metric conversion into code.
+
+What real systems do instead, roughly in increasing effort:
+
+1. Magnitude tiers, not raw numbers — let the model pick from a small enum (small/large turn, or reuse the existing alignment-vs-exploration action distinction that already exists in your code) and map each tier to its own calibrated duration. This is the cheapest fix and needs no schema change at all for turns — ALIGN_WITH_LANDMARK/cue_alignment vs. NAVIGATE_TO_FRONTIER/route_alignment/direction_turn are already distinct code paths sharing one constant; splitting that constant into a fine value and a coarse value alone should reduce hunting.
+2. Grounded magnitude instead of guessed magnitude — if a landmark/doorway's position in the image is known, compute the actual heading correction from its pixel offset relative to the camera's horizontal FOV, rather than trusting the model's qualitative judgment at all. More accurate, moderate effort.
+3. LiDAR-scaled forward distance — this directly answers your "door is 1m away, walk 1m not forever" question. Once the LiDAR gate exists, instead of a pure block/allow decision it can also report how much clear distance is ahead, and the forward pulse duration can be scaled to that (capped at a max), so the robot advances toward something close and stops appropriately instead of crawling in fixed 4.8cm increments. This is a natural extension of the LiDAR work already planned, not a separate project.
+4. True closed-loop stopping (odometry/heading feedback ends the pulse when the target is reached, not a timer) — the real fix for open-loop drift, but needs sensor/SDK support that doesn't exist here yet and is more effort.
+
+My recommendation: do #1 first — it's a same-day, zero-risk change (just recalibrating existing constants, no model/schema touch) and directly targets the imbalance you noticed. See if that alone kills the hunting before taking on #2 or #3. #3 is worth planning for once the LiDAR gate lands anyway, since you're about to have real range data in hand.
+
+Want me to scope #1 as an actual change once we're done with the LiDAR calibration, or fold it in now as a parallel track?
+**************************************************************************************************************************************************************************************
+From #1, #2, #3 which one would you suggest/recommend as a long-term setup useful for any building navigation? And to implement #4, what are details we need, what is sensor/SDK support? - just answer, no code change.
+
+
+Long-term pick between #1/#2/#3: #3 (LiDAR-grounded distance) and #2 (vision-grounded turning) are the real long-term architecture — they solve different axes of the same problem, not competing options. If I have to rank them:
+
+- #3 first. It's grounded in a physical measurement (range), not a model's visual judgment, so it generalizes to any building without retuning — a 1m gap reads as 1m whether it's a hallway in this lab or a corridor somewhere else. It also reuses the sensor you're already installing for safety, so there's no separate investment. This is the one I'd treat as the backbone.
+- #2 second, as the complement for turning: correcting heading toward a visible target from its pixel offset is pure image geometry (camera FOV math), so it's equally portable across buildings — but it only applies when something is actually visible to aim at.
+- #1 stays as the fallback, not the end-state: for pure exploration turns where nothing is visible yet (frontier search, no landmark grounded), you still need some fixed step, so keep tiers there. But tiers alone don't generalize well — a "medium turn" calibrated in this lab's hallway width isn't a principled quantity anywhere else, it's just a tuned constant.
+
+So: build #3 and #2 as the real system, keep #1 permanently as the no-target fallback rather than trying to make it the whole solution.
+
+#4 — what's actually needed, and I found something concrete rather than guessing: temp_files/LiDAR_details.txt (already captured from the robot) shows a /high_state topic (unitree_legged_msgs/HighState, ~50Hz) with IMU orientation at /high_state/imu/rpy — roll/pitch/yaw already available, no new hardware or SDK needed. That file also explicitly notes no odometry topic is currently published.
+
+That splits #4 into two very different-cost pieces:
+
+1. Closed-loop turning (cheap, ready now) — yaw is already on the wire. A turn pulse could read current yaw before starting, compute target yaw = current + desired delta, and stop the twist publish when yaw crosses that target (with a timeout cap as a safety fallback, since IMU yaw can drift/jitter). No new sensor, no new SDK — just consuming a topic that's already flowing but currently unused. This is the highest-value/lowest-cost piece of #4 and would directly fix the turn-overshoot half of the hunting problem.
+2. Closed-loop forward distance (harder) — no odometry topic exists, so "how far did I actually walk" isn't available for free. Options, increasing effort:
+  - Check whether /high_state itself carries velocity or position-estimate fields beyond IMU (Unitree's HighState message sometimes includes forward/side speed or a fused position estimate even without a dedicated /odom topic) — worth a rosmsg show unitree_legged_msgs/HighState next time you're at the robot, since if it's already there this becomes as cheap as the yaw case.
+  - If not, integrate commanded speed × time as a rough dead-reckoning estimate (still open-loop underneath, just a better guess than a fixed timer) — cheap but not truly closed-loop.
+  - If real closed-loop forward stopping matters, LiDAR-based scan matching (comparing consecutive point clouds to estimate how far you moved) or visual odometry from the existing camera — both real engineering projects on top of the minimal LiDAR gate, not a quick add.
+
+Given that, I'd sequence it: ship the LiDAR gate → add #3 (LiDAR-scaled forward pulses, solves distance without needing odometry) → add yaw-closed-loop turning (cheap, /high_state is already there) → only chase full forward odometry/SLAM if #3's range-capped approach turns out insufficient.
+**************************************************************************************************************************************************************************************
+ So, let's 1st implement LiDAR "Plan for the LiDAR implementation" (as per your plan from earlier response) -> then we will go ahead and implement " I'd sequence it: ship the LiDAR gate → add #3 (LiDAR-scaled forward pulses, solves distance without needing odometry) → add yaw-closed-loop turning (cheap, /high_state is already there) → only chase full forward odometry/SLAM if #3's range-capped approach turns out insufficient."
+
+  below was your earlier response for "Plan for the LiDAR implementation":
+  "Plan for the LiDAR implementation (no code yet, per your instruction — just laying out the approach):
+  1. lidar_reader.py as a persistent Python 2 bridge subprocess, same pattern as cmd_vel_bridge.py/PersistentCmdVelBridge — not a fresh one-shot rospy.wait_for_message subprocess per check, since spinning up a new ROS node on every check_motion() call would add latency and is exactly the kind of thing that pattern was built to avoid. It stays subscribed to /rslidar_points and answers on-demand for "nearest range in the forward cone, floor excluded."
+  2. Filter logic inside that bridge: cone half-angle ±20° (already validated by today's data — good point density, correctly separates near/far real objects), height-band cutoff by absolute z (not elevation angle) using the mounting height, since z stays ~constant for floor across range while elevation angle doesn't — tomorrow's probe run confirms the exact cutoff.
+  3. robot_safety.py: give RobotSafetyMonitor a real "lidar" mode — on init, spawn the bridge subprocess; check_motion() queries nearest forward-cone range and blocks/allows before issuing a pulse. Gates only forward/backward pulses, skips pure turns, per the already-agreed minimal design.
+  4. Stop-distance threshold: pulse-travel distance (from the measurement above) plus a safety margin, hardcoded for now — no new CLI flags until this proves out on real hardware."
+be accurate with the code changes.
+
+All behaviors work correctly, including the fail-closed/bypass paths when the bridge can't spawn (no ROS-sourced env in this shell — same limitation cmd_vel_bridge.py already has, not new).
+All four pieces of the plan are implemented, matching your original outline point-for-point:
+
+New file lidar_bridge.py — persistent Python 2 subprocess, same protocol style as cmd_vel_bridge.py (newline JSON, one-time rospy.init_node, ready handshake). Instead of cmd_vel's publisher, it subscribes to /rslidar_points, keeps the latest scan in memory, and answers {"cmd": "get_range"} on demand by filtering the stored scan (forward cone ±20°, floor excluded by height) rather than blocking on a fresh message each time — so check_motion() calls stay fast.
+
+robot_safety.py — added PersistentLidarBridge (Python-3-side subprocess owner, mirrors PersistentCmdVelBridge's pattern but not literally imported from robot_executor.py, since that file is the wrong dependency direction) and a real "lidar" mode on RobotSafetyMonitor. check_motion() now gates forward/backward pulses (nonzero linear_x) against the nearest in-cone range, and unconditionally allows pure turns — verified both paths behave correctly, plus confirmed "placeholder"/"disabled" are byte-for-byte unchanged (smoke-tested all five mode combinations above).
+
+Wiring — added "lidar" to the --safety-mode choices in both robot_executor.py and thinkpad_robot_capture_to_amd.py (the only CLI change, and it's extending an existing flag's valid values, not a new flag).
+
+Two values are still provisional and clearly marked in the code — I did not want to fabricate numbers you haven't measured yet:
+- LIDAR_FLOOR_HEIGHT_CUTOFF_M = -0.30 — estimated from the photo (38–43.5cm mounting height), not yet from the actual floor-band probe output. Once you run the updated lidar_probe.py, replace this with something just above the real observed floor z.
+- LIDAR_STOP_DISTANCE_M = 0.50 — placeholder pending the pulse-travel-distance measurement we discussed.
+
+Both live as named constants at the top of robot_safety.py, easy to update once you have the numbers.
+
+Not yet tested: I couldn't exercise the actual ROS path here (this shell doesn't have the ROS env sourced, same limitation cmd_vel_bridge.py already has — needs source /opt/ros/melodic/setup.bash etc. on the real run). Worth a real --safety-mode lidar run on hardware once you've filled in the two constants above.
+
+Want me to move on to #3 (LiDAR-scaled forward pulses) now, or pause here until you've run the floor-band probe and pulse-distance measurement to lock in those two constants?
+
+**************************************************************************************************************************************************************************************
+ answer this before proceeding with #3, what you've implemented now #1, #2, or #4?
+
+What I just implemented is none of #1/#2/#4 — it's a separate, earlier-agreed item: the LiDAR safety gate (from the original backlog, before the #1–#4 numbering existed). It only answers a binary question — is it safe to run the pulse that's already about to happen — and blocks/allows that fixed-size pulse accordingly. It does not change how big any pulse is.
+
+To place it precisely against #1–#4:
+- Not #1 (magnitude tiers) — no turn/forward duration logic was touched; pulses are still the same fixed sizes as before.
+- Not #2 (vision-grounded turning) — no image/pixel-offset logic; nothing about turning changed at all.
+- Not #4 (closed-loop yaw via IMU) — no /high_state/IMU consumption; still open-loop timed pulses.
+- It's a prerequisite for #3 (LiDAR-scaled forward pulses), not #3 itself — #3 needs the same range data this gate now provides, but would use it differently: instead of nearest < threshold → block, it would be pulse_duration = f(nearest, requested_duration) to size the forward pulse to the actual clear distance. The gate I just built stops short of that — it's block/allow only.
+
+So the sequence you outlined (gate → #3 → #4) is exactly on track: the gate is done, and #3 is the natural next step since lidar_bridge.py already gives you the nearest-range number _check_lidar_clearance needs — #3 would mostly be reworking how robot_executor.py's forward pulses consume that number, not new sensing infrastructure.
+**************************************************************************************************************************************************************************************
+go ahead and implement #3
+
+#3 is implemented and verified with a scripted test (stubbed safety monitor + stubbed cmd_vel bridge, since this shell has no ROS env) across five clearance scenarios — math confirmed correct in each case:
+
+┌────────────────────────────────────────────────────────┬────────────────────────────────────────────────┬────────────────────────────────────────────────┐
+│                        Scenario                        │                 Safe distance                  │            Resulting pulse duration            │
+├────────────────────────────────────────────────────────┼────────────────────────────────────────────────┼────────────────────────────────────────────────┤
+│ Nothing in range (open room)                           │ capped at MAX_FORWARD_PULSE_DISTANCE_M = 0.60m │ 5.00s                                          │
+├────────────────────────────────────────────────────────┼────────────────────────────────────────────────┼────────────────────────────────────────────────┤
+│ Obstacle at 5.0m                                       │ 0.60m (capped)                                 │ 5.00s                                          │
+├────────────────────────────────────────────────────────┼────────────────────────────────────────────────┼────────────────────────────────────────────────┤
+│ Obstacle at 1.0m                                       │ 1.0 − 0.5 = 0.50m                              │ 4.17s                                          │
+├────────────────────────────────────────────────────────┼────────────────────────────────────────────────┼────────────────────────────────────────────────┤
+│ Obstacle at 0.65m                                      │ 0.65 − 0.5 = 0.15m                             │ 1.25s                                          │
+├────────────────────────────────────────────────────────┼────────────────────────────────────────────────┼────────────────────────────────────────────────┤
+│ Obstacle at 0.51m (barely clear of the 0.5m stop line) │ 0.01m                                          │ 0.083s (above the 0.05s floor, so not clamped) │
+└────────────────────────────────────────────────────────┴────────────────────────────────────────────────┴────────────────────────────────────────────────┘
+
+Also confirmed APPROACH_LANDMARK/PASS_THROUGH_DOORWAY/SEARCH_FOR_CUE-style pulses and all pure turns are untouched — they kept their original fixed nominal durations exactly as before.
+
+What changed, in robot_executor.py:
+- New constants: MAX_FORWARD_PULSE_DISTANCE_M = 0.60 (provisional ceiling on a single pulse's travel), MIN_SCALED_PULSE_DURATION_S = 0.05 (floor so duration never hits zero), LIDAR_SCALABLE_MOTION_KINDS = {"route_advance", "direction_advance"}.
+- After the safety gate passes, if in "lidar" mode and the motion kind is one of those two (i.e. NAVIGATE_TO_FRONTIER/FOLLOW_DIRECTION moving forward — the actual "make progress across open space" actions), it recomputes pulse_duration from the LiDAR's nearest_range_m instead of using the fixed nominal value, and writes the new duration back into the logged command dict so results/logs reflect what actually ran.
+- Scoped deliberately to only those two motion kinds. APPROACH_LANDMARK, PASS_THROUGH_DOORWAY, READ_SIGN/CHECK_DOOR_LABEL's approach step, and SEARCH_FOR_CUE all keep their existing small fixed pulses — those are precision maneuvers meant to re-image often as they close in on a target, and scaling them up would defeat that purpose.
+
+One thing worth flagging before you rely on this, not a bug but a real tradeoff the math surfaced: at the current forward_speed=0.12 m/s, a fully-open-path pulse now runs for 5 full seconds in one blind, open-loop cmd_vel hold — versus the 0.4s pulses used everywhere else in this codebase. There's still no odometry/vision check during a pulse, so if something enters the path mid-pulse, nothing reacts until it ends. Options, not implemented yet since this wasn't part of #3's scope:
+- Keep MAX_FORWARD_PULSE_DISTANCE_M conservative (e.g. 0.2–0.3m) for initial hardware trials rather than the 0.60m I used as a placeholder.
+- Or, as a real follow-up: have _move_for_duration poll the LiDAR bridge partway through a long pulse and cut it short if the forward range suddenly drops — reuses the same lidar_bridge.py subprocess, no odometry needed. Worth doing before trusting long pulses in a space with foot traffic.
+
+LIDAR_STOP_DISTANCE_M (still 0.50m, provisional) and MAX_FORWARD_PULSE_DISTANCE_M (0.60m, provisional) both need real-hardware tuning — same open item as before, now joined by this second constant.
+
+Want me to lower MAX_FORWARD_PULSE_DISTANCE_M to something more conservative for the first hardware trial, or leave it as-is and revisit after you've run it once?
+**************************************************************************************************************************************************************************************
+"One thing worth flagging before you rely on this, not a bug but a real tradeoff the math surfaced: at the current forward_speed=0.12 m/s, a fully-open-path pulse now runs for 5 full seconds in one blind, open-loop cmd_vel hold — versus the 0.4s pulses used everywhere else in this codebase. There's still no odometry/vision check during a pulse, so if something enters the path mid-pulse, nothing reacts until it ends" - for this tradeoff, do this from your options, "Options, not implemented yet since this wasn't part of #3's scope: as a real follow-up: have _move_for_duration poll the LiDAR bridge partway through a long pulse and cut it short if the forward range suddenly drops — reuses the same lidar_bridge.py subprocess, no odometry needed. Worth doing before trusting long pulses in a space with foot traffic." be accurate.
+Tomorrow I'll go and check whether /high_state has inbuild odometry or not.
+
+
+Implemented and verified with three scripted scenarios (stubbed safety monitor + stubbed cmd_vel bridge, no real ROS needed):
+
+What changed in robot_executor.py:
+- New constant LIDAR_WATCH_CHUNK_SECONDS = 0.40 — reuses the existing forward_pulse_duration default as the "one blind increment" size, not an arbitrary new number.
+- New method _move_for_duration_with_lidar_watch(): instead of one long bridge.pulse(duration=5.0) call, it loops in 0.4s chunks, calling safety_monitor.check_motion() fresh before every chunk (not just once at the start). The moment a check comes back blocked, it stops issuing new chunks and returns — the robot is already halted because each completed chunk ends in _move_for_duration's existing confirmed stop().
+- Wired into execute_action: only pulses that are both LiDAR-scaled and longer than one chunk take this path. Everything else (turns, approach/doorway/search pulses, and short scaled pulses) is byte-for-byte the original single-shot call — verified below.
+
+Test 1 — obstacle appears mid-pulse: planned 5.00s pulse, first chunk (0.4s) ran clear, second re-check came back blocked → cut short at elapsed 0.40s of 5.00s planned, status pulse_cut_short_by_lidar, reason logged verbatim. Robot never got near the obstacle it would have walked 5s blindly toward.
+
+Test 2 — always clear: ran all 13 chunks (twelve 0.4s + one 0.2s remainder), summed to exactly 5.00s, completed normally as pulse_executed. Confirms the watch loop doesn't break the fully-open-path case.
+
+Test 3 — short scaled pulse (0.083s, under one chunk): bypassed the watch path entirely — exactly 1 check_motion call, 1 bridge pulse call, same as before this change. Confirms no added overhead for pulses that don't need watching.
+
+Also added command["elapsed_duration"] to the logged result whenever the watch path runs, so duration (planned) vs elapsed_duration (actual) are both visible in logs/results — useful for telling a cut-short pulse apart from a completed one downstream.
+
+One behavior change worth knowing about, not a defect: a long scaled pulse is now a sequence of short stop-then-go hops rather than one continuous glide, since each chunk ends in a confirmed stop before the next one's clearance check. Given the goal was catching something entering the path mid-pulse, that's the correct tradeoff, but it changes the motion's feel on hardware.
+
+Good call on checking /high_state for odometry tomorrow — that's the next real blocker for #4 (closed-loop yaw turning), and it's a pure investigation step, nothing here depends on it.
+**************************************************************************************************************************************************************************************
+ so tell me clearly,
+  1. what all I should test tomorrow apart from full pipeline test with robot? - give as points.
+  2. During full pipeline, how robot behaves with navigation? what behaviour change I may expect from robot from today's fixed distance and duration runs?
+  3. what should I notice tomorrow during testing the pipeline?
+  4. what have you changed till now and what else is pending? give as points.
+
+
+1. What to test tomorrow, beyond the full pipeline run
+
+- Run the updated lidar_probe.py (floor-band section) to get a real floor-z reading, and update LIDAR_FLOOR_HEIGHT_CUTOFF_M (currently -0.30, a photo-estimated placeholder) in robot_safety.py from that.
+- Isolate the LiDAR gate before combining it with the full pipeline — use robot_executor.py --safety-mode lidar --test-forward / --test-left / --test-right directly (no VLM involved) to confirm the bridge spawns, connects, and reports ready on real ROS.
+- Place a real obstacle at known distances (e.g. 0.3m, 0.5m, 0.7m, 1m) directly ahead and confirm block/allow matches expectations at each — this is the actual validation of LIDAR_STOP_DISTANCE_M = 0.50 (still provisional).
+- Check /high_state for real fields (rosmsg show unitree_legged_msgs/HighState) — confirm IMU rpy/yaw is really there as recorded, and look for any velocity/position field while you're in there (relevant to #4, and to the still-open "measure single-pulse travel distance" item).
+- Deliberately test a low obstacle (a box, cable reel, anything under ~30cm) in the path — this is the dangerous failure mode (height filter mistaking a real obstacle for floor and missing it), worth checking on purpose rather than discovering it by accident.
+- Trigger the mid-pulse cut-short on purpose: start a long clear-path forward pulse, then step into the forward cone partway through, and confirm you see [EXECUTOR] LiDAR watch: cutting pulse short... in the console and the robot actually stops.
+- Check the bridge shuts down cleanly — after a run, confirm no orphaned lidar_bridge.py process is left behind (ps aux | grep lidar_bridge), and check what happens if /rslidar_points isn't publishing yet when the executor starts (should fail closed, not hang or silently allow).
+
+2. Expected behavior change vs. today's fixed-duration runs
+
+- Forward pulses (NAVIGATE_TO_FRONTIER/FOLLOW_DIRECTION moving forward only) will vary a lot step to step — instead of the same ~4.8cm/0.4s hop every time, a clear stretch ahead can produce a pulse up to 0.6m/~5s, while a tighter gap produces something proportionally shorter. This is the whole point of #3 — fewer capture→plan→pulse→recapture cycles to cross open space.
+- A long pulse won't look like one smooth walk — it's chunked into 0.4s sub-hops with a full stop between each (that's how the mid-pulse watch checks for new obstacles), so a "big" forward advance will look like a rapid sequence of short halting steps, not a continuous glide.
+- Turning is completely unchanged — still the same fixed ~4° nominal pulse regardless of safety mode. The left/right hunting behavior you originally reported is not addressed by anything shipped so far; that's #1/#2/#4, still open.
+- Approach/doorway/search/alignment pulses are unchanged — fine positioning near a landmark or door will look and behave exactly like before.
+- New result statuses will start showing up in logs: safety_blocked (gate refused to start a pulse) and pulse_cut_short_by_lidar (a pulse started, then got interrupted). Previously, under "placeholder" mode, everything either bypassed uniformly or blocked uniformly — now there's a real, data-dependent split.
+- A LiDAR hiccup mid-run now matters — if the sensor stalls or the bridge dies partway through an otherwise-working run, forward motion will start failing (fail-closed) even though it worked a minute earlier. Under the old placeholder mode this couldn't happen since it never depended on live sensor data either way.
+
+3. What to watch for during the pipeline test
+
+- Read the printed [EXECUTOR] Pulse: ... duration=Xs line for each forward step and sanity-check it against what's visibly ahead in that step's image — does a long duration correspond to genuinely open space, and a short one to something close?
+- Watch for false safety_blocked with nothing actually in front — that's the floor-cutoff being too aggressive.
+- Watch for the opposite: a real low obstacle not triggering a block — the more dangerous miss, and the reason to deliberately test with one (see #1 above).
+- When pulse_cut_short_by_lidar appears, confirm the robot actually paused appropriately rather than continuing to drift.
+- Watch for the robot walking a long single pulse past a point where it should have stopped to re-image — a corner, doorway, or junction. The current scaling only knows "distance to nearest obstacle," not "this is a decision point" — it has no notion of when re-imaging sooner would matter, so it's plausible it walks further than ideal past something worth stopping at.
+- Confirm the bridge doesn't go stale/error out partway through a longer run.
+- Given pulses can now cover much more ground per step than the old 4.8cm hops, keep closer physical supervision / faster access to a manual stop than you might have needed with the old tiny pulses, until this is proven out.
+
+4. Changed so far / still pending
+
+Changed (implemented and unit-tested with stubs in this sandbox — not yet run on real hardware):
+- lidar_probe.py — added the floor-band diagnostic section (not yet run for real).
+- New file lidar_bridge.py — persistent Python 2 rospy subscriber subprocess for /rslidar_points, filters forward cone ±20° + floor-height cutoff, answers on-demand range queries.
+- robot_safety.py — added PersistentLidarBridge and a real "lidar" sensor mode on RobotSafetyMonitor; gates forward/backward pulses on nearest range, always allows pure turns; "placeholder"/"disabled" behavior confirmed unchanged.
+- robot_executor.py / thinkpad_robot_capture_to_amd.py — added "lidar" to --safety-mode choices.
+- robot_executor.py — LiDAR-scaled forward pulse duration for route_advance/direction_advance motion kinds only (capped 0.60m, floored 0.05s); everything else untouched.
+- robot_executor.py — mid-pulse LiDAR watch: pulses longer than one 0.4s chunk get re-checked before every chunk and cut short if blocked.
+
+Still pending / open:
+- LIDAR_FLOOR_HEIGHT_CUTOFF_M (-0.30) — needs confirmation from tomorrow's floor-band probe run.
+- LIDAR_STOP_DISTANCE_M (0.50) and MAX_FORWARD_PULSE_DISTANCE_M (0.60) — still provisional, need real-hardware validation.
+- Nothing in this whole LiDAR stack has run against real ROS yet — every test so far used stubs because this shell has no sourced ROS env; first real validation is tomorrow.
+- #4 (closed-loop yaw turning via /high_state) — not started, blocked on tomorrow's topic check.
+- #1/#2 (turn magnitude tiers / vision-grounded turning) — not started. This is the piece that actually addresses your original left/right hunting complaint; today's work only touched forward-distance sizing.
+- Full pipeline integration run with --safety-mode lidar has not happened at all yet — tomorrow is the first time.
+**************************************************************************************************************************************************************************************
+ Let's complete the implementation of #1 and #2 "#1/#2 (turn magnitude tiers / vision-grounded turning) — not started. This is the piece that actually addresses your original left/right hunting complaint; today's work only touched forward-distance sizing."
+
+#1 (turn magnitude tiers) is done and verified:
+
+┌──────────────────────────────────────────────┬──────────────────┬─────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│                    Action                    │   motion_kind    │                                                Duration                                                 │
+├──────────────────────────────────────────────┼──────────────────┼─────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ ALIGN_WITH_LANDMARK                          │ visual_alignment │ fine tier (turn_pulse_duration, unchanged, 0.35s default ≈ 4°)                                          │
+├──────────────────────────────────────────────┼──────────────────┼─────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ READ_SIGN/CHECK_DOOR_LABEL turns             │ cue_alignment    │ fine tier, unchanged                                                                                    │
+├──────────────────────────────────────────────┼──────────────────┼─────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ NAVIGATE_TO_FRONTIER/NAVIGATE_TO_LANDMARK    │ route_alignment  │ new exploratory tier                                                                                    │
+│ turns                                        │                  │                                                                                                         │
+├──────────────────────────────────────────────┼──────────────────┼─────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ FOLLOW_DIRECTION turns                       │ direction_turn   │ new exploratory tier                                                                                    │
+├──────────────────────────────────────────────┼──────────────────┼─────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ SEARCH_FOR_CUE                               │ visual_search    │ now defaults to the exploratory tier too (was its own separate 0.25s before — smaller than a            │
+│                                              │                  │ fine-alignment turn, which didn't make sense for a scan)                                                │
+└──────────────────────────────────────────────┴──────────────────┴─────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+New constant EXPLORATION_TURN_PULSE_DURATION_DEFAULT_S = 1.30 (≈15° at turn_speed=0.20 rad/s) — provisional, exposed as --exploration-turn-pulse-duration in both robot_executor.py and thinkpad_robot_capture_to_amd.py, same pattern as every other pulse-duration flag. --search-pulse-duration's default changed from 0.25 to the same value — flagging clearly since that's a real behavior change: search turns will be ~5x longer by default unless you override the flag.
+
+Before I touch #2, one thing changed the plan — I checked what data actually exists for vision-grounded turning, and the premise I described earlier doesn't hold: there's no bounding-box/pixel detector anywhere in this repo, no camera FOV configured anywhere, and the VLM's JSON schema only returns categorical fields (horizontal_position: left/center/right, proximity: far/medium/near) — never a pixel offset or numeric position. So "compute the turn angle from a landmark's pixel offset" isn't a small addition, it needs new infrastructure first.
+**************************************************************************************************************************************************************************************
+ What are details do you need to proceed with #2 and complete it efficiently? where and how to check that?
+
+Good — I dug into the actual camera setup, and it changes the picture: this pipeline isn't one wide camera, it's three separate physical cameras (front/left/right USB devices) whose images get stitched side-by-side into one composite image before going to the model. That matters a lot for #2's design, so here's exactly what's needed and how to get it.
+
+First, a blocking unknown I can't resolve from code — which mode do you actually run?
+thinkpad_robot_capture_to_amd.py supports --camera-mode {single, stitched, separate} (default single). If your real runs use stitched/separate (3 cameras), the scope below applies in full. If you actually run single (one camera), this gets much simpler — just one FOV to measure, no multi-camera mounting calibration. Which do you use day-to-day?
+
+Assuming stitched/3-camera mode, here's what's missing and how to get each piece:
+
+1. Per-camera horizontal FOV — not in any spec, code, or config; no camera model/vendor string exists anywhere in the repo to look one up from either. Must be measured directly:
+  - Simplest method, no special tools: stand the robot a measured distance D from a flat wall, find the wall points where each camera's left and right frame edges fall (nudge a marker until it just leaves the frame), measure the physical distance W between those two marks, then FOV = 2 × atan((W/2) / D). Same spirit as the tape-measure LiDAR height check you already did.
+  - Do this once for the front camera, then spot-check left/right — likely the same lens/FOV if all three are the same camera model, but that's an assumption worth verifying, not asserting.
+2. Camera mounting bearing (left/right cameras' angular offset from true forward) — also nowhere in the repo. robot_executor.py already assumes "evidence_view==LEFT → turn left" but no actual degree value is coded anywhere. To measure: place a marker at a few known bearings around the robot (e.g. tape-measure/protractor marks on the floor at 0°/45°/90° from the robot's forward centerline) and note which camera panel each one lands in and roughly where — this tells you each camera's boresight angle relative to the robot's own heading, which you need to convert "offset within the LEFT panel" into a real-world turn angle rather than just an offset-from-that-camera's-own-center.
+3. Panel geometry (already known, no measurement needed) — confirmed in code: stitched image is LEFT-FRONT-RIGHT, each panel is --stitch-width (default 960px) wide, no cropping/distortion between raw capture and panel by default since capture size and stitch size match. So pixel-to-panel mapping is already fixed and reliable; only the FOV and mounting-angle numbers are missing.
+4. Schema field pairs with the existing evidence_view, not replacing it — the model already labels which panel (LEFT/FRONT/RIGHT) a landmark is in; #2 would add a numeric fraction (-1.0 to +1.0) for position within that panel. Worth knowing: evidence_view itself is model-inferred, not pixel-measured by the pipeline, so the new fraction's accuracy is bounded by how well the VLM judges its own image, on top of the geometry.
+5. One caveat regardless of the above: even with a perfect target angle, converting it to a pulse duration still depends on turn_speed being an accurate real angular velocity — which is still open-loop and unvalidated (that's #4's territory, pending tomorrow's /high_state check). #2 gets you a better target angle; it doesn't by itself fix execution accuracy the way closed-loop yaw would.
+
+Once I know single vs. stitched, I can tell you exactly how much of this you actually need to measure tomorrow.
+**************************************************************************************************************************************************************************************
+I am using separate as default for all my experiment, since stitched is making the pixel quality very less and single is making robot process more as it doesn't know what is there in the sides. but for ablation study, I'll include all 3.
+
+Good — "separate" mode actually simplifies #2 meaningfully. Confirmed from the code: in separate mode, the three camera images are sent as three distinct full-resolution images in one API call (each prefixed with a "LEFT/FRONT/RIGHT camera image:" text label), with no resizing or stitching — capture_three_camera_files just runs ffmpeg and the raw file bytes go straight to the model. That's different from stitched mode, which does img.resize() per panel before concatenating (that resize is almost certainly your "pixel quality" complaint). So in your actual setup, evidence_view: LEFT/FRONT/RIGHT means "which of the three separate images," not "which column-region of one composite" — no panel/pixel-boundary math needed at all, which removes one whole piece of complexity from what I described earlier.
+
+Here's exactly what's still needed, concretely:
+
+1. Confirm which physical camera is which device — from the code: --front-device defaults to /dev/video2, --left-device to /dev/video4, --right-device to /dev/video3. Before measuring anything, physically confirm these device numbers still map to the camera you think they do on your current hardware (v4l2-ctl --list-devices, or just cap each device individually and look at the output) — device numbering can shift after a reboot/reconnect, and measuring the wrong physical camera would poison everything downstream.
+
+2. Each camera's own horizontal FOV — measured, not assumed. No spec/vendor info exists anywhere in the repo to look one up. Simple method, same spirit as the LiDAR height check: put the robot a measured distance D from a flat wall, find where each camera's left and right frame edges fall on the wall, measure that width W, then FOV = 2 × atan((W/2) / D). Do this for all three — in separate mode they're never combined, so there's no shortcut assuming they're identical even if they're the same model; worth at least a quick spot-check on all three, full precision on front is most important since forward turns matter most.
+
+3. Each side camera's mounting bearing (boresight angle relative to true robot-forward) — this is the piece that turns "offset within the LEFT image" into an actual real-world turn angle. Not in any config. Method: place a marker at a few known bearings around the robot (tape-measure/protractor marks on the floor relative to the robot's forward centerline), and find the bearing at which the marker sits dead-center in the LEFT image — that's the LEFT camera's boresight. Repeat for RIGHT.
+
+4. Nothing else new in the schema/pipeline mechanics — evidence_view and the rest of the JSON schema are already identical regardless of camera_mode, so adding a numeric horizontal_offset_fraction field (paired with existing evidence_view) doesn't need per-mode branching in the prompt logic, just in how robot_executor.py converts it to an angle (image-center-relative for FRONT, boresight-relative for LEFT/RIGHT).
+
+Given this is now a fairly bounded set of measurements (not the messier multi-panel calibration I was worried about for stitched mode), do you want to schedule these alongside tomorrow's other lab checks and I'll implement the moderate-tier design (schema field + FOV/bearing constants) now so it's ready to calibrate, or hold code changes until after you've got the numbers?
+
+**************************************************************************************************************************************************************************************
+ Go ahead and implement the moderate-tier design now
+
+Implemented and tested the robot_executor.py side — verified correct with real numbers, all shown below. But digging into action_generator.py to wire the model's estimate through turned up something that changes the scope, so let me report both.
+
+What's done and verified:
+- _vision_grounded_turn(evidence_view, horizontal_offset_fraction) converts a per-camera offset into (direction, duration), using the FOV/boresight constants, with proper fallback (None) for missing/invalid/NaN input.
+- Wired into ALIGN_WITH_LANDMARK and the READ_SIGN/CHECK_DOOR_LABEL cue-alignment turns — confirmed via direct tests:
+  - FRONT, offset=-1.0 (far left edge) → turn left, 2.62s (≈30°, half the 60° FOV)
+  - LEFT, offset=0.0 (dead-center of the LEFT image) → turn left, 7.85s (≈90°, the boresight)
+  - Missing/invalid offset → None → falls back cleanly to the existing fixed-duration tier (verified both ALIGN_WITH_LANDMARK and READ_SIGN fall back to exactly turn_pulse_duration when the field is absent)
+  - NAVIGATE_TO_FRONTIER (exploratory, not a landmark-alignment action) — confirmed completely unaffected, still uses the fixed exploration tier regardless of what's in horizontal_offset_fraction
+
+What I found that changes the plan: ALIGN_WITH_LANDMARK's params very often come from a landmark-memory override, not the raw per-turn VLM response. action_generator.py has (at least) two separate code paths — one around line 424 ("exact current target" priority override) and one around line 1063 ("side-view target → alignment" post-processor) — that both rebuild ALIGN_WITH_LANDMARK's params from landmark.extra["horizontal_position"], a value stored on the Landmark object itself, populated by a separate landmark-extraction VLM call I haven't located yet (traced as far as memory.py:_build_landmark, which normalizes extra["horizontal_position"] from a raw_lm dict whose actual prompt/schema lives elsewhere). For vision-grounded turning to fire in these common cases — not just the direct/non-override path — that third schema also needs the new field, plus a _landmark_offset_fraction() helper, plus wiring into both override sites. That's real additional scope beyond what I estimated as "moderate."
+
+One more thing the test numbers surfaced, worth flagging before this goes near hardware: a LEFT/RIGHT-camera boresight turn can compute a long blind turn — up to ~7.85s for the full 90° boresight at today's turn_speed. Unlike forward pulses, turns aren't LiDAR-gated at all (by design, "skip gating pure turns"), so there's currently no mid-turn re-check for a turn this long — a multi-second blind spin with zero safety check midway.
+
+Given both of these, how do you want to proceed?
+Invalid tool parameters
+
+● User answered Claude's questions:
+· The landmark-memory override paths need a third schema (landmark extraction) updated to carry horizontal_offset_fraction through -- real additional scope. How do you want to handle it? → Find and wire it now (complete #2 fully)
+· Long vision-grounded turns (up to ~7.85s for a 90 degree boresight) currently have no mid-turn safety check, unlike forward pulses. What should happen? → Add chunked/watched turns now (mirrors the forward-pulse mechanism)
+
+#2 is now fully wired end-to-end. Summary of what changed beyond the earlier robot_executor.py work:
+
+Data source completed (both decisions you picked):
+- Direct path: horizontal_offset_fraction added to action_generator.py's raw model-facing JSON schema, plus a prompt instruction telling the model when/how to estimate it (only for ALIGN_WITH_LANDMARK/READ_SIGN/CHECK_DOOR_LABEL, relative to that landmark's own source image, not the whole scene).
+- Landmark-memory path (the one I found mid-implementation): traced back to the actual source — memory.py's separate landmark-extraction prompt (NavigationMemory._PROMPT), which is a third, independent VLM schema from the one in action_generator.py. Added the field there too, a _normalise_horizontal_offset_fraction() clamp/validate function, and wired it into _build_landmark() so it lands in Landmark.extra.
+- Added _landmark_offset_fraction() in action_generator.py (mirrors _landmark_horizontal_position()), and wired it into all three places that rebuild ALIGN_WITH_LANDMARK/CHECK_DOOR_LABEL params from stored landmark data instead of the model's raw turn-by-turn response — the "exact target" priority override (3 branches), the "side-view target → alignment" post-processor, and the _validate() normalization pass. Found all three systematically by grep, not just the two I originally spotted.
+
+Turn-chunking implemented and generalized: rather than bolt on a second, LiDAR-named method, I renamed the existing forward-pulse watcher (_move_for_duration_with_lidar_watch → _move_for_duration_watched, LIDAR_WATCH_CHUNK_SECONDS → MOTION_WATCH_CHUNK_SECONDS) since it was already generic internally, and made the trigger condition duration-based rather than LiDAR-specific — so it now also covers long turns (vision-grounded or the fixed exploration tier), not just scaled forward pulses. Verified via test: a 90°/7.85s boresight turn correctly ran as 20 chunks (19×0.4s + one 0.25s remainder), same direction throughout, completed normally; re-ran the earlier forward mid-pulse cut-short test to confirm the rename didn't break it — still works. Honest caveat, as discussed: for turns this bounds the worst-case blind segment to one chunk and creates pause points, but doesn't actually cancel a turn early today, since no sensor exists yet that can tell a turn to stop (that's what your selected option anticipated).
+
+One verification limit, worth knowing: I could only syntax-check action_generator.py/memory.py via ast.parse(), not actually import/run them — this ThinkPad sandbox's Python is 3.6, and both files need 3.7+ (from __future__ import annotations), consistent with navigation_pipeline running on the AMD server, not here. Worth a quick python3 -c "import action_generator, memory" sanity check there before trusting it on a real run.
+
+robot_executor.py's side (constants, helper, wiring, chunking) was fully tested in this sandbox and is solid. Total diff across the session: 5 files, ~724 lines added.
+**************************************************************************************************************************************************************************************
+Run that import sanity check on the AMD server
+
+Ran it on ernis-amd395 (confirmed reachable, same repo/commit 081f43a as this ThinkPad's HEAD). Since my edits are still local/uncommitted, I copied just the edited navigation_pipeline/ directory to a scratch path there, tested against it, then deleted the scratch copy — the server's real deployed files were never touched.
+
+Results, all pass:
+- import action_generator, memory succeeds cleanly under the real Python 3.12.3 (vs. this ThinkPad's 3.6, which can't even parse the from __future__ import annotations these files need).
+- memory._normalise_horizontal_offset_fraction: clamps correctly (-1.5→-1.0, 2.0→1.0), rejects bad input correctly (None, 'bad', NaN all → None).
+- action_generator._landmark_offset_fraction: correctly reads a valid value (-0.7), clamps an out-of-range one (5.0→1.0), and returns None for a landmark with no extra or no landmark at all.
+
+Both files are confirmed syntactically and functionally sound under the environment they actually run in. These changes are still uncommitted locally on the ThinkPad — let me know when you want them committed/pushed so they reach the AMD server for real.
+**************************************************************************************************************************************************************************************
+ I will commit. Save all the necessary details to memory clearly.
+
+
+Memory saved. Three files updated/created:
+
+- backlog_navigation_improvements.md (updated) — LiDAR gate marked DONE at the code level, cross-linked to the new detail file instead of duplicating.
+- project_lidar_motion_tuning.md (new) — the full picture: what shipped (LiDAR gate, LiDAR-scaled pulses, mid-pulse watch, turn magnitude tiers, vision-grounded turning with all three landmark-override sites), every provisional constant with its current value and why it's provisional, the camera-setup discovery (separate mode, 3 real cameras, no FOV/bearing calibrated anywhere), and the exact 9-item lab checklist for the next hardware session.
+- reference_amd_server_access.md (new) — SSH access to ernis-amd395, repo path, the Python 3.6-vs-3.12 split explaining why navigation_pipeline/*.py can only be truly verified there, and the scratch-copy method for testing uncommitted changes safely.
+
+MEMORY.md index updated to point to both. Ready whenever you want to commit.
+**************************************************************************************************************************************************************************************
+so, as per the recent updates, tell me clearly,
+  1. what all I should test tomorrow apart from full pipeline test with robot? - give as points.
+  2. During full pipeline, how robot behaves with navigation? what behaviour change I may expect from robot from today's fixed distance and duration runs?
+  3. what should I notice tomorrow during testing the pipeline?
+  4. what have you changed till now and what else is pending? give as points.
+I have committed the changes (FYI)
+
+
+Good, and one important operational note before the lists: your commit is only on the ThinkPad so far. navigation_pipeline/action_generator.py and memory.py actually execute on the AMD server (ernis-amd395), which was on the same commit as the ThinkPad before your changes — so until you push and pull/sync there, the model-facing prompt still won't ask for horizontal_offset_fraction at all, and everything will silently behave exactly as before (safe, but you won't see #2 do anything). Worth doing that sync before tomorrow's test.
+
+1. What to test tomorrow, beyond the full pipeline run
+
+- Run lidar_probe.py's floor-band section → confirms/replaces LIDAR_FLOOR_HEIGHT_CUTOFF_M (still -0.30, photo-estimated).
+- Obstacle-distance test (0.3/0.5/0.7/1m) with --safety-mode lidar --test-forward → validates LIDAR_STOP_DISTANCE_M (still 0.50, unvalidated).
+- Camera FOV measurement (wall-distance method) for all three separate-mode cameras — CAMERA_HORIZONTAL_FOV_DEG is currently a flat 60.0° guess for all three, not measured.
+- Camera mounting-bearing measurement (known-bearing markers) for LEFT/RIGHT — CAMERA_BORESIGHT_DEG is currently a pure guess (±90°), not measured.
+- Confirm /dev/video2/3/4 still map to front/left/right (v4l2-ctl --list-devices) before trusting any camera-specific measurement — device numbering can drift.
+- Check /high_state (rosmsg show unitree_legged_msgs/HighState) for the IMU yaw field, and note any velocity/position fields — prep for #4, not yet started.
+- Deliberately test a low obstacle (<30cm) in the path — the dangerous miss case for the floor-height filter.
+- Trigger the mid-pulse cut-short on purpose — step into the forward cone during a long clear-path pulse, confirm [EXECUTOR] Motion watch: cutting pulse short....
+- Trigger a long vision-grounded turn on purpose (put a landmark in LEFT or RIGHT view) — confirm the robot visibly pauses every ~0.4s rather than spinning continuously.
+- Sync the AMD server (push + pull, or however you deploy) before testing — see the note above.
+
+2. Expected pipeline behavior vs. today's fixed-duration runs
+
+Everything from before still applies (forward pulses vary with clearance, chunked long pulses look like short halting steps, new safety_blocked/pulse_cut_short statuses). On top of that, turning now changes too:
+
+- ALIGN_WITH_LANDMARK/cue-alignment turns: if the model actually returns horizontal_offset_fraction (depends on the AMD-server sync above), the turn angle is now computed from the landmark's position in-frame instead of a fixed ~4° nudge — but since CAMERA_HORIZONTAL_FOV_DEG/CAMERA_BORESIGHT_DEG are still placeholder guesses, expect these computed angles to likely be wrong tomorrow — possibly quite wrong for LEFT/RIGHT-camera targets (boresight guessed at exactly ±90°). Don't be surprised by an alignment turn that clearly over- or under-shoots; that's the calibration gap showing, not a new bug. If the model doesn't return the field at all, this silently falls back to the old fixed behavior — worth checking which case you're in.
+- Exploratory turns (NAVIGATE_TO_FRONTIER/FOLLOW_DIRECTION, and SEARCH_FOR_CUE) are now bigger by default: ~15° (1.3s) instead of ~4° (0.35s) for route/direction turns, and SEARCH_FOR_CUE specifically jumped from 0.25s (previously the smallest turn in the system) to the same 1.3s — a real, deliberate behavior change, not incidental.
+- Any turn over ~1.3s runs chunked — same stop-start hop pattern as long forward pulses, now visible on turns too (most noticeable on a large vision-grounded LEFT/RIGHT-camera alignment, which could plan for several seconds).
+
+3. What to notice tomorrow
+
+- Check the console's Params:/Mapped command: lines to see whether horizontal_offset_fraction is actually present and non-null — first thing to confirm before judging anything else about #2.
+- If it's present, sanity-check the resulting turn against what's visually reasonable — a landmark near the edge of the LEFT image swinging into a ~90° turn is expected only if the real LEFT camera boresight is genuinely close to 90°, which isn't confirmed yet.
+- Watch for chunked-turn pausing during any long alignment turn — expected, not a glitch.
+- Watch whether SEARCH_FOR_CUE's bigger sweep still reliably finds cues, or starts sweeping past ones that would've been caught by the old smaller step.
+- Everything from before still applies: false-positive/false-negative floor detection, safety_blocked timing sanity, bridge staleness, and closer physical supervision than the old tiny-pulse behavior warranted.
+
+4. Changed so far / still pending
+
+Changed (all committed on the ThinkPad):
+- lidar_probe.py — floor-band diagnostic section added.
+- New lidar_bridge.py — persistent LiDAR range-query subprocess.
+- robot_safety.py — real "lidar" safety mode, PersistentLidarBridge.
+- robot_executor.py — --safety-mode lidar wiring, LiDAR-scaled forward pulses, mid-pulse watch (generalized to both forward and turn pulses), turn magnitude tiers (#1), vision-grounded turning (#2), camera FOV/boresight constants.
+- thinkpad_robot_capture_to_amd.py — mirrored CLI flags, --search-pulse-duration default change.
+- navigation_pipeline/action_generator.py — horizontal_offset_fraction added to the planning schema/prompt, _landmark_offset_fraction() helper, wired into all three places that rebuild alignment actions from stored landmark data.
+- navigation_pipeline/memory.py — horizontal_offset_fraction added to the separate landmark-extraction schema/prompt (a third, distinct VLM call), normalization function, wired into landmark storage.
+- Verified: robot_executor.py fully stub-tested in this sandbox; action_generator.py/memory.py import- and function-tested for real on the AMD server (Python 3.12) via a scratch copy, then cleaned up — not yet tested against the live deployed copy there.
+
+Still pending:
+- AMD server not yet synced with this commit — see the note at the top.
+- LIDAR_FLOOR_HEIGHT_CUTOFF_M, LIDAR_STOP_DISTANCE_M, MAX_FORWARD_PULSE_DISTANCE_M — still provisional.
+- CAMERA_HORIZONTAL_FOV_DEG, CAMERA_BORESIGHT_DEG — still pure placeholders, most urgent to measure now that they'll actually affect real turns tomorrow.
+- turn_speed/forward_speed — never validated against real robot motion; everything downstream inherits this open-loop timing error.
+- #4 (closed-loop yaw turning via /high_state) — not started.
+- Nothing in this entire stack has run against real hardware or the real pipeline yet — tomorrow is the first time, for all of it at once.
+**************************************************************************************************************************************************************************************
+AMD and thinkpad are in sync. pushed and pulled already.
+
+Verified directly on ernis-amd395 — not just taking your word for it:
+
+- Commit hash matches exactly: d7a47e9... on both the ThinkPad and the AMD server, git status clean on the server (no stray local changes there).
+- horizontal_offset_fraction is live in the deployed files: 8 occurrences in action_generator.py, 5 in memory.py on the server's actual checkout — the schema/prompt changes and all the wiring are really there, not stale.
+
+That clears the one caveat from before — tomorrow's run should actually exercise #2 for real (the model will be asked for horizontal_offset_fraction), not silently fall back to old behavior. Everything else from the last answer still stands: CAMERA_HORIZONTAL_FOV_DEG/CAMERA_BORESIGHT_DEG are still placeholder guesses, so expect the computed alignment-turn angles to likely be off until you measure them — that's the main thing to watch for once you confirm the field is actually coming through in the logs.
+**************************************************************************************************************************************************************************************
+Give me the checklist of what needs to be done today in the lab. no code changes.
+
+Checklist items are in separate file
+**************************************************************************************************************************************************************************************
+In the checklist, point 1 is done and it's correct, below is the output I got for checklist point 2, check and let me know your opinion, remianing am doing it:
+  vlm_project@vlmproject-ThinkPad-X1:~/VLM_Navigation_Project$ python2 temp_files/lidar_probe.py
+  Waiting for one message on /rslidar_points ...
+  Total points in this scan: 22255
+
+  --- Range, all points (meters) ---
+  min: 0.832   max: 13.767
+
+  --- Horizontal spread / azimuth, atan2(y,x) (degrees) ---
+  min: -179.8   max: 179.9   (should span close to -180..180 for a full 360 deg mechanical scan)
+
+  --- Vertical spread / elevation, asin(z/r) (degrees) ---
+  min: -14.7   max: 14.9   (this is your usable vertical FOV for height-band filtering)
+
+  --- Forward cone (+/-20 deg of straight ahead) ---
+  point count: 2722
+  closest point: range=1.487 m  x=1.393  y=0.505  z=-0.126  elevation=-4.9 deg
+  If z is strongly negative and elevation is near the most downward angle seen above, this is almost certainly the FLOOR being picked up by a low channel, not the robot's own body -- expected until the height-band filter excludes it. If z is instead close to 0 (near the LiDAR's own height) with a shallow elevation angle, that would point to real self-occlusion from the robot's structure instead.
+
+  --- Floor-band check (points within 2.0 deg of the steepest downward elevation, -14.7 deg) ---
+  all points in band: count=2311  z: min=-0.664 max=-0.218 mean=-0.414   ra
+  (z here should be close to constant across range if this is a flat floor -- that constant is your height-band cutoff, and should be roughly -1x the measured LiDAR mounting
+  height above the floor)
+  forward-cone-only: count=400  z: min=-0.472 max=-0.466 mean=-0.469   range: min=1.839 max=2.129
+  vlm_project@vlmproject-ThinkPad-X1:~/VLM_Navigation_Project$ python2 temp
+  Waiting for one message on /rslidar_points ...
+  Total points in this scan: 22209
+
+  --- Range, all points (meters) ---
+  min: 0.839   max: 13.777
+
+  --- Horizontal spread / azimuth, atan2(y,x) (degrees) ---
+  min: -179.8   max: 179.9   (should span close to -180..180 for a full 360
+
+  --- Vertical spread / elevation, asin(z/r) (degrees) ---
+  min: -14.7   max: 14.9   (this is your usable vertical FOV for height-band filtering)
+
+  --- Forward cone (+/-20 deg of straight ahead) ---
+  point count: 2677
+  closest point: range=1.490 m  x=1.395  y=0.506  z=-0.127  elevation=-4.9 deg
+  If z is strongly negative and elevation is near the most downward angle stainly the FLOOR being picked up by a low channel, not the robot's ownbody -- expected until the height-band filter excludes it. If z is instead close to 0 (near the LiDAR's own height) with a shallow elevation angle, that would point to real
+  self-occlusion from the robot's structure instead.
+
+  --- Floor-band check (points within 2.0 deg of the steepest downward elev
+  all points in band: count=2305  z: min=-0.663 max=-0.218 mean=-0.415   range: min=0.879 max=2.984
+  (z here should be close to constant across range if this is a flat floor ht-band cutoff, and should be roughly -1x the measured LiDAR mountingheight above the floor)
+  forward-cone-only: count=400  z: min=-0.472 max=-0.466 mean=-0.469   rang
+  vlm_project@vlmproject-ThinkPad-X1:~/VLM_Navigation_Project$
+
+
+Good data — let me break down what it actually shows, since it answers slightly more than just point 1.
+
+Floor calibration (point 1) — confirmed with real numbers now:
+The forward-cone-only floor band is tight and consistent across both runs: z ≈ -0.469m (min -0.472, max -0.466, both runs agree almost exactly). That's your real measured floor height in the direction that actually matters for the gate. It's a bit deeper than the photo-based estimate (38–43.5cm), which makes sense — the photo measured to the visible housing, not necessarily the LiDAR's true optical center.
+
+Recommendation: set LIDAR_FLOOR_HEIGHT_CUTOFF_M = -0.35 (currently -0.30, the placeholder). That leaves ~12cm of margin above the real floor (-0.469) so any point at or below -0.35 gets excluded as floor, while staying well clear of real obstacles — see below.
+
+One thing worth noting but not acting on: the non-forward-cone floor band ("all points in band") was much noisier — z ranged from -0.664 to -0.218, not tight like the forward-cone reading. Could be an uneven floor patch elsewhere in the room, or low objects at other azimuths mixed into that wider sample. Doesn't matter for the gate (it only ever checks the forward cone), just flagging it so it doesn't surprise you if you look at that number again.
+
+Now, what this "point 2" data actually is — this isn't the obstacle-distance test from my checklist (that one specifically wants a deliberately placed obstacle at 0.3/0.5/0.7/1m, tested through robot_executor.py --safety-mode lidar --test-forward to see the actual block/allow decision). This is another lidar_probe.py run, and it happens to show something useful anyway: a real, static object at ~1.49m, z≈-0.126 (consistent across both runs, sub-cm agreement) — that's roughly 34cm above the true floor (-0.469 to -0.126 ≈ 0.343m). At either -0.30 or -0.35 as the cutoff, this object stays correctly classified as an obstacle, not floor — good bonus validation that there's clean separation between real low objects and the floor here.
+
+Still needed for the real point 2: place something at known distances (0.3/0.5/0.7/1m) directly ahead and run it through the actual safety gate (--safety-mode lidar --test-forward), so you see the real allow/block decision, not just raw point-cloud numbers.
+
+Want me to update LIDAR_FLOOR_HEIGHT_CUTOFF_M to -0.35 now, or hold off until you've finished the rest of today's measurements and update everything together?
+**************************************************************************************************************************************************************************************
+ In previous prompt, I mean point 0 and 1 are done from the checklist, not #2
+
+Got it — points 0 and 1 done, points 2 onward still ahead. Good, and I see LIDAR_FLOOR_HEIGHT_CUTOFF_M in robot_safety.py is already at -0.35 — matches the recommendation from the floor-band data, nothing further needed there.
+
+Whenever you get to point 2, that's the deliberate-obstacle test at 0.3/0.5/0.7/1m through robot_executor.py --safety-mode lidar --test-forward (not another lidar_probe.py run) — let me know the results when you have them.
+**************************************************************************************************************************************************************************************
+ In point 2, you asked me to test deliberately with <30cm tall low obstacles in the path, should it be same <30 now, or <35, since the LIDAR_FLOOR_HEIGHT_CUTOFF_M has been changed? - just a doubt, prefer short answer
+
+Recompute it from the numbers, not the old 30cm: floor is at -0.469, cutoff is now -0.35, so the gap is 0.119m. Anything shorter than ~12cm risks being excluded as floor now (was ~17cm risk zone under the old -0.30 cutoff).
+
+So: test with something <15cm to actually probe near the real danger boundary — testing at <30cm like before is still safe to do but won't tell you much since it's well clear of the risk zone either way.
+**************************************************************************************************************************************************************************************
+as per the latest code, what is the new values for below parameters,
+
+    --forward-speed 0.08 \
+    --turn-speed 0.3 \
+    --forward-pulse-duration 12.0 \
+    --turn-pulse-duration 8.0 \
+    --approach-pulse-duration 10.0 \
+    --doorway-pulse-duration 10.0 \
+    --search-pulse-duration 10.0 \
+    --min-evidence-score 0.20
+
+Going through each one against what actually changed:
+
+- --forward-speed 0.08, --turn-speed 0.3, --approach-pulse-duration 10.0, --doorway-pulse-duration 10.0, --min-evidence-score 0.20 — unchanged, still mean the same thing. Nothing this session touched these paths.
+- --search-pulse-duration 10.0 — unchanged in effect. Only the default moved (0.25→1.30) if you omit the flag; since you pass it explicitly, your 10.0 still wins exactly as before.
+- --turn-pulse-duration 8.0 — narrower scope now. It only covers the fine tier (ALIGN_WITH_LANDMARK, cue_alignment turns) — and even those get overridden by the vision-grounded computed angle if the model supplies a usable horizontal_offset_fraction, falling back to your 8.0s only when it doesn't.
+- Missing, needs to be added: --exploration-turn-pulse-duration. Route/direction turns (NAVIGATE_TO_FRONTIER/FOLLOW_DIRECTION turning) used to inherit --turn-pulse-duration, they don't anymore — they'll silently drop to the new default 1.30s instead of your 8.0s unless you explicitly pass --exploration-turn-pulse-duration 8.0 (or whatever value you want). This is the one that'll bite you silently if skipped.
+- --forward-pulse-duration 12.0 — only matters as-is if you're not running --safety-mode lidar. If you are, route_advance/direction_advance forward pulses get dynamically recomputed from LiDAR clearance instead, capped at MAX_FORWARD_PULSE_DISTANCE_M / forward_speed = 0.60 / 0.08 = 7.5s max, less if anything's closer — your 12.0 becomes an unreachable ceiling in that mode, not the real value used.
+
+Bottom line to preserve old behavior: add --exploration-turn-pulse-duration 8.0; everything else keeps meaning what it did, except forward-pulse-duration is superseded by live LiDAR scaling if you're running in lidar safety mode.
+**************************************************************************************************************************************************************************************
+For point #5 in checklist, refer the document named ROS_related.txt, placed under /temp_files folder
+
+
+Good — this fully answers checklist point 5, and better than expected.
+
+What it confirms:
+- /high_state/imu/rpy — present, actively publishing, ~50Hz (avg 49.9–50.0, low jitter, std dev ~0.013s). Yaw is stable and low-noise across the streamed samples (drifts only ~0.0003 rad over 15 readings while stationary) — this is a clean, usable signal for closed-loop turning (#4).
+- No /odom topic — confirmed dead, not just quiet (rostopic type /odom → "unknown topic type"). Matches what was already on record.
+
+Bonus finding, changes the plan for the better: /high_state also has position (3-element), velocity (3-element), bodyHeight, and yawSpeed — and they're actively publishing real values (position: [0.011, -0.044, 0.289], velocity near-zero while stationary, consistent with bodyHeight). This means the robot's own onboard estimator already fuses something (leg kinematics + IMU, presumably) into a position/velocity estimate — it's just not exposed under the conventional /odom topic name/type. forwardSpeed/sideSpeed specifically don't exist as separate fields in this message version, but velocity already covers that.
+
+This matters beyond just #4: earlier I'd scoped closed-loop forward-distance control as the "harder, needs new engineering (LiDAR scan-matching or vision odometry)" option, on the assumption no position data existed at all. That assumption was wrong — real position/velocity is already there, just needs consuming, same as yaw. Worth revisiting that sequencing.
+
+One caveat worth keeping in mind: this is almost certainly leg-kinematics dead-reckoning, which for legged robots typically drifts over longer distances/time (double-integration + foot-slip error). For the way this pipeline works — one short pulse (~0.4–8s), then re-plan from a fresh image — that's a non-issue, since you'd only ever use the relative change over one pulse, never accumulate across a whole run.
+
+Want this folded into project_lidar_motion_tuning.md now, or hold off until you're through the rest of today's checklist?
+**************************************************************************************************************************************************************************************
+ what is the use of " project_lidar_motion_tuning.md" this? why are you asking whether to fold into this file? #4 was already implemented yesterday right along with #1, #2, and #3? or no yet to start working on that?
+
+project_lidar_motion_tuning.md is one of my persistent memory files — notes that carry across separate conversations (not just this one), so a future session doesn't have to re-derive all of this from scratch by re-reading the whole chat history. It currently records what shipped, what's still provisional, and the lab checklist for this whole body of work. I asked about folding the /high_state findings in because that file currently says "#4 not started, blocked on the /high_state check" and lists that check as a pending checklist item — now that you've actually run it, that entry is stale and should be updated to reflect the real, better-than-expected result.
+
+On #4: not implemented, and it was never supposed to be yet. To be precise about what happened when:
+
+- LiDAR safety gate (the original backlog item) — implemented.
+- #3 (LiDAR-scaled forward pulses + mid-pulse watch) — implemented, same session as the gate.
+- #1 (turn magnitude tiers) and #2 (vision-grounded turning, including the landmark-memory wiring) — implemented in the following session, both committed.
+- #4 (closed-loop turning using /high_state yaw instead of open-loop timed pulses) — no code written yet. It was deliberately left as the next step, gated on confirming /high_state actually has usable yaw data — which is exactly what today's ROS_related.txt check was for. That gate is now cleared (yaw confirmed stable at ~50Hz, plus the bonus position/velocity fields), but the actual implementation hasn't started.
+
+So: everything up through #1/#2/#3 is done and committed. #4 is unblocked as of today's check, but still just a plan, not code.
+**************************************************************************************************************************************************************************************
+ check files names LiDAR_testing_1.txt and LiDAR_testing_2.txt, placed under /temp_files folder for checklist point #6. Check the results thoroughly, the object detection is working good, stopping is also good, one thing I noticed is I placed a cardboard box infront of the robot (like very near, the box height may be approx 30cm), the robot didn't stop for that, other than that for other obstacles it stopped. For point #4, the left and right cameras are placed 90 degrees from the robot's direct pose. should I measure it separetely, can't we just use 90 degree itself? you can even check the images for camera placements.
+  and point #3, should I do this like is it very important? I'm using logi 1080p webcam (all 3 cameras are same). And point #7 is also pending, the battery ran out, so put on charge, will do the full pipeline after sometime.
+Along with above checkings, I want you to give me clearly, what are implementations are pending now, overall..
+
+
+Point #6 — LiDAR gate isolated tests: thorough review
+
+Both files show the whole stack working correctly on real hardware, not just in my sandbox stubs. Concretely:
+
+- Obstacle detection/stopping: multiple real safety_blocked events at the right threshold — "nearest obstacle at 0.45m", "0.39m", all correctly blocked under the 0.50m stop distance. Matches what you reported.
+- LiDAR-scaled forward pulses (#3) confirmed live — pulse counts vary run to run (some stop at 4 chunks, some run 10+), meaning duration is genuinely being computed from real-time clearance, not fixed.
+- Mid-pulse cut-short fired for real: "Motion watch: cutting pulse short after 1.60s of 2.03s planned -- Motion blocked: nearest obstacle at 0.47m" — something entered the path mid-pulse and the chunk-watch caught it exactly as designed.
+- Turn magnitude tiers (#1) confirmed — --test-left/--test-right show direction_turn at the new 1.3s exploration duration, chunked into 3×0.4s + 0.1s.
+- Vision-grounded turning (#2) confirmed end-to-end, including through the real AMD pipeline: horizontal_offset_fraction is flowing from the model through the landmark-override wiring into the executor. The controlled 90°-offset tests computed 5.236s (offset=1.0 → 60° from boresight) and matched formula exactly; the real C2.016 run computed 7.854s (offset=0.0 → full 90° boresight) and the goal was actually reached at step 4 — even though the turn wasn't perfectly precise (landmark L001 went invalid/lost tracking after the turn), the pipeline recovered by re-observing and matching a new landmark (L008) in FRONT. Good real evidence the system is resilient to imprecise turn angles, not just that the math works.
+
+Two minor robustness things worth knowing, not urgent: (1) one Ctrl+C during an image-capture phase (not a motion pulse) produced "CRITICAL: stop command failed (bridge process closed its output); the robot may still be moving" — likely the whole process tearing down killed the bridge before stop() could confirm; a later interrupt in the same session stopped cleanly, so this looks like a one-off timing case, not systemic. (2) stray arrow-key input while waiting for SSH/image capture leaked into a couple of prompts (user_rejected on a real "y", and a garbled next-goal string) — cosmetic, not a safety issue.
+
+The 30cm cardboard box miss is the one real, unresolved finding. Given the box was "very near," this is likely a sparse-vertical-channel geometry issue rather than the height-band filter itself: RSHELIOS_16P only has 16 beams across ~30° of vertical FOV, and at very close range a short object can fall between two adjacent beams' elevation angles entirely — no return at all, not a misclassification. I can't diagnose which it was (no beam intersected it vs. got filtered as floor) without the raw scan. Recommend: put the same box back at the same close distance and re-run lidar_probe.py there — that'll show whether the forward cone got zero points near the box's position (geometry miss) or got points that the floor cutoff wrongly excluded (filter issue), which are two different problems with different fixes.
+
+Point #4 — camera boresight
+
+Good news: CAMERA_BORESIGHT_DEG in the code is already {"LEFT": 90.0, "RIGHT": -90.0} — exactly what you're describing physically. No change needed, no separate measurement required — use 90° as-is. I checked 20260727_151542.jpg for visual confirmation, but it only shows one camera clearly (the center/front one on the mast); I can't independently verify the left/right units' exact pointing angle from the photos I have. Given the real C2.016 test above still reached the goal despite some tracking loss after the turn, 90° is a reasonable working value — worth keeping in mind as a possible (small) source of that lost-tracking event if you want to refine it later, but not blocking anything now.
+
+Point #3 — camera FOV, is it important?
+
+Moderate, not critical. The LiDAR safety gate doesn't depend on it at all (separate system), and the real test above shows the pipeline recovers from an imprecise turn via re-observation rather than failing outright — so a wrong FOV costs you efficiency (occasional lost tracking, extra steps), not safety or correctness. If you know the exact model number (C270 vs C920 vs C922 vs Brio etc.), Logitech's published HFOV spec would likely get you a good number instantly without the wall-distance measurement — worth checking the model before doing it by hand.
+
+Overall — what's still pending
+
+1. Camera FOV measurement (or model lookup) — point #3, moderate priority.
+2. Low-obstacle-miss diagnosis — re-run lidar_probe.py with the same box at the same close range to find the actual cause before trusting the gate near short obstacles.
+3. Full pipeline test — point #7, pending battery charge (though the two C2.016/landmark-alignment runs in LiDAR_testing_2.txt already partially covered this — worth deciding if a dedicated longer run is still needed or if that counts).
+4. #4 (closed-loop yaw turning via /high_state) — no code written yet, unblocked since yesterday's check but not started.
+5. turn_speed/forward_speed validation — still open-loop, never confirmed against real motion (the vision-grounded angle math trusts these completely).
+6. Camera boresight (#4) is now resolved (use 90°, matches code) — no longer pending.
+**************************************************************************************************************************************************************************************
+ When I am running the full pipeline after battery is charged, I'll do the cardboard testing too.
+  For point #3, the webcam model is C920.
+  And the Ctrl+c trigged during image capture is because my laptop is having an issue with this right key which is getting automatically triggered sometime. Is there anyway we can disable this kepboard arrow keys during executions?
+Answer these above questions and save all the necessary details to memory. and if eveything is available tell me if we can go ahead and implement #4 closed-loop yaw turning functionality, and I still need to do turn_speed/forward speed validation. tell me what should I do for that too..
+
+
+C920 FOV
+
+Logitech's published spec for the C920 is 78° diagonal FOV in its native 16:9 mode. Converting to horizontal (using 16:9 aspect ratio math): ≈70.4° horizontal, ≈43.3° vertical. That's a real improvement over the current placeholder 60.0°.
+
+One caveat, not full certainty: your capture is 960x720 (4:3), not the sensor's native 16:9. If the driver crops the sensor's height to get 4:3 while keeping full width, horizontal FOV stays ~70.4°. If it crops differently, it could be narrower. I can't confirm which from here — worth a quick wall-distance check on just the front camera at some point to validate, but 70.4° is a much better starting number than 60° regardless. Want me to update CAMERA_HORIZONTAL_FOV_DEG to 70.4° for all three now?
+
+Ctrl+C / stray right-arrow key
+
+Yes, this is fixable at the code level, independent of the hardware quirk. What's happening: the stray key sends a raw ANSI escape sequence (\x1b[C), and it's leaking into input() as literal characters instead of being consumed as a cursor-move — so it lands in the confirm-prompt answer or the next-goal string. The fix is to sanitize input right after reading it: strip ANSI/escape sequences (regex for \x1b\[[0-9;]*[a-zA-Z]) before comparing against "y"/"yes" or before sending a goal string to the API. That would turn a corrupted "\x1b[Cy" back into a clean "y", and a corrupted goal string back into clean text. Doesn't fix the flaky key itself, but neutralizes its effect on the pipeline. Want me to add this to the confirm-prompt and next-goal input points in robot_executor.py/thinkpad_robot_capture_to_amd.py?
+
+#4 (closed-loop yaw turning) — go/no-go
+
+Yes, prerequisites are confirmed and good. /high_state/imu/rpy is real, stable, ~50Hz, low-noise (verified twice now — the ROS_related.txt check and indirectly by everything working in the two LiDAR test runs). Design would be: a new high_state_bridge.py (python2, same persistent-subprocess pattern as lidar_bridge.py/cmd_vel_bridge.py) subscribing to /high_state, answering "current yaw" on demand; the turn-execution path reads yaw before starting, computes target yaw, and stops when reached instead of trusting the timed duration alone. Low technical risk given the pattern is proven twice already. This is a real implementation task though — want me to start it now, or after you've finished today's remaining checklist items?
+
+turn_speed/forward_speed validation — what to do
+
+Given /high_state is confirmed working, use it directly instead of tape-measure/protractor methods:
+
+1. rostopic echo -n 1 /high_state right before a test pulse — note position (x,y) and imu.rpy[2] (yaw).
+2. Run one known pulse in an open area — e.g. --test-forward --forward-pulse-duration 2.0 for a forward test, --test-left for a turn test (note the actual total duration printed in the log, since long pulses get chunked).
+3. rostopic echo -n 1 /high_state again once fully stopped — note position/yaw again.
+4. Forward speed: actual_speed = sqrt((x1-x0)² + (y1-y0)²) / actual_duration, compare to the --forward-speed you passed.
+5. Turn speed: actual_angle = yaw1 - yaw0 (wrap-correct: if the difference exceeds ±π, add/subtract 2π), actual_turn_speed = actual_angle / actual_duration, compare to --turn-speed.
+6. Repeat 2-3 times each direction and average — legged-robot gait has some run-to-run variance.
+7. Update --forward-speed/--turn-speed to whatever you actually measured.
+
+This is also effectively a manual dry-run of what #4 would automate, so doing it now is useful groundwork either way.
+
+Now saving everything to memory. Memory updated. Quick recap of the four things awaiting your go-ahead before I touch any code:
+
+1. Update CAMERA_HORIZONTAL_FOV_DEG to 70.4° (C920 spec-based)
+2. Add ANSI-escape input sanitization for the confirm/next-goal prompts (arrow-key mitigation)
+3. Start building #4 (closed-loop yaw turning)
+4. You'll re-run lidar_probe.py with the cardboard box + do the /high_state-based speed validation yourself when you get to the full pipeline test
+
+Let me know which of 1-3 you want done now versus batched with today's other work.
+**************************************************************************************************************************************************************************************
+go ahead and do 1-3, be accurate with your changes.
+
+All three implemented, tested, and verified. Summary:
+
+1. CAMERA_HORIZONTAL_FOV_DEG → 70.4° (C920 spec, converted from 78° diagonal in native 16:9) and CAMERA_BORESIGHT_DEG comment updated to reflect it's confirmed by physical mounting, not a guess.
+
+2. Input sanitization — _sanitize_terminal_input() strips ANSI/CSI escape sequences, applied to both the confirm-prompt (robot_executor.py) and next-goal prompt (thinkpad_robot_capture_to_amd.py). Verified against the exact corrupted string from your logs: '\x1b[Cy' → 'y'.
+
+3. #4, closed-loop yaw turning — new high_state_bridge.py (python2, same pattern as lidar_bridge.py), PersistentHighStateBridge + _turn_closed_loop() in robot_executor.py, opt-in via --use-yaw-feedback (default off). Target angle is derived from what #1/#2 already compute (angular_z × pulse_duration) — no changes to how turn size gets decided, only how it gets executed. Tested against four scenarios with a stubbed yaw feed:
+- Reaches target → stops early, correct angle achieved (turn_closed_loop_reached)
+- Feedback lost mid-turn → stops safely, reports partial progress (turn_closed_loop_feedback_lost)
+- Yaw never moves (stuck/bad feedback) → stops at the 2× timeout cap, doesn't spin forever (turn_closed_loop_timeout)
+- Feedback unavailable from the start → falls through to the exact old open-loop behavior, confirmed identical (pulse_executed, same duration/chunking as before)
+
+Also confirmed the default path (yaw_feedback_enabled=False, unset by default) is byte-for-byte unchanged — reran the vision-grounded 90° boresight turn test from before #4 existed and got identical output.
+
+Not yet done, still needs real hardware: none of #4's actual bridge-to-real-/high_state behavior has been tested against live ROS (same sandbox limitation as everything else) — first real test is your next lab session. Want me to update project_lidar_motion_tuning.md with this now, or hold until you've run it on hardware?
+**************************************************************************************************************************************************************************************
+ yes, update the memory file now and also tell me during live run what I'll encounter, how the autonomous navigation would behave with all this implemented, so that when I actually run I can cross-check these. think in all the scenarios and then tell me.
+
+Now the big update — the "What's NOT addressed yet" section and the new-findings section, reflecting #4's implementation:
+Memory's updated. Now here's what to expect during the live run, organized so you can cross-check against it in real time.
+
+One decision before you start: --use-yaw-feedback
+
+Recommend leaving it off for the first full run. Everything else below has real-hardware validation behind it (LiDAR_testing_1/2.txt); #4 only has sandbox-stub testing. If you want to try it, do an isolated --action-json test first (same pattern as the controlled LEFT/RIGHT vision-turn tests you already ran), not inside a live unattended navigation run.
+
+Per-action-type behavior
+
+Forward-moving actions (NAVIGATE_TO_FRONTIER/NAVIGATE_TO_LANDMARK/FOLLOW_DIRECTION with direction: forward, motion kind route_advance/direction_advance):
+- Duration = min(0.60, nearest_obstacle_m - 0.50) / forward_speed, floored at 0.05s. Sanity-check formula in your head as it runs — e.g. at forward_speed=0.12, a fully open path caps at 5.0s; at 0.08, caps at 7.5s.
+- Anything over 0.4s prints as repeated duration=0.4s chunks in the console before completing — that's expected chunking, not several separate actions.
+- Watch for safety_blocked (obstacle already inside 0.50m before the pulse starts) and pulse_cut_short (obstacle appeared mid-pulse) — both already confirmed working live.
+
+Fine alignment turns (ALIGN_WITH_LANDMARK, cue_alignment for READ_SIGN/CHECK_DOOR_LABEL):                                                                                     - If the model supplies a usable horizontal_offset_fraction, this is visiesight - offset*(70.4/2)|, clamped to 90° max. For FRONT (boresight 0),expect up to ~35.2°. For LEFT/RIGHT (boresight ±90°), expect roughly 55°-90° (90° being the clamp, not necessarily the "true" answer, if offset pushes it past the cap).      - Check whether horizontal_offset_fraction is ever nonzero. In the one rey time — if that keeps happening, the FOV update won't visibly changeanything (offset=0 makes the angle independent of FOV), and it's worth flagging separately as a model-behavior question, not a code issue.                                    - If the field is missing/invalid, falls back to your fixed --turn-pulse-check the printed duration against that value to tell which path fired.
+                                                                                                                                                                              Exploratory turns (route_alignment/direction_turn for frontier/direction ARCH_FOR_CUE):
+- Always your fixed --exploration-turn-pulse-duration (default 1.30s ≈15°), never vision-grounded — there's nothing to aim at when exploring blindly. Same value now used for SEARCH_FOR_CUE by default too (changed from the old, smaller 0.25s).
+
+APPROACH_LANDMARK/PASS_THROUGH_DOORWAY/cue_approach: fixed --approach-puluration, never LiDAR-scaled — but still subject to the LiDAR safety gateitself (can still get safety_blocked if something's too close), and if you've configured a long duration for these (like your earlier example 10.0), they'll also get
+chunked/watched like anything else over 0.4s.
+
+STOP_AND_VERIFY/WAIT_OR_RECOVER/ASK_RECEPTION_OR_STAFF/USE_ELEVATOR_OR_STotion_mapping abort, unaffected by anything this session.
+
+Pre-existing behavior you'll see but isn't new
+
+- low_confidence_blocked — you saw this twice in the real C2.016 run alrescore below --min-evidence-score, default 0.30) get blocked unless--allow-low-confidence is passed. Not related to today's changes, just expect it in early/sparse steps.
+- invalid_action — e.g. the L001-lost-tracking case; the pipeline recover failing the run.
+
+Status vocabulary cheat-sheet
+
+pulse_executed (normal) · safety_blocked (LiDAR pre-check) · pulse_cut_shent_command_failed (ROS failure) · no_motion_mapping (non-motion action) · low_confidence_blocked / invalid_action (pre-existing) · user_rejected/dry_run (confirm-mode) · turn_closed_loop_reached/_timeout/_feedback_lost (only if --use-yaw-feedback is
+on).
+
+Known open gap
+
+The low-obstacle miss (cardboard box) is unresolved — if something low ant, that's the known issue, not a new regression. The arrow-key corruptionissue should no longer produce false rejections or garbled goal text — that's fixed now, worth confirming it's actually gone.
+
+What "success" looks like
+
+Model eventually issues STOP_AND_VERIFY with high confidence matching the goal text → Done: True → "[DONE] Goal '...' reached at step N." — exactly what you saw with C2.016. Don't expect every turn to be perfectly precise; the system tolerates impalready demonstrated.
+**************************************************************************************************************************************************************************************
+but 0.4s is tooo short for the navigation right? just asking
+
+Good question, but I think it's a mix-up between two different things — 0.4s isn't how far the robot moves per navigation step, it's just how often it pauses to recheck during a longer move.
+
+The actual per-action distance/angle isn't capped at 0.4s at all. A single NAVIGATE_TO_FRONTIER forward action can run up to ~5-7.5s (depending on forward_speed), covering up to 0.6m in one go. A single ALIGN_WITH_LANDMARK vision-grounded turn can run up to ~7.85s for a 90° turn. You already saw both of these for real: LiDAR_testing_1.txt had a forward pulse running 10×0.4s chunks (4.2s total) as one action, and LiDAR_testing_2.txt had the LEFT-camera turn running 20×0.4s chunks (7.85s total) as one action. So navigation-per-step is not short — it's actually much longer per step than it used to be, which was the whole point of #3.
+
+0.4s is just the re-check interval inside that longer pulse — after every 0.4s, it briefly stops, checks (LiDAR clearance for forward, or just creates a pause point for turns), and continues if still clear. That's what lets a 5-second forward pulse actually stop 1.6 seconds in if something walks into the path, instead of committing blind for the full 5 seconds.
+
+Worth knowing where 0.4s itself came from: it's not an arbitrary small number picked for this feature — it's literally the size every single pulse in this whole system used to be, for every action, before any of #1/#2/#3 existed (the original forward_pulse_duration/turn_pulse_duration defaults were 0.40s/0.35s). So chunking didn't shrink anything; it reused the system's original per-action granularity as the internal safety heartbeat inside actions that are now deliberately longer than that.
+
+The real trade-off, which I did flag earlier: the robot fully stops and restarts every 0.4s during a long pulse rather than gliding continuously — so it'll look like a rapid series of small halting steps rather than one smooth motion. That's a real cost (some lost time/smoothness at each boundary), traded for the safety property above. If that stop-start pattern turns out to feel too choppy in practice, the chunk size (MOTION_WATCH_CHUNK_SECONDS) is the knob to loosen — but I'd want to see it run first before touching it.
+**************************************************************************************************************************************************************************************
+And we still have Elevator related implementations pending right? don't implement just asking..
+
+Yes, still open — nothing implemented yet. Quick recap from the design that was finalized (but never built):
+
+- Keep USE_ELEVATOR_OR_STAIRS as one combined action, elevator prioritized over stairs when both are plausible.
+- Three human-in-the-loop pause points (press lift button → confirm inside; press floor button → confirm pressed; confirm out of elevator on the right floor → resume autonomy), reusing the same blocking-prompt pattern as the continue-goal "enter next goal" prompt.
+- All actual movement in/out of the elevator is manual (human drives via the robot's own remote) — the automation's only job is pausing/waiting, zero motion commands during that window, so it doesn't touch the safety monitor.
+- goal_parser.py already derives a possible_floor hypothesis from the goal's room-code pattern — usable for the "press floor N" prompt without new parsing work, just needs surfacing.
+- Still an open decision, never resolved: cross-floor memory handling — either wipe memory on the floor-transition leg (zero new code, reuses keep_memory=False from continue-goal) or tag landmarks by floor and prefer same-floor ones (real scope, touches every landmark-selection path). You were going to decide after thinking it over; that hasn't come back up.
+
+Effort estimate was ~a day or two of software work, and it's now probably a bit less since the goal-chaining backbone it leans on is already built and tested. Priority order has it after this LiDAR/motion work, which is basically where things stand — LiDAR/motion is code-complete and mid-validation, elevator hasn't been touched.
+**************************************************************************************************************************************************************************************
+ Okay, let me run the full pipeline once and then go further. will confirm here once done.
+
+  Check the command and correct if needed as per our recent implementations,
+
+  python3 thinkpad_robot_capture_to_amd.py \
+    --mode auto \
+    --camera-mode separate \
+    --goal C0.004 \
+    --memory true \
+    --execute confirm \
+    --max-steps 30 \
+    --interval 2 \
+    --forward-speed 0.08 \
+    --turn-speed 0.3 \
+    --forward-pulse-duration 12.0 \
+    --turn-pulse-duration 8.0 \
+    --approach-pulse-duration 10.0 \
+    --doorway-pulse-duration 10.0
+    --search-pulse-duration 10.0 \
+    --safety-mode lidar \
+    --allow-low-confidence
+
+Two real issues, plus one thing worth a decision:
+
+1. Syntax bug — missing line-continuation backslash after --doorway-pulse-duration 10.0. As written, bash would treat --search-pulse-duration 10.0 \ as a new command starting with --, which errors out. Needs a \ there.
+
+2. Missing --exploration-turn-pulse-duration — this is the one that actually changes behavior silently. --turn-pulse-duration 8.0 now only covers the fine tier (ALIGN_WITH_LANDMARK/cue_alignment). Route/direction turns no longer inherit it — without this flag they'd drop to the new default 1.30s instead of your intended 8.0s. Since you're clearly recreating your old "everything turns at 8.0s" setup, I added it at 8.0 to match — but that's your call, not mine: if you'd rather let exploratory turns use the new smaller default while fine turns stay at 8.0, drop it.
+
+One thing to know, not a bug: even with --turn-pulse-duration 8.0 set, ALIGN_WITH_LANDMARK/cue_alignment turns will actually run at the vision-grounded computed duration whenever the model supplies a usable horizontal_offset_fraction (confirmed happening in your last real run) — 8.0s only applies as the fallback when that field is missing/invalid. Don't be surprised seeing different durations than 8.0 for those specific actions in the log.
+
+Corrected command:
+
+python3 thinkpad_robot_capture_to_amd.py \
+  --mode auto \
+  --camera-mode separate \
+  --goal C0.004 \
+  --memory true \
+  --execute confirm \
+  --max-steps 30 \
+  --interval 2 \
+  --forward-speed 0.08 \
+  --turn-speed 0.3 \
+  --forward-pulse-duration 12.0 \
+  --turn-pulse-duration 8.0 \
+  --exploration-turn-pulse-duration 8.0 \
+  --approach-pulse-duration 10.0 \
+  --doorway-pulse-duration 10.0 \
+  --search-pulse-duration 10.0 \
+  --safety-mode lidar \
+  --allow-low-confidence
+
+Everything else checks out against current defaults — --api, --robot-user, --robot-ip, --front/left/right-device, --capture-size all match what you've been using and don't need to be passed explicitly. --allow-low-confidence is correctly included and will actually fix the two low_confidence_blocked aborts you hit last time (both had evidence scores above the 0.30 default threshold, just confidence: "low" — this flag bypasses exactly that check). --use-yaw-feedback correctly omitted, matching the recommendation to not enable it for the first full run.
+**************************************************************************************************************************************************************************************
+So if there is a obstacle, the robot passes stop command as of now, then will it continue exploring or just stops. I am thinking of doing a re-direction, what do you think? give me suggestions
+
+Good question — let me trace exactly what happens, since it's more than just "the robot stops."
+
+Current behavior, confirmed in code:
+
+1. The blocked pulse aborts (safety_blocked, executed=False) — the robot itself just doesn't move for that one action.
+2. The outer loop does not stop the run. It reports the failure back to the AMD server via /autonomous/ack (since your setup uses --execute confirm + --mode auto --memory true, this path is active), which appends the failure reason to NavigationMemory.failed_actions.
+3. The last 3 entries of failed_actions get injected into the next planning prompt via context_for_planner() — so the model literally sees something like "ThinkPad did not execute NAVIGATE_TO_FRONTIER: Motion blocked: nearest obstacle at 0.45m, below the 0.50m stop distance." before deciding the next action.
+
+So it's not blind repetition by design — the model gets a hint that the last attempt failed and why. But there's no guarantee it does anything smart with that hint: since the robot didn't move, the next image looks the same, and the model has to infer "try a different direction" purely from the failure text plus whatever it can see in that same image. It could just as easily retry the identical action, or get stuck oscillating.
+
+My suggestion — check before building anything. This feedback path is already live in your setup at zero extra cost. Next time you hit a safety_blocked in a real run, look specifically at what the model does on the following step — does it pick something else (turn, search, alternate landmark), or does it repeat the same blocked action? That single data point tells you whether this is actually a problem worth solving, versus something the existing text hint already handles reasonably.
+
+If it turns out the model does get stuck, here's how I'd escalate, roughly by effort:
+
+1. Richer block signal (moderate) — right now the LiDAR bridge only reports the forward ±20° cone. It's already scanning 360°; cheaply add a couple more azimuth-filtered queries (e.g. a left-ish and right-ish cone) and fold "left clearer (Xm) vs right clearer (Ym)" into the block reason text. This gives the model an actual data-grounded hint instead of asking it to guess blind from a static image — keeps the architecture's existing philosophy intact (VLM still decides, just with better information).
+2. Auto-redirect after repeated blocks (larger) — track consecutive safety_blocked results for the same action type; after some threshold, have the executor itself do a small reactive turn toward whichever direction the LiDAR shows clearer, then hand back to the VLM to re-plan from the new heading. This is a real behavior change (the executor making a decision, not just executing one) and a bigger step — I'd only reach for it if #1 doesn't fix it.
+
+I'd start with checking real behavior first, then #1 before #2 — don't build the bigger mechanism before confirming the cheap one doesn't already cover it.
+**************************************************************************************************************************************************************************************
+where timeout=20secs is given, I want to increase the timeout timing.
+
+Found it — --scp-timeout defaults to 20 (argparse, thinkpad_robot_capture_to_amd.py:1842-1846), and that's exactly what the failed scp call in your log was using. There's also a separate --ssh-timeout (also defaults to 20, used for the capture SSH command's budget: 3×capture_timeout + ssh_timeout = 44s total for the three-camera capture), which didn't fail this time but shares the same default.
+
+Both are already CLI-overridable (--scp-timeout 40, --ssh-timeout 40) without touching code. Do you want me to just raise the default in the file (so you don't need to pass the flag every run), and if so what value — or would you rather pass it explicitly per-run and leave the default as-is?
+**************************************************************************************************************************************************************************************
+Is it possible to give two commands like turn right and move forward in a single step?
+
+Technically possible to build, but I'd recommend against it — here's the tradeoff.
+
+The whole pipeline is built around re-observing after every motion type change (capture → plan → pulse → recapture), specifically because turn precision isn't guaranteed — you've already seen this directly: the LEFT-boresight turn in the C2.016 run wasn't perfectly on-target, and the pipeline only recovered because it looked again before committing to the next move (re-found the target as a new landmark L008 instead of blindly walking forward on a bad heading). If turn+forward were chained into one step with no recapture between them, a turn that over/undershoots would send the forward pulse in a subtly wrong direction with zero chance to catch it until after both have already executed — the exact failure mode the current step-by-step structure exists to avoid. That's also why ALIGN_WITH_LANDMARK and APPROACH_LANDMARK are two separate skills/steps rather than one, even though they often happen back-to-back.
+
+Worth noting: the main reason you'd want this — fewer round-trips, more progress per step — is already largely solved by #1/#2/#3. A single turn or forward action now covers a lot more (up to ~90° or ~0.6m) than the old fixed tiny pulses did, so the number of steps needed for a given maneuver has already dropped a lot without needing to bundle different motion types together.
+
+If there's a specific scenario driving this (e.g. "there's a gap 2m ahead and slightly right, I want one maneuver to get there") — that might be better served by a genuinely new single primitive (a diagonal/curved approach) rather than chaining turn+forward, which keeps the re-observe-between-motions safety property intact. Happy to think through that if that's the actual case you're hitting.
+**************************************************************************************************************************************************************************************
+check the new logs files I have placed under /temp_files folder, I think something is wrong in the execution, but check once and tell me
+
+I checked log_C0.004_2 and log_C0.004_3 — found a real bug, plus one recurring issue worth flagging.
+
+The bug: "Mapped command" shows the wrong duration for LiDAR-scaled forward pulses
+
+In both logs, step 2 (NAVIGATE_TO_LANDMARK/route_advance) prints:
+Mapped command: {'linear_x': 0.1, 'angular_z': 0.0, 'duration': 20.0, 'motion_kind': 'route_advance'}
+but the actual executed pulses are only 15 chunks × 0.4s = 6.0s in both runs — I counted them directly. That 6.0s isn't random: it's exactly MAX_FORWARD_PULSE_DISTANCE_M (0.60) / forward_speed (0.1) = 6.0s, i.e. the LiDAR-scaling cap working correctly. The actual behavior is safe and correct — the robot really did stop at the intended, clearance-based distance, not run for 20 seconds. The problem is purely the printed line: it shows the pre-scaling nominal duration (20.0, from your --forward-pulse-duration), not what actually got computed and executed.
+
+Root cause: in robot_executor.py, print("Mapped command:", command) happens before the LiDAR-scaling block that overwrites command["duration"]. The console snapshot is taken too early. This would be confusing for exactly this reason — you'd watch it say "20.0" and then see it stop after a handful of pulses, which looks like something broke, when actually the safety cap is doing its job. Want me to fix the print ordering so it reflects the real scaled duration?
+
+Recurring issue: Ctrl+C during image capture
+
+This is now the third time (once per log file) that interrupting during the SSH/image-capture phase specifically (not during a motion pulse) produces "CRITICAL: stop command failed (bridge process closed its output); the robot may still be moving." Given it's reproduced identically three times under the same circumstance, I'd stop treating it as a one-off — it looks like the whole process tearing down on SIGINT kills the cmd_vel bridge subprocess before the emergency-stop stop() call can get a reply, every time. Worth investigating if you plan to keep using Ctrl+C to bail out of runs, since the message itself is alarming even though the robot was very likely not moving at that exact point (captures only happen between pulses).
+
+Minor, probably not a bug: repeated invalid landmarks
+
+In log_C0.004_3, steps 3 and 4 both aborted (invalid_action) trying to navigate to a "reception desk" landmark not visible in the current view — two wasted steps out of your 7-step budget with zero motion. This looks like model/landmark-selection behavior (picking a remembered landmark that's since gone stale) rather than an executor bug, so I don't think it's what you're flagging, but let me know if you want me to dig into it separately.
+
+Which of these matches what you noticed, or is there something else in the logs that caught your eye?
+**************************************************************************************************************************************************************************************
+Okay, so, I have tested the robot with the below command, and saved the terminal logs under /temp_files folder, with name log_C0.004_5_28072026_partialSuccess.txt, check that and check the saved execution log as well under /navigation_outputs/live_runs folder. If you want to check the images against the logs or json files, check that as well under /robot_live_runs folder. I have noticed few things,
+
+  1. In the step 2 itself, the model saw the direction sign in the front image, even after that it didn't turn right, instead it keeps on turning left and forward. Does this mean the model couldn't read the text on the sign-board? check thoroughly and tell me all possible reasons.
+  2. Why the sensor scan is going stale, coz the two times the action got aborted coz of sensor scan failure, in those two times, the front was clear there were nothing in front of the robot.
+  3. If the performance issue is due to camera clarity, would it be improved if I use "intel's REALSENSE camera, model D435,or D435i"?
+After answering this, save all the necessary details to memory, and then I will clear this session chats.
+
+I checked the full log (all 15 steps), the saved JSON results, and the actual images. Big picture first: this run actually reached the goal — [DONE] Goal 'C0.004' reached at step 15 — first full end-to-end success on real hardware. Now the three questions.
+
+1. Did the model fail to read the sign?
+
+I pulled up the actual image (robot_live_frames/step_0002/front.png) and yes — there's real evidence of a misread. The sign clearly shows two rows: a left arrow for rooms C0.016–C0.020, and a red right arrow for rooms C0.004–C0.008 (your target). The correct move from that sign was right.
+
+What actually happened: step 2's action (ALIGN_WITH_LANDMARK toward the sign itself, turning left) isn't the problem — that's just centering on the sign object to look at it, not following its arrow yet, and is legitimate. The real issue is what happened after: steps 3 and 4 picked entirely different landmarks (open doorways further left) instead of coming back to read and act on the sign's right-arrow, and the robot kept drifting left/forward for several more steps. It only found room C0.004 later via a second, different sign around step 10-11.
+
+Likely reasons, roughly in order of how much I trust them:
+- Fine-grained sign parsing is the weak point, not general OCR. This sign has two stacked rows, each with an icon cluster, an arrow, and a room range — correctly pairing "this arrow belongs to this specific range" is a harder spatial-reasoning task than just detecting "there's a sign here." The model's own landmark description ("listing room ranges including C0.004") shows it noticed the sign had relevant text, but never captured which arrow went with C0.004 specifically.
+- The model didn't follow its own prompted fallback rule. action_generator.py's prompt explicitly says: if signage is unclear, move closer / don't guess, and say so in the reason. Here it didn't do either — it just moved on to a different, easier-to-grab landmark (a doorway) instead of re-engaging with the sign.
+- Possible model capacity limit. If the deployed model is a quantized local model (I recall a README_GGUF_Q8.md reference from earlier work in this codebase), that's consistent with weaker fine-grained multi-element sign parsing than a full-precision or larger frontier model would manage.
+- Image quality itself is not the likely cause — I looked at the actual 960×720 capture and the sign is clearly legible even to my eyes; this doesn't look like a resolution/blur problem.
+
+2. Why the LiDAR scan goes stale — found the actual cause
+
+This is a real, fixable bug, not sensor flakiness, and "front was clear" is exactly what I'd expect given the cause. The "stale scan" message isn't a false obstacle detection — it's the safety gate refusing to trust old data, unrelated to whether anything's actually in front.
+
+Root cause, confirmed in code: a brand-new RobotSafetyMonitor (and therefore a brand-new PersistentLidarBridge subprocess) gets spawned from scratch on every single step (thinkpad_robot_capture_to_amd.py:1163, inside maybe_execute_robot_action, called once per auto-step). Unlike the cmd_vel bridge — which is deliberately cached and reused across the whole run via _get_shared_bridge/_SHARED_BRIDGES specifically to avoid paying ROS registration cost repeatedly — the LiDAR bridge has no equivalent caching. So every step pays full ROS node registration + resubscription cost again, and nothing ever shuts the previous ones down (only atexit-registered, which only fires once at final process exit) — so by step 9+ there could be 8+ orphaned LiDAR-bridge subprocesses still alive and registered with the ROS master, competing for the same topic subscription.
+
+This matches the actual pattern exactly: steps 1-8 all succeeded cleanly (little/no pileup yet), then staleness started appearing from step 9 onward (9, 13, 14) — right when accumulated subprocess/registration load would start mattering. I confirmed via the saved JSONs that "sensor_ready": true in all three stale cases — the bridge had connected and gotten at least one scan, it just didn't get a fresh one in time for the query, consistent with registration-latency/contention rather than a dead sensor.
+
+Fix (not applied yet, since you didn't ask for a code change): apply the same shared/cached bridge pattern already used for PersistentCmdVelBridge to the LiDAR safety monitor, so one bridge subprocess is reused for the whole run instead of respawned every step.
+
+3. Would a RealSense D435/D435i help?
+
+Not for this specific problem. The D435's RGB stream isn't meaningfully sharper than your current C920 for OCR/sign-reading purposes — the image I checked was already clear, so the bottleneck is the model's fine-grained reading/reasoning (per Q1), not camera optics. Swapping cameras wouldn't fix that.
+
+Where a RealSense would genuinely add value is its actual differentiator — depth sensing (and IMU on the "i" variant) — which could complement or extend obstacle detection beyond the LiDAR, or potentially support visual-inertial odometry later. But that's a different project (new capture pipeline, drivers, and redoing the FOV/boresight calibration work from this session) aimed at a different problem than sign-reading. I wouldn't reach for it to fix issue #1.
+
+Now saving everything to memory. Memory fully updated across all three files (project_lidar_motion_tuning.md, MEMORY.md, backlog_navigation_improvements.md). Summary of what's preserved for next session:
+
+- Two full goal completions on real hardware (C2.016, C0.004) — the whole LiDAR gate + #1/#2/#3 stack is validated end-to-end, not just unit-tested.
+- New bug #1 (high priority): LiDAR bridge respawns and orphans a subprocess every single step (no caching, unlike cmd_vel's bridge) — root cause of the stale-scan aborts, fix identified (reuse the existing _get_shared_bridge pattern), not yet applied.
+- New bug #2: "Mapped command" console print shows the pre-scaling duration, not the real one — confirmed again in this run, fix identified, not yet applied.
+- Sign-misreading finding: real evidence from the actual image, root-caused to model-side fine-grained sign parsing rather than camera quality, with the RealSense recommendation and reasoning captured.
+- Everything else from earlier in the session (calibration constants, #4 implementation status, open checklist items) carried forward and cross-referenced rather than duplicated.
+
+Good stopping point — this was a productive session. Whenever you're back, the memory file has everything needed to pick up right at the two open bugs.
+**************************************************************************************************************************************************************************************
+Fix the LiDAR bridge caching. check the memory from previous sessions for the details.
+
+Fix applied in robot_safety.py: added _SHARED_LIDAR_BRIDGES/_get_shared_lidar_bridge(topic, ...), mirroring robot_executor.py's _get_shared_bridge pattern for /cmd_vel. RobotSafetyMonitor.__init__ now pulls the PersistentLidarBridge from this cache instead of always spawning a new one, so every step's RobotSafetyMonitor("lidar", ...) construction in thinkpad_robot_capture_to_amd.py::maybe_execute_robot_action reuses one bridge subprocess per topic for the whole run instead of orphaning a new one each step (the confirmed root cause of the "stale scan" safety_blocked aborts at steps 9/13/14 in the C0.004 run).
+
+Syntax-checked with py_compile — not yet tested on real hardware, since that requires the ROS/robot environment. Next live run should confirm the stale-scan aborts stop appearing.
+**************************************************************************************************************************************************************************************
+Now fix the "Mapped command" print bug too. And tell me what can we do for the sign-reading related bug, don't fix it now let's discuss first then will go ahead.
+
+"Mapped command" print bug fixed. In robot_executor.py::execute_action, the original print("Mapped command:", command) at line 700 fires before LiDAR-scaling mutates command["duration"], so it always showed the nominal pre-scaling duration (e.g. 20.0) instead of what actually ran (e.g. 2.0). I added a second print right after the mutation (command["duration"] = pulse_duration, robot_executor.py:790), labeled "Mapped command (LiDAR-scaled duration):", so the log shows the real value whenever scaling applies. Left the original early print in place since it also runs during the confirm-mode prompt, before the safety/LiDAR check even happens — that one can't show final numbers ahead of a decision it doesn't have yet, so a second print is the correct fix rather than moving the original.
+
+---
+Now, the sign-reading bug — recapping what's known and the options, for discussion only:
+
+What happened: the model correctly detected a two-row directional sign (left → C0.016–C0.020, right → C0.004–C0.008, the goal) but never acted on the right-arrow pairing, and drifted left for a few steps before recovering via a second sign later. Image quality was ruled out — the source frame is legible at native 960×720. The model also ignored its own prompted fallback ("move closer / say unclear" instead of guessing).
+
+Likely cause: this looks like a model reasoning gap (correctly parsing which arrow pairs with which room range in a cluttered multi-element layout), not a sensing/optics problem — consistent with it being a quantized local deployment.
+
+Rough options, roughly in order of effort:
+
+1. Prompt-level fix (cheapest): explicitly instruct the model to enumerate each arrow/label pair separately before choosing a direction when a sign has multiple rows/arrows, and to state its pairing reasoning in the response — makes the failure mode visible in logs even if it doesn't fully fix it.
+2. Force a re-read/zoom step on ambiguity: if the model reports a sign but confidence/evidence_score is borderline, trigger a mandatory closer-approach or crop-and-recheck action before committing to a turn — leans on the fallback behavior the model already knows about but doesn't reliably self-invoke.
+3. Stronger/less-quantized model: addresses the root cause directly but is the most expensive lever (different deployment, latency/resource tradeoffs) and unproven — no confirmation yet that a bigger model would actually fix this specific failure mode.
+
+Given it worked out via re-observation in this run, my instinct is to try #1 first since it's a prompt change (cheap, reversible, testable next run) before considering #2 or #3. What direction do you want to go?
+**************************************************************************************************************************************************************************************
+ Let's go with option 1, update the prompt. And I want you to check all the prompts that I am using in the pipeline - the quality of the prompt, how good the model understands it for processing, whether it's all good or any modifications needed, whether any misleading, contradictive sentences there that makes the model confused and everything that matters - but importantly don't change anything in the prompt, other than the option 1 fix.
+
+Now applying option 1 — the multi-arrow sign pairing is handled in memory.py's landmark-extraction prompt (navigation_pipeline/memory.py:155-165), where extra.target_direction gets assigned. I'll add explicit enumeration + stated-reasoning rules there, and nowhere else. Option 1 applied (navigation_pipeline/memory.py:155-159, the landmark-extraction prompt — this is where extra.target_direction gets assigned per sign, so it's the right spot, not the per-step planning prompt): added rules forcing the model to treat each row of a multi-row sign as its own arrow-to-label pair, match the goal only to the pair whose label range actually contains it, explicitly reject matching by visual prominence/position alone, and state which row/pair it matched in the landmark's description. Nothing else in that prompt touched. Verified as a plain-text addition inside the triple-quoted string (no braces/quotes broken); py_compile itself fails on this file in this sandbox, but that's pre-existing — Python 3.6 here can't parse this file's from __future__ import annotations/3.7 type hints at all, confirmed by reproducing the identical error on the untouched file via git stash. Real validation has to happen on the AMD server.
+
+
+Full prompt review (4 files, no changes made besides the above)
+
+goal_parser.py — clean, no contradictions found. One-shot, no retry-on-failure (falls back to the deterministic rule parser instead), which is fine since it's a single goal string, not a live navigation decision.
+
+memory.py (landmark extraction) — this is the most complex prompt and has real issues:
+
+1. extra.arrow gets self-contradictory instructions (lines ~162, 165): first told to "preserve the raw visible arrow information," then told it "should be normalized to left, right, forward, none, or unknown whenever possible." Those are opposite instructions for the same field — raw vs. normalized. Worth resolving (pick one).
+2. extra.direction is in the output schema but never explained anywhere in the prompt — unlike target_direction and continuation_direction, which both get explicit rules. This isn't cosmetic: I traced it downstream (_semantic_direction_from_extra, memory.py:1594) — the code collects target_direction, arrow, and direction, and if they don't all agree, it silently discards the direction entirely (returns ""), dropping a landmark from subgoal consideration even when target_direction alone was correct. An unexplained field that the model fills inconsistently is a plausible route to silently losing good signal.
+3. Retry-suffix caps landmarks at 6 vs. the main prompt's 8 — probably intentional (shorter output under retry), but worth a quick confirm that it's deliberate and not just drift.
+4. Minor redundancy: the multi-arrow-sign rule is stated twice in slightly different words (lines 155 and 163, pre-edit numbering) — not contradictory, just repeated.
+
+action_generator.py (per-step planner) — mostly solid and internally consistent (evidence_view, horizontal_position, proximity, doorway_state, threshold_state are all well-defined with matching enums in both prose and schema). Two gaps:
+
+1. search_for and the target vs. target_description distinction are never defined. The prompt says "put landmark names in target or target_description" as if they're interchangeable, but never says when to use which; search_for appears only in the JSON schema with zero prose explanation. Compare to evidence_view/horizontal_position, which get full enum + usage rules — this is inconsistent treatment across fields in the same schema.
+2. Minor: the direction field's constraint ("left"/"right"/"forward" only) is stated once in prose (line 154) but, unlike every other constrained field, isn't echoed as an inline enum hint in the JSON schema template. LLMs tend to weight the schema hint closest to generation more heavily, so this is a plausible compliance gap.
+
+verifier.py — the tightest and cleanest of the four; the "building letter ≠ target room" guardrail is stated clearly and repeated appropriately (reinforcement, not contradiction) since it's the single most safety-critical rule (false arrival). No retry-on-parse-failure here either, same pattern as goal_parser.
+
+Cross-cutting, low priority: none of the four prompts are dedented before being sent (textwrap.dedent is never used) — every line carries ~8+ spaces of leading indentation as literal text sent to the model. Unlikely to cause comprehension problems for a chat-tuned VLM, but it's wasted tokens and worth knowing about.
+
+My recommendation on what to actually fix, if you want to go further: #1 and #2 under memory.py are the ones with a traceable path to real behavioral bugs (not just style) — the arrow raw-vs-normalized contradiction and the unexplained extra.direction field feeding into a silent-discard-on-disagreement code path. The action_generator.py gaps are lower stakes since target/target_description/search_for aren't obviously wired into strict pass/fail logic the way _semantic_direction_from_extra is. Let me know which of these you want me to act on.
+**************************************************************************************************************************************************************************************
+Go ahead and fix both of those in memory.py 1st. and if you see yesterda's partial success logs, you can notice target or direction as None, is it because of the LiDAR scan issue, since that is fixed now, will the issue gone?
+
+Both fixes are in:
+
+1. extra.arrow contradiction resolved — removed the "may preserve raw visible arrow information" instruction, kept only "must be normalized to left/right/forward/none/unknown," matching what _normalise_subgoal_direction (memory.py:1429) can actually parse. A raw arrow glyph would never have matched that function's fixed token set anyway, so this also fixes a real dead-instruction, not just a wording clash.
+2. extra.direction now explained — tied it explicitly to target_direction for semantic landmarks and to continuation_direction for structural landmarks, with an explicit "must always agree" instruction, matching what _semantic_direction_from_extra (memory.py:1594) actually cross-checks.
+
+Same caveat as before: py_compile can't run in this sandbox (Python 3.6 vs. the file's 3.7+ syntax), but the edits are plain-text lines inside the existing triple-quoted string — no braces/quotes disturbed, diff is a clean 6-insertion/2-deletion change.
+
+---
+On yesterday's target/direction: None question — good catch connecting those, but I don't think they're the same failure. They're different fields at different layers:
+
+- The LiDAR staleness bug (now fixed) caused safety_blocked aborts at steps 9/13/14 — those show up as "status": "safety_blocked" in execution_result, with the LiDAR error message in reason. That's an execution-layer failure after an action was already chosen.
+- target/direction: None in action.params is a planning-layer field, set by the action-generator prompt (action_generator.py) when the model itself decides not to specify a target or direction for that action — nothing in that prompt ever reads LiDAR state, and RobotSafetyMonitor/LiDAR data never flows into action_generator.py's prompt inputs at all (only into robot_executor.py's post-decision motion-scaling/gating). So a LiDAR hiccup can't be what's nulling those fields.
+
+More likely explanations, in rough order of probability: (a) the action genuinely didn't need a target/direction (e.g. WAIT_OR_RECOVER, or a NAVIGATE_TO_FRONTIER with no specific landmark), (b) the model left it null because the field wasn't clearly prompted for — which lines up with the search_for/target/target_description gap I flagged in the last review, or (c) a parse fallback (_extract_json failing, or the retry path) defaulting those fields to None.
+
+I haven't looked at the actual log lines yet — if you want a real answer instead of a guess, point me at the specific step(s) in log_C0.004_5_28072026_partialSuccess.txt showing the None and I'll check what action name/status they're paired with.
+**************************************************************************************************************************************************************************************
+Check log_C0.004_5_28072026_partialSuccess.txt for the None steps
+
+Checked the log directly. The direction: None occurrences are at steps 13 and 14 (lines 847 and 896), both CHECK_DOOR_LABEL actions targeting the actual door (L026, then L028), with target: 'C0.004' populated and evidence_view: 'FRONT', proximity: 'near'.
+
+Not related to the LiDAR staleness bug. Here's the evidence:
+
+1. I pulled the direction field from every action in the run, in order: every PASS_THROUGH_DOORWAY, ALIGN_WITH_LANDMARK, NAVIGATE_TO_LANDMARK, and FOLLOW_DIRECTION action got a real value (forward/left/right). The only two Nones are both CHECK_DOOR_LABEL. That's a clean split by action type, not by when it happened in the run.
+2. direction is a planning-layer field, set by the action-generator prompt before execution even starts. It never sees LiDAR data — LiDAR/RobotSafetyMonitor state only enters the pipeline later, inside robot_executor.py, after the action is already chosen. The staleness bug lived entirely in that later, execution-side bridge respawn — it couldn't reach back and null out a field the planner already decided.
+3. Checking action_generator.py's prompt itself: the only rule that ever constrains direction is "For FOLLOW_DIRECTION, direction must be exactly left/right/forward" (line 154). CHECK_DOOR_LABEL is a target-oriented action, and its required fields are landmark_id, target_description, stop_condition, evidence_view, capture_after (line 159) — direction isn't one of them, and there's no rule anywhere telling the model what to put there for this action type.
+
+So direction: None here is expected, correct behavior: the robot is already stopped directly in front of the door (FRONT, center, near) — there's no directional heading left to specify, it's a "read what's right in front of you" action, not a "go this way" action. This is a genuinely different direction than the extra.direction field we just fixed in memory.py — that one lives in landmark memory and feeds _semantic_direction_from_extra; this one is the action's own output param, unrelated code path.
+
+Separately: the [EXECUTOR] ABORT (safety_blocked): ... stale scan lines do show up right around the same steps (13 and 14, lines 867/916) — that's the real, now-fixed LiDAR bug, but it's hitting the cue_approach motion that came after the CHECK_DOOR_LABEL decision, not the decision itself. Coincidental proximity in the log, not the same cause. So yes, the LiDAR fix should stop those specific abort lines from recurring, but it won't change the direction: None behavior — that's just how CHECK_DOOR_LABEL is supposed to look.
+**************************************************************************************************************************************************************************************
+Got it. what else is pending overall for this project?
+
+Here's the full pending picture, pulling together the backlog and today's session:
+
+Just fixed this session (uncommitted, hardware-untested)
+
+Three files modified, not yet committed: robot_safety.py, robot_executor.py, navigation_pipeline/memory.py.
+- LiDAR bridge per-step respawn (the stale-scan cause) — fixed
+- Misleading "Mapped command" print (pre-scaling duration) — fixed
+- Multi-arrow sign misreading — prompt fix (row-pairing + reasoning) applied
+- extra.arrow/extra.direction contradictory/undocumented prompt fields — fixed
+
+None of this has run against real ROS/hardware yet — that's the natural next step whenever you're back at the robot. Let me know if you want these committed now or held until after a hardware pass.
+
+Backlog — still open
+
+Elevator/multi-level navigation — design is finalized (3 human-in-the-loop confirmation prompts, USE_ELEVATOR_OR_STAIRS stays one action), nothing built yet. Blocked on one decision you hadn't made: cross-floor memory handling — wipe memory on floor transition (cheap, reuses existing continue-goal code) vs. tag landmarks by floor and filter by it (real scope, touches every landmark-selection path). ~1-2 days of work once that's decided.
+
+Provisional calibration constants, from the LiDAR work, not yet nailed down:
+- turn_speed/forward_speed — plan exists (derive from /high_state position/yaw deltas around a timed pulse) but never executed
+- Camera FOV (70.4°) — spec-based estimate, not wall-distance verified (you called this moderate priority, not critical)
+
+Low-obstacle miss — the ~30cm cardboard box that didn't trigger a stop. Suspected sparse-vertical-beam geometry gap in the 16-beam LiDAR, not a filter bug, but unconfirmed. You planned to retest with lidar_probe.py at the same close range next time you're doing full pipeline testing.
+
+#4 closed-loop yaw turning (--use-yaw-feedback) — implemented, sandbox-verified against a stubbed yaw feed, but has never touched real /high_state data. Off by default; recommended to isolate-test before trusting it in an unattended run.
+
+Pure-exploration turns (no landmark to ground against) still use the fixed-duration tier — only landmark-aligned turns got the vision-grounded treatment. This was flagged as only a partial fix to the original left/right-hunting complaint.
+
+Deliberately deferred, not urgent: health-check/cleanup items — you already decided these wait until README/cleanup time, not before.
+**************************************************************************************************************************************************************************************
+1. you remember, I asked you this "So if there is a obstacle, the robot passes stop command as of now, then will it continue exploring or just stops. I am thinking of doing a re-direction, what do you think? give me suggestions" and you gave 2 suggestions "1. Richer block signal (moderate) — right now the LiDAR bridge only reports the forward ±20° cone. It's already scanning 360°; cheaply add a couple more azimuth-filtered queries (e.g. a left-ish and right-ish cone) and fold "left clearer (Xm) vs right clearer (Ym)" into the block reason text. This gives the model an actual data-grounded hint instead of asking it to guess blind from a static image — keeps the architecture's existing philosophy intact (VLM still decides, just with better information). 2. Auto-redirect after repeated blocks (larger) — track consecutive safety_blocked results for the same action type; after some threshold, have the executor itself do a small reactive turn toward whichever direction the LiDAR shows clearer, then hand back to the VLM to re-plan from the new heading. This is a real behavior change (the executor making a decision, not just executing one) and a bigger step — I'd only reach for it if #1 doesn't fix it." and asked me about the real behaviour, The real behaviour I noticed is the robot just passes same actions and for movement executions the actions become invalid. It just getting repeated 2,3 times, then I manually move the robot from that place, then the navigation continues. So should we go ahead and implement #1 is what you suggest?
+  2. For #4 Closed-loop yaw turning (--use-yaw-feedback), should I use this during the live testing, include this in the execution command I give to start with the navigation?
+  3. "- turn_speed/forward_speed — plan exists (derive from /high_state position/yaw deltas around a timed pulse) but never executed" what should I do for this?
+  4. For "Elevator/multi-level navigation", I told you not to wipe the whole memory instead include floor number in the landmarks, and refer the landmarks based on the floor number, so, when the robot initially land on the floor, it will not have any memory related to that floor but has the memory of previous floors.
+  5. "Pure-exploration turns (no landmark to ground against) still use the fixed-duration tier — only landmark-aligned turns got the vision-grounded treatment. This was flagged as only a partial fix to the original left/right-hunting complaint." - what is this issue?
+Don't change any code. Let's discuss and then decide
+
+I dug into the actual code paths (not just re-stating prior suggestions) before answering, since your observed behavior is new information. Here's what I found for each.
+
+1. Repeated blocked actions → should we do #1?
+
+I traced how the pipeline currently reacts to a safety_blocked result, and found something that changes the recommendation:
+
+What actually happens today, confirmed in code:
+- When an action fails to execute (executed=False, e.g. LiDAR-blocked), the ThinkPad script's two repeat-detection guards (apply_no_progress_guard, apply_action_retry_guard in thinkpad_robot_capture_to_amd.py) both reset their tracking state to None on that exact step (line 1646-1651: elif ...: last_executed_state = None). Neither guard accumulates across consecutive blocks — they only guard against a successfully executed action producing an unchanging result. So there's currently no mechanism at all that detects "N consecutive obstacle blocks" and intervenes — I'd assumed earlier that the pulse-count retry guard could be reused for this; it can't, it doesn't apply to this failure mode.
+- Meanwhile, the LiDAR-block reason text does reach the planner: on the ack round-trip, NAV.acknowledge_execution() calls memory.add_failed_action(reason) (navigator.py:412), and failed_actions (last 3 entries) is included in the JSON blob sent to the model every step (memory.py:865-868).
+- But — the action-generator prompt never explains what failed_actions means or tells the model to do anything differently when it sees one. It's raw data in the context with zero instruction attached, same class of gap as the extra.direction field we just fixed.
+
+So the mechanism producing what you're seeing is simplest read as: robot blocked → doesn't move → next frame looks the same → model has no instruction to treat "recently blocked" as a signal to change plan → proposes something similar again → repeats → you intervene manually.
+
+Revised recommendation: #1 (richer left/right LiDAR cone data) is good, but data alone won't fix this — it needs a paired prompt rule telling the model to use failed_actions and change direction/action when it sees a recent obstacle block. That's still moderate effort, just two changes instead of one. Given this model's track record of not reliably following soft fallback instructions (same pattern as the sign-arrow miss), I'd treat that combo as "try first," but go in expecting it might not be fully reliable, since it still depends on the model choosing to act on the hint. #2 (executor-driven auto-redirect) would need genuinely new counting logic now — not the free reuse I originally implied — but it's the one that doesn't depend on model compliance at all, which matters given the fix here is specifically about getting the robot unstuck without you.
+
+My honest suggestion: do #1 + the prompt rule first since it's cheaper and keeps the "VLM decides" architecture intact; but I'd plan for #2 as the near-term fallback rather than a maybe, given how model-compliance-dependent #1 is.
+
+2. Should --use-yaw-feedback go in your live run command?
+
+Not yet — same recommendation as when #4 was built. It's never touched real /high_state data, only a stubbed sandbox feed. It's opt-in and fails safe (falls straight through to the existing open-loop turn if the bridge isn't ready), so including it wouldn't break anything catastrophically — but "wouldn't break catastrophically" isn't the same as "known to work." I'd do one isolated test first, same pattern as the earlier --action-json vision-turn tests: run robot_executor.py directly with --test-left/--test-right (or an --action-json) plus --use-yaw-feedback, watch a single turn complete and check turn_closed_loop_reached vs. _timeout/_feedback_lost in the output, before putting it in a full unattended thinkpad_robot_capture_to_amd.py --mode auto run.
+
+3. turn_speed/forward_speed validation via /high_state
+
+The plan from before: run one known-duration pulse, read yaw/position from /high_state immediately before and after, compute actual rad/s or m/s from the delta, repeat 2-3x per direction and average.
+
+Concretely, with what already exists: robot_executor.py --test-left/--test-right/--test-forward already give you a single known-duration, known-speed pulse to bracket. What's missing is a convenient way to read /high_state yaw/position on demand — high_state_bridge.py only exists as the long-lived subprocess PersistentHighStateBridge talks to over stdin/stdout; there's no standalone "print current yaw" command today. Two ways to actually do this, neither requiring new code if you want to do it manually right now:
+- Quick and dirty: run python2 -u high_state_bridge.py --topic /high_state in one terminal, pipe {"cmd":"get_yaw"}\n into its stdin around a --test-left call in another terminal, read the yaw values off stdout before/after.
+- Cleaner: a small new standalone script (e.g. --measure-only mode) that starts the bridge, records yaw/position, runs one pulse via the existing SafeCmdVelExecutor, records again, prints the delta and computed rate — maybe 20-30 lines, reusing PersistentHighStateBridge and PersistentCmdVelBridge as-is.
+
+Given you're already going to be doing calibration work on hardware, I'd lean toward the second option since it turns a fiddly manual two-terminal dance into one command you can repeat 2-3x per direction cleanly — but that's a code change, so only if/when you want me to write it.
+
+4. Elevator — floor-tagged landmarks confirmed
+
+Got it, that's option (b) from the backlog, not the memory-wipe option. To restate back so we're aligned: Landmark.extra["floor"] already exists as a field in the schema (currently populated but unused downstream) — the work is making landmark-selection code (context_for_planner's recent/relevant/structural picks, update_current_subgoal, the structural-direction lookups) filter/prefer landmarks tagged with the robot's current floor, rather than showing every landmark from every floor ever visited. On landing on a new floor, there's naturally nothing tagged with that floor yet (empty by construction, not by a wipe), while landmarks from floors already visited stay in memory for a possible round-trip later. This is the "real scope" option flagged in the backlog — touches every landmark-selection path, not a one-field change. I'll treat this as the confirmed direction whenever we pick up elevator work; no code changes now per your ask.
+
+5. What "pure-exploration turns still use the fixed tier" means
+
+Vision-grounded turning (#2) only works when there's a specific landmark visible to aim at — the model reports horizontal_offset_fraction (where that landmark sits in its own camera image), and that's converted into a precise turn angle to center it. That mechanism is wired into exactly two motion kinds: ALIGN_WITH_LANDMARK and cue_alignment — both "I can see the thing, turn until it's centered" turns.
+
+SEARCH_FOR_CUE and generic route_alignment/direction_turn turns (e.g., "nothing useful in view, turn left and look") have nothing to aim at by definition — there's no landmark, so there's no horizontal_offset_fraction to compute a precise angle from. Those still just execute a fixed nominal turn (exploration_turn_pulse_duration, ~15° per pulse by default) regardless of what's actually around the robot — same blind, generic behavior as before any of this work started. So: turns toward something visible got smarter, turns into the unknown didn't, and it's specifically the second category that was behind the original "hunts left/right inefficiently" complaint when the robot has nothing to look at yet.
+**************************************************************************************************************************************************************************************
+ Okay now, for
+    1. go ahead and implement #1 first, then after that we can start #2 implementation.
+    2. --use-yaw-feedback - I'll do this today and let you know.
+    3. turn_speed/forward_speed validation via /high_state - This also I'll do today.
+
+    but for 2 and 3 I need list of commands and step-by-step instruction for execution, will ask here when I am executing it.
+    4. Elevator — floor-tagged landmarks confirmed - I am okay to start implementing Elevator related functionalities, let me know when you're ready.
+    5. What "pure-exploration turns still use the fixed tier" means - This one, what I noticed from yesterday's live run is, not all the turns were same, the turns triggered with "ALIGH_WITH_LANDMARK" didn't use the default turn-duration, it just turned few steps to make it align with the landmark. so I think this is working. But for SEARCH_FOR_CUE and generic turns we still need to work on it.
+
+
+Got it — implementing #1 now: richer LiDAR left/right clearance data, folded into the block reason, plus the missing prompt rule that actually tells the model to use it. Let me check the current state of the relevant files first. That's exactly the reason string that flows into failed_actions → next planning prompt. #1 is implemented and verified in isolation:
+
+What changed (3 files, uncommitted, hardware-untested)
+
+- lidar_bridge.py: get_range now reports left_range/right_range alongside the existing forward range, from two new cones centered at ±45° (same validated 20° half-angle), computed in one pass over the point cloud. Backward-compatible — range key unchanged.
+- robot_safety.py: _check_lidar_clearance's blocked-reason string now appends " Side clearance: left X.XXm, right Y.YYm, <side> is clearer." when a forward pulse is blocked, and the result dict carries left_range_m/right_range_m too. New LIDAR_SIDE_CONE_CENTER_DEG = 45.0 constant, threaded through PersistentLidarBridge/_get_shared_lidar_bridge.
+- action_generator.py: the prompt now explains failed_actions (previously undocumented, per last session's review) and adds a decision rule: if the latest failed_actions entry is a same-direction obstacle block, don't repeat it — turn/frontier/search toward the clearer side if given, else SEARCH_FOR_CUE/WAIT_OR_RECOVER.
+
+Verified the cone geometry and reason-string formatting with synthetic points in isolation (forward/left/right buckets came out correct, floor point excluded). Real validation still needs the AMD server (3.7+) for the prompt-side Python and the robot for the ROS side.
+
+Whenever you're ready, say the word and I'll start on #2 (executor-driven auto-redirect after repeated blocks) — worth doing after you've run #1 live at least once, since what #1 actually achieves changes how much #2 is still needed.
+
+---
+Quick acknowledgments on the rest:
+
+- #4 / turn_speed-forward_speed today: I'll have the commands ready when you ask.
+- Elevator: I'm ready whenever you want to start — say the word and I'll kick off implementation using the confirmed floor-tagged-landmark design.
+- SEARCH_FOR_CUE / generic turns: agreed, that's the real remaining piece of the original hunting complaint. Worth deciding whether to fold it into elevator work, #2, or its own pass — let me know priority when you're ready to sequence it.
+**************************************************************************************************************************************************************************************
+I just have one more doubt, during the robot's forward movement, instead of straight forward, the robot is going forward but in a slightly right angle. the 0.4s pause window we gave to robot motion to check for mid-movement obstacles, does it cause that behaviour? can we increase or decrease the pause window - which would increase or decrease the stumble behaviour of the robot during motion?
+
+Good question — I traced the actual execution path rather than guessing. Two things are worth separating: what's provably true from the code, and what's a physically-grounded hypothesis I can't confirm without hardware data.
+
+Confirmed from code: the angular_z sent for any straight-forward command is exactly 0.0, always — _forward_cmd() (robot_executor.py:1156-1166) hardcodes "angular_z": 0.0. So there's no software bug quietly injecting a turn component. Whatever's causing the veer, it isn't a bad /cmd_vel value on our side.
+
+Also confirmed: yes, the 0.4s watch window does mean the robot isn't doing one continuous glide. For any forward pulse longer than MOTION_WATCH_CHUNK_SECONDS (0.40s) — which is most of them; a typical LiDAR-scaled pulse at forward_speed=0.3 is ~2.0s — _move_for_duration_watched (robot_executor.py:1277) breaks it into 0.4s chunks, and each chunk is a genuine full stop: _move_for_duration (line 1223) calls bridge.pulse() then an explicit stop() afterward to confirm the halt, before the next chunk starts. So a 2.0s forward pulse is actually 5 separate stop→walk→stop cycles, not one.
+
+Is that the cause of the rightward veer? Plausible, not provable from what I have. Legged robots commonly have some asymmetry in how they initiate a gait from a dead standstill (weight isn't perfectly settled, first-step timing isn't perfectly symmetric) — that's a real, common quadruped behavior, distinct from anything in this codebase. Repeating that stop→start transition 5 times in 2 seconds gives 5 chances for a small heading nudge to accumulate, versus 1 chance in a single continuous pulse. But I have no yaw telemetry captured for forward pulses today to actually confirm this — _turn_closed_loop's /high_state yaw reads only fire for turns, never for forward motion, so nothing in the logs today can distinguish "chunking caused it" from "the robot just drifts right regardless, chunked or not."
+
+Can we tune it, and what's the trade-off? Yes, it's MOTION_WATCH_CHUNK_SECONDS = 0.40 at robot_executor.py:64 — a single hardcoded constant, no CLI flag today. Increasing it reduces restart frequency (e.g. 0.8s chunks → 2-3 restarts instead of 5 for a 2.0s pulse), which would test your hypothesis directly. But it's not free: this same constant is what bounds the blind distance between LiDAR rechecks mid-pulse — the exact mechanism that produced the confirmed real "cutting pulse short after 1.60s of 2.03s planned" obstacle-recheck save you got on hardware. At forward_speed=0.3, going from 0.4s→0.8s chunks doubles the worst-case blind travel between checks from ~0.12m to ~0.24m, eating further into the 0.50m stop margin. It's also a shared constant for turns too, which don't need the safety granularity the same way (turns aren't LiDAR-cancelable anyway) — so if you want to loosen it for forward motion without touching turn behavior, that'd need splitting into two separate constants, a small change.
+
+Before touching the constant at all, I'd actually test the hypothesis first — conveniently, this folds into the /high_state calibration work you're already doing today: run one un-chunked forward pulse (needs --forward-pulse-duration set above 0.4s so chunking doesn't kick in on its own — the CLI default of 0.40s won't trigger chunking at all) and read yaw before/after via /high_state, then compare against a chunked run of the same total distance. If the un-chunked pulse still drifts right by a similar amount, it's not the chunking — it's just how the robot walks, and loosening the window won't fix it. If the chunked version drifts noticeably more, that confirms it, and you'd have a number to justify how far to loosen it. Want me to fold this comparison into the yaw-feedback test instructions I'm preparing for you?
+**************************************************************************************************************************************************************************************
+ And give me command and step-by step instruction for yaw-feedback and turn-speed/forward-speed - these points from our discussion "2. --use-yaw-feedback - I'll do this today and let you know.
+  3. turn_speed/forward_speed validation via /high_state - This also I'll do today.but for 2 and 3 I need list of commands and step-by-step instruction for execution, will ask here when I am executing it." I am okay if you can give me in text or pdf format as a downloadable file. give clear instruction and commands to execute
+
+One thing first: high_state_bridge.py's get_yaw only ever returned yaw, never position (I checked — confirmed via temp_files/ROS_related.txt, HighState.position is a real [x,y,z] field, just never wired into the reply). Forward-speed validation needs position, so I added "position": [...] to that one reply dict — a 2-line, additive change, nothing else touched. If you'd rather I revert it and you do forward-speed by physical tape-measure instead, say so and I will. Otherwise it's already in place and the commands below depend on it.
+
+1. Isolated --use-yaw-feedback test
+
+The existing --test-left/--test-right CLI flags don't print their outcome to the terminal (it's stored in executor.last_result but never printed), so a plain CLI flag won't show you reached vs timeout vs feedback_lost. Use this instead — run on the ThinkPad, ROS sourced as usual:
+
+cd ~/VLM_Navigation_Project
+python3 -c "
+from robot_executor import SafeCmdVelExecutor
+from robot_safety import RobotSafetyMonitor
+
+safety = RobotSafetyMonitor(sensor_mode='lidar')
+executor = SafeCmdVelExecutor(
+    execute_mode='confirm',
+    turn_speed=0.30,
+    exploration_turn_pulse_duration=1.30,
+    safety_monitor=safety,
+    yaw_feedback_enabled=True,
+    high_state_topic='/high_state',
+)
+executor.execute_action({
+    'name': 'FOLLOW_DIRECTION',
+    'params': {'direction': 'left'},
+    'reason': 'isolated yaw-feedback test',
+    'confidence': 'high',
+    'evidence_score': 1.0,
+    'is_valid': True,
+})
+print('RESULT:', executor.last_result)
+"
+
+It'll ask Execute this small movement pulse? [y/N]: before moving. After it runs, check the printed RESULT line: status should be turn_closed_loop_reached (good), turn_closed_loop_timeout, or turn_closed_loop_feedback_lost (bridge dropped mid-turn) — reason includes achieved-vs-target degrees. Change 'direction': 'left' to 'right' and rerun for the other side. Do each direction 2-3x.
+
+Only once you've seen turn_closed_loop_reached consistently would I add --use-yaw-feedback to your real thinkpad_robot_capture_to_amd.py --mode auto ... command.
+
+2. turn_speed/forward_speed validation via /high_state
+
+⚠️ This sends a raw pulse directly through the cmd_vel bridge, bypassing SafeCmdVelExecutor entirely — no confirm prompt, no LiDAR gating, no safety net. Only run this with the robot in a clear, open space, standing right there.
+
+cd ~/VLM_Navigation_Project
+python3 -c "
+import math, time
+from robot_executor import PersistentCmdVelBridge, PersistentHighStateBridge
+
+hs = PersistentHighStateBridge(topic='/high_state')
+cv = PersistentCmdVelBridge(topic='/cmd_vel')
+assert hs.is_ready, hs.ready_error
+assert cv.is_ready, cv.ready_error
+
+DURATION = 2.0     # seconds
+LINEAR_X = 0.3     # forward test: set nonzero; ANGULAR_Z must be 0.0
+ANGULAR_Z = 0.0    # turn test: set nonzero (e.g. 0.3), LINEAR_X must be 0.0
+
+before = hs.get_yaw()
+print('BEFORE:', before)
+
+result = cv.pulse(LINEAR_X, ANGULAR_Z, DURATION)
+print('PULSE:', result)
+cv.stop()
+time.sleep(0.3)
+
+after = hs.get_yaw()
+print('AFTER:', after)
+
+if LINEAR_X:
+    dx = after['position'][0] - before['position'][0]
+    dy = after['position'][1] - before['position'][1]
+    dist = math.hypot(dx, dy)
+    print('Measured forward_speed = {:.3f} m/s (commanded {:.3f})'.format(dist / DURATION, LINEAR_X))
+if ANGULAR_Z:
+    dyaw = after['yaw'] - before['yaw']
+    while dyaw > math.pi: dyaw -= 2 * math.pi
+    while dyaw < -math.pi: dyaw += 2 * math.pi
+    print('Measured turn_speed = {:.3f} rad/s ({:.1f} deg, commanded {:.3f} rad/s)'.format(dyaw / DURATION, math.degrees(dyaw), ANGULAR_Z))
+
+hs.shutdown()
+cv.shutdown()
+"
+
+Run it once with LINEAR_X=0.3, ANGULAR_Z=0.0 (forward), 2-3 times, average the measured speed. Then edit the two variables to LINEAR_X=0.0, ANGULAR_Z=0.3 (turn), 2-3 times each for left and right (try -0.3 too), average. Compare each measured value to what you're currently passing as --forward-speed/--turn-speed.
+******************************************************************************************************************************************************************************************************************
+I am done with yaw_feedback and turn & forward speed test, I have attached the logs under /temp_files folder in files named yaw_feedback_logs.txt, turn_speed_logs.txt and forward_speed_logs.txt - check that thoroughly and I am going to add --use-yaw-feedback in my execution command for live run. I haven't averaged the speeds yet.
+
+I've read through all three logs carefully. Good news on yaw-feedback; two real calibration findings worth your attention before today's run.
+
+Yaw-feedback (6/6 trials succeeded)
+
+All six isolated turns — 3 left, 3 right — came back turn_closed_loop_reached, no timeouts, no feedback_lost:
+
+┌───────────┬────────┬──────────────────────────┬───────────────────────┐
+│ Direction │ Target │         Achieved         │        Elapsed        │
+├───────────┼────────┼──────────────────────────┼───────────────────────┤
+│ Left      │ 22.3°  │ 20.9° / 21.1° / 20.8°    │ 2.60s / 2.60s / 2.60s │
+├───────────┼────────┼──────────────────────────┼───────────────────────┤
+│ Right     │ -22.3° │ -20.6° / -23.0° / -24.6° │ 2.00s / 2.00s / 2.40s │
+└───────────┴────────┴──────────────────────────┴───────────────────────┘
+
+This is a real, clean pass — --use-yaw-feedback for today's live run looks justified. One caveat below on left-turn timing margin, not a blocker.
+
+Turn-speed measurement (not yet averaged by you — here it is)
+
+┌────────────────────────┬────────────────────────┬─────────────────────────────────┐
+│       Direction        │     Trials (rad/s)     │             Average             │
+├────────────────────────┼────────────────────────┼─────────────────────────────────┤
+│ Left (+0.3 commanded)  │ 0.175, 0.167, 0.174    │ 0.172 rad/s (≈57% of commanded) │
+├────────────────────────┼────────────────────────┼─────────────────────────────────┤
+│ Right (−0.3 commanded) │ −0.222, −0.218, −0.208 │ 0.216 rad/s (≈72% of commanded) │
+└────────────────────────┴────────────────────────┴─────────────────────────────────┘
+
+Two things stand out: the robot turns meaningfully slower than the assumed turn_speed=0.3 in both directions, and there's a real left/right asymmetry — right turns are consistently ~25% faster than left for the identical command. Tight clustering within each direction (3/3 samples close together), so this isn't noise.
+
+Does this matter today? With yaw-feedback on, no — it self-corrects against real yaw, which is exactly what the 6/6 successful trials just proved. But it explains something concretely: left turns are running close to their timeout cap. The safety ceiling is max(1.0, nominal_duration × 2.0) = max(1.0, 1.3×2.0) = 2.6s. At the measured 0.172 rad/s, reaching the 0.39 rad target takes ≈2.27s — and two of your three left trials landed exactly at 2.60s, right at the boundary. Right turns have more headroom (≈1.81s needed vs. the same 2.6s cap). If left-turn rate drops even slightly under different conditions (colder motors, floor friction, battery), you could start seeing turn_closed_loop_timeout instead of _reached — not dangerous (it just stops with partial progress reported), but worth watching for in today's logs. If you want more margin before running, I can bump YAW_FEEDBACK_MAX_DURATION_MULTIPLIER from 2.0 to something like 3.0 — small, isolated change, only affects this ceiling. Your call — say the word or skip it and just watch the logs today.
+
+Forward-speed measurement
+
+┌─────────────────────┬────────────────────────────────────┐
+│    Trials (m/s)     │              Average               │
+├─────────────────────┼────────────────────────────────────┤
+│ 0.364, 0.376, 0.386 │ 0.375 m/s (≈125% of commanded 0.3) │
+└─────────────────────┴────────────────────────────────────┘
+
+Opposite direction from the turn error — the robot moves faster than commanded, consistently (~25% over, tight clustering again).
+
+This one's worth understanding precisely before you touch anything: forward_speed is used two ways — as the literal linear_x published to /cmd_vel, and as the divisor in the LiDAR-scaled pulse-duration formula (duration = safe_distance / forward_speed). Because it's the same constant in both places, if the real-vs-commanded relationship is linear (which 3 tight samples at one speed can't fully confirm, but is consistent with), changing the --forward-speed CLI value won't fix the ~25% distance overshoot — the error cancels back in algebraically regardless of what value you pick, since duration and real speed scale together. Worked example: for a 0.6m safe-distance pulse, commanded duration = 2.0s, but real distance covered = 0.375 × 2.0 = 0.75m — a real 0.15m overshoot past the intended stop margin.
+
+The mitigating factor: motion-watch chunking (0.4s rechecks) already bounds most of this — each chunk only accumulates ≈3cm of extra blind travel (0.15m vs. 0.12m assumed) before the next LiDAR recheck, not the full 0.15m in one blind shot. So the real exposure is small, not the worst-case number above. A proper fix would be a separate distance-math correction factor (e.g. divide the duration formula by the measured ~1.25 ratio) distinct from the /cmd_vel speed constant — that's a real code change, not something to do by editing a CLI flag, and I'd want more than 3 samples at one speed before trusting a correction factor. Not urgent for today given chunking's mitigation; worth a proper pass later with more data.
+
+Bottom line for today: proceed with --use-yaw-feedback as planned — the data supports it. Forward-speed finding is informational, no action needed before running given chunking's protection. Left-turn timeout margin is the one thing I'd actually flag as worth a quick decision (bump the multiplier, or just watch for it) before you start.
+******************************************************************************************************************************************************************************************************************
+Update memory with latest informations.
+
+Memory updated. Summary of what got recorded in project_lidar_motion_tuning.md:
+
+- Yaw-feedback (#4): 6/6 hardware trials succeeded, all turn_closed_loop_reached — user is adding --use-yaw-feedback to today's live run on this basis.
+- Turn-speed: measured left 0.172 rad/s, right 0.216 rad/s (vs. 0.3 commanded) — real left/right asymmetry, plus the tight left-turn timeout-margin finding and the still-open question of whether to bump YAW_FEEDBACK_MAX_DURATION_MULTIPLIER.
+- Forward-speed: measured 0.375 m/s (vs. 0.3 commanded) — plus the non-obvious finding that editing --forward-speed won't fix the distance-math overshoot since the same constant serves double duty, and that a real fix needs a separate correction factor (not built yet).
+- Updated the provisional-constants table, lab checklist (item 9 now done), and the "what's not addressed yet" list to reflect current state — including the possible link between the turn-speed asymmetry and the still-unconfirmed forward-veering complaint.
+- backlog_navigation_improvements.md's elevator item and the top-level MEMORY.md index were also updated earlier this session to reflect the confirmed floor-tagged-landmark decision.
+******************************************************************************************************************************************************************************************************************
+Now memory.json and navigation_logs.json which are being exported are getting saved only if the runs are fully completed, not for the aborted runs. can we change to save the results even for aborted runs?
+
+New helper _finalize_auto_run(...) (thinkpad_robot_capture_to_amd.py:1477) — extracted the existing end-of-run logic (close out the last leg, compute metrics, save_final_summary, and export_autonomous_session which is what actually writes memory.json/navigation_log.json) into its own function, unchanged behavior-wise.
+
+run_auto_mode's step loop is now wrapped in try/except BaseException. On any interruption — Ctrl+C, a network failure, an unhandled bug — the except block:
+1. Prints [ABORT] ...
+2. Calls send_emergency_stop(args) first — this is local-only (reuses the already-running /cmd_vel bridge, no network call), so the robot gets stopped immediately, not after a slow save.
+3. Calls _finalize_auto_run(...) in its own nested try/except — best-effort, so if the save/export itself fails (e.g. the AMD server is the reason the run aborted in the first place), that failure gets printed but doesn't swallow the original error.
+4. Re-raises the original exception, so existing behavior (exit codes, main()'s own send_emergency_stop redundant-but-harmless second call, [STOPPED] User interrupted message) is unaffected.
+
+Why this ordering matters: export_autonomous_session hits the AMD server over the network with up to a 60s timeout. If I'd put the save before the emergency stop, a Ctrl+C during a live run could sit there waiting on a network call for up to a minute before the robot actually stops moving — that would've been a real regression. Stop-first, save-second avoids that.
+
+This was a mechanical but large reindentation (the whole step-loop body shifted one level), so I did it via a scripted transformation rather than hand-editing 228 lines, then verified with py_compile and an ast walk to confirm the try/for/except nesting is exactly right — both passed clean.
+
+This is untested on real hardware/AMD (same caveat as everything else today) — worth a quick Ctrl+C test during a live run at some point to confirm memory.json/navigation_log.json/final_run_summary.json actually land in the run directory afterward.
+
+- _finalize_auto_run(...) (new, thinkpad_robot_capture_to_amd.py:1477): extracted the existing end-of-run logic (leg close-out, metrics, save_final_summary, and export_autonomous_session — the call that actually writes memory.json/navigation_log.json) into its own function, behavior unchanged.
+- run_auto_mode's step loop wrapped in try/except BaseException: on any abort (Ctrl+C, exception), it stops the robot first (send_emergency_stop, local-only, no network delay), then best-effort calls _finalize_auto_run in its own nested try (so a save/export failure can't mask the original error), then re-raises so exit codes and the existing top-level handling in main() stay exactly as before.
+******************************************************************************************************************************************************************************************************************
+check the log file logs_29072026_2.txt saved under /temp_files folder and the related execution logs under /navigation_outputs folder. Compare both runs. Few things I have noticed, obstacle avoidance is working good, but the model is totally ignoring the directional sign-boards and giving more importance to structural landmarks like corridor, open glass doors - this is what I understood but correct me if I'm wrong, and check images 20260729_165352.jpg and 20260729_165401.jpg under /temp_files folder, this happened during the 1st run you can refer here logs_29072026_1.txt from step 13, even though ABORT message is telling left is clearer, the model is giving forward direction as next action until max-steps 20 got exceeded. The robot is stopping only if the obstacle detection is within 0.50m, which is being very near to the obstacle like walls, and moving further from that makes the quadruped legs esp the knee side, touch the walls a lot, so stopping the robot a little far from the obstacle helps the turning easier. if you see the above images I have given, you can see the robot is very near to the wall. and as we discussed before the pole and LiDAR weights making the robot move straight with more right aligned.
+Give me your honest opinions too.
+
+I went through both terminal logs, both navigation_outputs run directories (memory.json, final_run_summary.json, individual step JSONs), and both images. Here's what the evidence actually shows.
+
+Run comparison
+
+Neither run reached the goal within max_steps=20. But they're not equally bad:
+
+┌───────────────┬────────────────────────────────────────────┬───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│               │       Run 1 (163341, logs_...1.txt)        │                                             Run 2 (170237, logs_...2.txt)                                             │
+├───────────────┼────────────────────────────────────────────┼───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Executed      │ 11/20                                      │ 17/20                                                                                                                 │
+│ steps         │                                            │                                                                                                                       │
+├───────────────┼────────────────────────────────────────────┼───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Non-executed  │ 9 (1 invalid + 8 straight safety_blocked)  │ 3 (1 safety_blocked + 2 user_rejected at the very end — looks like you manually declined those)                       │
+├───────────────┼────────────────────────────────────────────┼───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Outcome       │ Stuck against a wall from step 13 to 20,   │ Got as far as checking a door label (L046, "closed double doors with room labels and QR code") at step 18 — plausibly │
+│               │ never moved again                          │  right at or near the actual target when it ran out of steps                                                          │
+└───────────────┴────────────────────────────────────────────┴───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+Run 2 is a real, substantial improvement in raw progress. Worth knowing before reading the rest of this.
+
+1. Is the model ignoring directional signs for structural landmarks?
+
+Partially right, but the real picture is more specific than "totally ignoring." I checked memory.json for both runs directly:
+
+- Run 1: only 2 sign landmarks in the entire 20-step run, both with unreadable/empty text, and zero signs detected from step 10 onward — that's the entire second half of the run, including the 8-step stuck loop. There was no sign for the model to ignore during that stretch; it was correctly falling back to structural landmarks because that's genuinely all there was. So for run 1 specifically, "ignoring signs" isn't what happened.
+- Run 2: much richer — 9 sign landmarks, several with real, readable room-range text ("C0.004 - C0.008", "C0.016 - C0.020"). The model did use them correctly more than once — step 8's reasoning explicitly reasons about a range mismatch, and step 14 correctly turns left off a directory sign (L036, "indicates the target room C0.004 is to the left").
+
+But I found one concrete, real miss that matches your concern exactly: step 5 of run 2. I traced the landmark image_path fields and confirmed L012 (a sign reading "C0004" — an exact match to the goal, target_direction: right) and L013 (a generic "corridor extending forward") came from the same camera frame. The model chose L013 (forward) over L012 (right). Its own reasoning even mentions the sign: "...the sign on the right wall indicates the room is likely further along this route" — it saw the sign, but interpreted "C0004, arrow right" as supporting continuing forward rather than as an instruction to turn right toward it now. That's a real misread, not a total ignore.
+
+There's a bonus finding here worth knowing: the pipeline's own scoring layer already has a mismatched_room_code_penalty, and it fired on this exact action — the model's step-5 choice got docked 0.35 out of its score specifically because the chosen landmark's room code didn't match the goal. But that penalty is purely diagnostic — it's computed after the model already committed to the action, and nothing uses it to make the model reconsider or pick differently. So the system already "knows" something's off in cases like this; it just doesn't act on its own knowledge. That's the same shape of problem as the failed_actions issue below.
+
+2. Run 1, step 13 — confirmed, and this is the one I'd act on
+
+I traced every step from 13 to 20 precisely. Every single one of those 8 steps: NAVIGATE_TO_LANDMARK forward toward some remembered corridor landmark, blocked at nearly identical readings each time (nearest ~0.29m, left ~0.52m, right ~0.28-0.29m, "left is clearer"). The robot did not move again for the entire second half of the run — that's 40% of the step budget spent stuck in place.
+
+At step 17, the model's own reasoning text says: "the most recent failed actions indicate a blockage in the immediate forward path; therefore, I will navigate toward the remembered corridor continuation (L029)" — so it did read the failed_actions/side-clearance data I wired in this morning. But its response to "blocked, left is clearer" was to try a different remembered forward landmark, not to actually go left. It's reading the hint and still not correctly acting on it.
+
+Honest opinion: this is exactly the failure mode I flagged as a risk when we discussed shipping suggestion #1 (richer signal + prompt rule) — I said this model has a track record of not reliably following soft, prompt-only redirect instructions (same pattern as the sign-arrow miss from earlier), and now there's a clean, concrete, expensive example of it happening (8 wasted steps, run failure). I'd stop treating #2 (executor-driven auto-redirect, not dependent on the model's compliance) as "only if #1 doesn't work" — #1 alone visibly didn't work here. I'd move on it.
+
+3. Stop distance too close / knees hitting the wall
+
+I looked at both images. In 20260729_165401.jpg especially, the robot's near-side leg is right up against the wood-slat wall — visibly closer than what I'd want to call a safe turning margin. Your read on this is correct, and it's a real gap I hadn't accounted for: LIDAR_STOP_DISTANCE_M=0.50m is measured from the LiDAR's mounting point to the nearest obstacle in the forward cone — it says nothing about the robot's actual body width or how far the legs splay outward during a turn. A quadruped's legs move laterally in a way the stop-distance math doesn't model at all. So "0.50m clear ahead of the sensor" can still mean a leg brushes or touches a wall when it turns in a narrow corridor.
+
+Honest opinion: this is a legitimate, cheap fix — bump LIDAR_STOP_DISTANCE_M up (something like 0.65-0.70m would be my starting guess, though real numbers should come from measuring the robot's actual leg-splay radius during a turn, similar to how the current 0.50m came from an earlier physical measurement). The cost is minor — signs/doors get read from slightly farther away, not a real functional loss.
+
+4. Right-veering / pole + LiDAR mount weight
+
+I haven't run the actual chunked-vs-unchunked diagnostic we designed, so I can't confirm this from today's logs. But here's my honest update: your physical explanation (pole + LiDAR mount shifting weight to one side) is actually a better hypothesis than the one I originally offered (chunking-amplified gait-restart asymmetry). A static weight imbalance would explain both things we've now observed — the forward-veering-right complaint and the turn-speed asymmetry from yesterday's calibration (right turns ~25% faster than left for the identical command) — with one single cause. My chunking theory could only ever explain the forward drift, not the turn-rate asymmetry. I'd weight your explanation higher than mine at this point.
+
+Bottom line, if you want my priority order
+
+1. #2 (auto-redirect) — the run-1 stuck loop is the most expensive, clearest failure in today's data. I'd do this next.
+2. LIDAR_STOP_DISTANCE_M increase — cheap, low-risk, directly addresses something I can see in your photos.
+3. Sign vs. structural landmark preference — real but narrower than "totally ignoring signs"; the step-5 miss suggests the fix is more about forcing the model to act on mismatched_room_code_penalty-style signals than a broad prompt rewrite.
+4. Right-veering — still needs the actual measurement test; the pole/weight explanation is plausible enough that a physical inspection (is the mount actually off-center?) might be faster than the software diagnostic.
+
+No code changed — this is analysis only, per your instruction. Let me know what you want to act on.
+******************************************************************************************************************************************************************************************************************
+Go ahead and implement #2 (auto-redirect)
+
+Implemented. Here's what it does and the key design decisions:
+
+What it does
+
+New opt-in flag --auto-redirect-after-blocks N (default 0 = disabled, matching how --use-yaw-feedback was introduced as opt-in until proven on hardware). When N consecutive obstacle blocks happen, the executor turns toward whichever side LiDAR reports clearer — without waiting for the VLM to notice and self-correct.
+
+Design decisions worth knowing
+
+1. Counts consecutive blocks regardless of which landmark/action the model used to justify them. The original framing was "same action type," but today's run-1 evidence showed the model cycling through different landmark IDs (L029, L031, L033, L035...) while getting blocked at the exact same physical spot each time — so matching on action identity would never have triggered in the scenario that motivated this. I deliberately track physical-block-repetition, not decision-identity-repetition.
+2. Scoped to route_advance/direction_advance motion kinds only — reused the existing LIDAR_SCALABLE_MOTION_KINDS constant from robot_executor.py rather than inventing a new one. This deliberately excludes cue_approach (CHECK_DOOR_LABEL/READ_SIGN/APPROACH_LANDMARK) and doorway_traversal (PASS_THROUGH_DOORWAY) — those legitimately hit the stop-distance boundary as part of "get as close as safely possible to read/pass through," and an auto-redirect turning the robot away mid-approach would actively undermine that, not help it.
+3. Direction choice (_pick_redirect_direction): picks the larger of left_range_m/right_range_m; if one side is None (no point detected in that cone — genuinely open, not "unknown"), that side is preferred over a measured one, not avoided.
+4. Reuses the existing FOLLOW_DIRECTION execution path — same maybe_execute_robot_action → SafeCmdVelExecutor → RobotSafetyMonitor machinery as every normal action, including the --execute confirm y/N prompt if that's how you're running. No new unsupervised motion path; the reason string printed ("Auto-redirect after N consecutive obstacle blocks...") makes it obvious in the console what's happening and why.
+5. Doesn't consume a step from --max-steps — it runs within the current step's iteration, not as its own loop iteration, so it costs wall-clock time but not budget.
+6. Counter resets to 0 after firing (whether or not a usable direction was found), so it can trigger again later in the run rather than only once.
+
+auto_redirect_after_blocks is also now saved into run_config.json for the record.
+
+Syntax-checked and AST-verified (confirmed the new block sits correctly at the end of the for-loop body, before time.sleep). Not committed — sitting in your working tree alongside the aborted-run-save fix from earlier, both uncommitted. Also untested on hardware — this is new, never-exercised code; I'd suggest trying it with a low threshold (e.g. --auto-redirect-after-blocks 2) on a supervised run before trusting it unattended, same caution as everything else new today.
+******************************************************************************************************************************************************************************************************************
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

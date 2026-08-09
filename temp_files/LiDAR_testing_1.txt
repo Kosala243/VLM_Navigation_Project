@@ -1,0 +1,520 @@
+vlm_project@vlmproject-ThinkPad-X1:~$ xsource /opt/ros/melodic/setup.bash
+xsource: command not found
+vlm_project@vlmproject-ThinkPad-X1:~$ source ~/go1_ws/devel/setup.bash
+vlm_project@vlmproject-ThinkPad-X1:~$ 
+vlm_project@vlmproject-ThinkPad-X1:~$ export ROS_MASTER_URI=http://192.168.12.212:11311
+vlm_project@vlmproject-ThinkPad-X1:~$ export ROS_IP=192.168.12.212
+vlm_project@vlmproject-ThinkPad-X1:~$ 
+vlm_project@vlmproject-ThinkPad-X1:~$ rostopic list
+/cmd_vel
+/high_state
+/rosout
+/rosout_agg
+/rslidar_points
+vlm_project@vlmproject-ThinkPad-X1:~$ rostopic pub -1 /cmd_vel geometry_msgs/Twist \
+> '{linear: {x: 0.0, y: 0.0, z: 0.0}, angular: {x: 0.0, y: 0.0, z: 0.0}}'
+publishing and latching message for 3.0 seconds
+vlm_project@vlmproject-ThinkPad-X1:~$ cd ~/VLM_Navigation_Project
+vlm_project@vlmproject-ThinkPad-X1:~/VLM_Navigation_Project$ 
+vlm_project@vlmproject-ThinkPad-X1:~/VLM_Navigation_Project$ python3 - <<'PY'
+> from robot_safety import RobotSafetyMonitor
+> 
+> monitor = RobotSafetyMonitor(sensor_mode="lidar")
+> 
+> print("LiDAR bridge ready:", monitor.sensor_ready)
+> 
+> result = monitor.check_motion(
+>     action_name="MANUAL_LIDAR_PREFLIGHT",
+>     linear_x=0.12,
+>     angular_z=0.0,
+>     motion_kind="route_advance",
+> )
+> 
+> print("Safety result:")
+> for key, value in result.items():
+>     print("  {}: {}".format(key, value))
+> PY
+LiDAR bridge ready: True
+Safety result:
+  allowed: True
+  sensor_ready: True
+  sensor_mode: lidar
+  bypassed: False
+  reason: Nearest obstacle at 2.85m, clear.
+  action_name: MANUAL_LIDAR_PREFLIGHT
+  motion_kind: route_advance
+  nearest_range_m: 2.8495040106185017
+vlm_project@vlmproject-ThinkPad-X1:~/VLM_Navigation_Project$ python3 robot_executor.py \
+>   --safety-mode lidar \
+>   --test-forward \
+>   --execute confirm
+
+========== EXECUTOR DECISION ==========
+Action: NAVIGATE_TO_FRONTIER
+Params: {'direction': 'forward'}
+Reason: Manual tiny forward test.
+Mapped command: {'linear_x': 0.12, 'angular_z': 0.0, 'duration': 0.4, 'motion_kind': 'route_advance'}
+Execute mode: confirm
+=======================================
+
+Execute this small movement pulse? [y/N]: y
+[EXECUTOR] Pulse: linear.x=0.12, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.12, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.12, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.12, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.12, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.12, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.12, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.12, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.12, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.12, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.12, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.12, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.12, angular.z=0.0, duration=0.19999999999999984s
+[EXECUTOR] STOP
+vlm_project@vlmproject-ThinkPad-X1:~/VLM_Navigation_Project$ python3 robot_executor.py \
+>   --safety-mode lidar \
+>   --test-left \
+>   --execute confirm
+
+========== EXECUTOR DECISION ==========
+Action: FOLLOW_DIRECTION
+Params: {'direction': 'left'}
+Reason: Manual tiny left turn test.
+Mapped command: {'linear_x': 0.0, 'angular_z': 0.2, 'duration': 1.3, 'motion_kind': 'direction_turn'}
+Execute mode: confirm
+=======================================
+
+Execute this small movement pulse? [y/N]: y
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=0.2, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=0.2, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=0.2, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=0.2, duration=0.09999999999999998s
+[EXECUTOR] STOP
+vlm_project@vlmproject-ThinkPad-X1:~/VLM_Navigation_Project$ python3 robot_executor.py \
+>   --safety-mode lidar \
+>   --test-right \
+>   --execute confirm
+
+========== EXECUTOR DECISION ==========
+Action: FOLLOW_DIRECTION
+Params: {'direction': 'right'}
+Reason: Manual tiny right turn test.
+Mapped command: {'linear_x': 0.0, 'angular_z': -0.2, 'duration': 1.3, 'motion_kind': 'direction_turn'}
+Execute mode: confirm
+=======================================
+
+Execute this small movement pulse? [y/N]: y
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=-0.2, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=-0.2, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=-0.2, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=-0.2, duration=0.09999999999999998s
+[EXECUTOR] STOP
+vlm_project@vlmproject-ThinkPad-X1:~/VLM_Navigation_Project$ python3 robot_executor.py \
+>   --safety-mode lidar \
+>   --test-forward \
+>   --execute confirm
+
+========== EXECUTOR DECISION ==========
+Action: NAVIGATE_TO_FRONTIER
+Params: {'direction': 'forward'}
+Reason: Manual tiny forward test.
+Mapped command: {'linear_x': 0.12, 'angular_z': 0.0, 'duration': 0.4, 'motion_kind': 'route_advance'}
+Execute mode: confirm
+=======================================
+
+Execute this small movement pulse? [y/N]: y
+[EXECUTOR] Pulse: linear.x=0.12, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.12, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.12, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.12, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.12, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.12, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.12, angular.z=0.0, duration=0.11919118036074006s
+[EXECUTOR] STOP
+vlm_project@vlmproject-ThinkPad-X1:~/VLM_Navigation_Project$ python3 robot_executor.py   --safety-mode lidar   --test-forward   --execute confirm
+
+========== EXECUTOR DECISION ==========
+Action: NAVIGATE_TO_FRONTIER
+Params: {'direction': 'forward'}
+Reason: Manual tiny forward test.
+Mapped command: {'linear_x': 0.12, 'angular_z': 0.0, 'duration': 0.4, 'motion_kind': 'route_advance'}
+Execute mode: confirm
+=======================================
+
+Execute this small movement pulse? [y/N]: y
+[EXECUTOR] ABORT (safety_blocked): Motion blocked: nearest obstacle at 0.45m, below the 0.50m stop distance.
+[EXECUTOR] STOP
+vlm_project@vlmproject-ThinkPad-X1:~/VLM_Navigation_Project$ python3 robot_executor.py   --safety-mode lidar   --test-forward   --execute confirm
+
+========== EXECUTOR DECISION ==========
+Action: NAVIGATE_TO_FRONTIER
+Params: {'direction': 'forward'}
+Reason: Manual tiny forward test.
+Mapped command: {'linear_x': 0.12, 'angular_z': 0.0, 'duration': 0.4, 'motion_kind': 'route_advance'}
+Execute mode: confirm
+=======================================
+
+Execute this small movement pulse? [y/N]: y
+[EXECUTOR] Pulse: linear.x=0.12, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.12, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.12, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.12, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.12, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.12, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.12, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.12, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.12, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.12, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.12, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.12, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.12, angular.z=0.0, duration=0.19999999999999984s
+[EXECUTOR] STOP
+vlm_project@vlmproject-ThinkPad-X1:~/VLM_Navigation_Project$ python3 robot_executor.py   --safety-mode lidar   --test-forward   --execute confirm
+
+========== EXECUTOR DECISION ==========
+Action: NAVIGATE_TO_FRONTIER
+Params: {'direction': 'forward'}
+Reason: Manual tiny forward test.
+Mapped command: {'linear_x': 0.12, 'angular_z': 0.0, 'duration': 0.4, 'motion_kind': 'route_advance'}
+Execute mode: confirm
+=======================================
+
+Execute this small movement pulse? [y/N]: y
+[EXECUTOR] Pulse: linear.x=0.12, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.12, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.12, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.12, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.12, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.12, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.12, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.12, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.12, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.12, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.12, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.12, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.12, angular.z=0.0, duration=0.19999999999999984s
+[EXECUTOR] STOP
+vlm_project@vlmproject-ThinkPad-X1:~/VLM_Navigation_Project$ python3 robot_executor.py   --safety-mode lidar   --test-forward   --execute confirm
+
+========== EXECUTOR DECISION ==========
+Action: NAVIGATE_TO_FRONTIER
+Params: {'direction': 'forward'}
+Reason: Manual tiny forward test.
+Mapped command: {'linear_x': 0.12, 'angular_z': 0.0, 'duration': 0.4, 'motion_kind': 'route_advance'}
+Execute mode: confirm
+=======================================
+
+Execute this small movement pulse? [y/N]: y
+[EXECUTOR] Pulse: linear.x=0.12, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.12, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.12, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.12, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.12, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.12, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.12, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.12, angular.z=0.0, duration=0.08574365778555137s
+[EXECUTOR] STOP
+vlm_project@vlmproject-ThinkPad-X1:~/VLM_Navigation_Project$ python3 robot_executor.py   --safety-mode lidar   --test-forward   --execute confirm
+^[[C
+========== EXECUTOR DECISION ==========
+Action: NAVIGATE_TO_FRONTIER
+Params: {'direction': 'forward'}
+Reason: Manual tiny forward test.
+Mapped command: {'linear_x': 0.12, 'angular_z': 0.0, 'duration': 0.4, 'motion_kind': 'route_advance'}
+Execute mode: confirm
+=======================================
+
+Execute this small movement pulse? [y/N]: ^[[C^[[C^[[C^[[C^[[C^[[C^[[C^[[C^[[C^[[C^[[C^[[C^[[C^[[C^[[C^[[C^[[C^[[C^[[C^[[C^[[C^[[C^[[C^[[C^[[C^[[C^[[C^[[C^[[C^[[C^[[C^[[C^[[C^[[C^[[C^[[C^[[C^[[C^[[C^[[C^[[C^[[C^[[C^[[C^[[C^[[C^[[C^[[C^[[C^[[C^[[C^C
+[STOPPED] Ctrl+C pressed.
+[EXECUTOR] STOP
+vlm_project@vlmproject-ThinkPad-X1:~/VLM_Navigation_Project$ python3 robot_executor.py   --safety-mode lidar   --test-forward   --execute confirm
+
+========== EXECUTOR DECISION ==========
+Action: NAVIGATE_TO_FRONTIER
+Params: {'direction': 'forward'}
+Reason: Manual tiny forward test.
+Mapped command: {'linear_x': 0.12, 'angular_z': 0.0, 'duration': 0.4, 'motion_kind': 'route_advance'}
+Execute mode: confirm
+=======================================
+
+Execute this small movement pulse? [y/N]: y
+[EXECUTOR] Pulse: linear.x=0.12, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.12, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.12, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.12, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.12, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.12, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.12, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.12, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.12, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.12, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.12, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.12, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.12, angular.z=0.0, duration=0.19999999999999984s
+[EXECUTOR] STOP
+vlm_project@vlmproject-ThinkPad-X1:~/VLM_Navigation_Project$ python3 robot_executor.py   --safety-mode lidar   --test-forward   --execute confirm
+
+========== EXECUTOR DECISION ==========
+Action: NAVIGATE_TO_FRONTIER
+Params: {'direction': 'forward'}
+Reason: Manual tiny forward test.
+Mapped command: {'linear_x': 0.12, 'angular_z': 0.0, 'duration': 0.4, 'motion_kind': 'route_advance'}
+Execute mode: confirm
+=======================================
+
+Execute this small movement pulse? [y/N]: y
+[EXECUTOR] Pulse: linear.x=0.12, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.12, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.12, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.12, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.12, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.12, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.12, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.12, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.12, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.12, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.12, angular.z=0.0, duration=0.2245050980884684s
+[EXECUTOR] STOP
+vlm_project@vlmproject-ThinkPad-X1:~/VLM_Navigation_Project$ python3 robot_executor.py   --safety-mode lidar   --test-forward   --execute confirm
+
+========== EXECUTOR DECISION ==========
+Action: NAVIGATE_TO_FRONTIER
+Params: {'direction': 'forward'}
+Reason: Manual tiny forward test.
+Mapped command: {'linear_x': 0.12, 'angular_z': 0.0, 'duration': 0.4, 'motion_kind': 'route_advance'}
+Execute mode: confirm
+=======================================
+
+Execute this small movement pulse? [y/N]: y
+[EXECUTOR] Pulse: linear.x=0.12, angular.z=0.0, duration=0.24608292726977973s
+[EXECUTOR] STOP
+vlm_project@vlmproject-ThinkPad-X1:~/VLM_Navigation_Project$ python3 robot_executor.py   --safety-mode lidar   --test-forward   --execute confirm
+
+========== EXECUTOR DECISION ==========
+Action: NAVIGATE_TO_FRONTIER
+Params: {'direction': 'forward'}
+Reason: Manual tiny forward test.
+Mapped command: {'linear_x': 0.12, 'angular_z': 0.0, 'duration': 0.4, 'motion_kind': 'route_advance'}
+Execute mode: confirm
+=======================================
+
+Execute this small movement pulse? [y/N]: y
+[EXECUTOR] ABORT (safety_blocked): Motion blocked: nearest obstacle at 0.39m, below the 0.50m stop distance.
+[EXECUTOR] STOP
+vlm_project@vlmproject-ThinkPad-X1:~/VLM_Navigation_Project$ python3 robot_executor.py --safety-mode lidar --test-left --execute confirm
+
+========== EXECUTOR DECISION ==========
+Action: FOLLOW_DIRECTION
+Params: {'direction': 'left'}
+Reason: Manual tiny left turn test.
+Mapped command: {'linear_x': 0.0, 'angular_z': 0.2, 'duration': 1.3, 'motion_kind': 'direction_turn'}
+Execute mode: confirm
+=======================================
+
+Execute this small movement pulse? [y/N]: y
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=0.2, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=0.2, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=0.2, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=0.2, duration=0.09999999999999998s
+[EXECUTOR] STOP
+vlm_project@vlmproject-ThinkPad-X1:~/VLM_Navigation_Project$ python3 robot_executor.py --safety-mode lidar --test-left --execute confirm
+
+========== EXECUTOR DECISION ==========
+Action: FOLLOW_DIRECTION
+Params: {'direction': 'left'}
+Reason: Manual tiny left turn test.
+Mapped command: {'linear_x': 0.0, 'angular_z': 0.2, 'duration': 1.3, 'motion_kind': 'direction_turn'}
+Execute mode: confirm
+=======================================
+
+Execute this small movement pulse? [y/N]: y
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=0.2, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=0.2, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=0.2, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=0.2, duration=0.09999999999999998s
+[EXECUTOR] STOP
+vlm_project@vlmproject-ThinkPad-X1:~/VLM_Navigation_Project$ python3 robot_executor.py --safety-mode lidar --test-left --execute confirm
+
+========== EXECUTOR DECISION ==========
+Action: FOLLOW_DIRECTION
+Params: {'direction': 'left'}
+Reason: Manual tiny left turn test.
+Mapped command: {'linear_x': 0.0, 'angular_z': 0.2, 'duration': 1.3, 'motion_kind': 'direction_turn'}
+Execute mode: confirm
+=======================================
+
+Execute this small movement pulse? [y/N]: y
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=0.2, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=0.2, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=0.2, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=0.2, duration=0.09999999999999998s
+[EXECUTOR] STOP
+vlm_project@vlmproject-ThinkPad-X1:~/VLM_Navigation_Project$ python3 robot_executor.py   --safety-mode lidar   --test-forward   --execute confirm
+
+========== EXECUTOR DECISION ==========
+Action: NAVIGATE_TO_FRONTIER
+Params: {'direction': 'forward'}
+Reason: Manual tiny forward test.
+Mapped command: {'linear_x': 0.12, 'angular_z': 0.0, 'duration': 0.4, 'motion_kind': 'route_advance'}
+Execute mode: confirm
+=======================================
+
+Execute this small movement pulse? [y/N]: y
+[EXECUTOR] Pulse: linear.x=0.12, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.12, angular.z=0.0, duration=0.13773351736586636s
+[EXECUTOR] STOP
+vlm_project@vlmproject-ThinkPad-X1:~/VLM_Navigation_Project$ python3 robot_executor.py --safety-mode lidar --test-left --execute confirm
+
+========== EXECUTOR DECISION ==========
+Action: FOLLOW_DIRECTION
+Params: {'direction': 'left'}
+Reason: Manual tiny left turn test.
+Mapped command: {'linear_x': 0.0, 'angular_z': 0.2, 'duration': 1.3, 'motion_kind': 'direction_turn'}
+Execute mode: confirm
+=======================================
+
+Execute this small movement pulse? [y/N]: N
+[EXECUTOR] ABORT (user_rejected): User rejected movement.
+[EXECUTOR] STOP
+vlm_project@vlmproject-ThinkPad-X1:~/VLM_Navigation_Project$ python3 robot_executor.py   --safety-mode lidar   --test-forward   --execute confirm
+
+========== EXECUTOR DECISION ==========
+Action: NAVIGATE_TO_FRONTIER
+Params: {'direction': 'forward'}
+Reason: Manual tiny forward test.
+Mapped command: {'linear_x': 0.12, 'angular_z': 0.0, 'duration': 0.4, 'motion_kind': 'route_advance'}
+Execute mode: confirm
+=======================================
+
+Execute this small movement pulse? [y/N]: y
+[EXECUTOR] Pulse: linear.x=0.12, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.12, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.12, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.12, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.12, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.12, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.12, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.12, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.12, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.12, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.12, angular.z=0.0, duration=0.26067521605430755s
+[EXECUTOR] STOP
+vlm_project@vlmproject-ThinkPad-X1:~/VLM_Navigation_Project$ python3 robot_executor.py   --safety-mode lidar   --test-forward   --execute confirm
+
+========== EXECUTOR DECISION ==========
+Action: NAVIGATE_TO_FRONTIER
+Params: {'direction': 'forward'}
+Reason: Manual tiny forward test.
+Mapped command: {'linear_x': 0.12, 'angular_z': 0.0, 'duration': 0.4, 'motion_kind': 'route_advance'}
+Execute mode: confirm
+=======================================
+
+Execute this small movement pulse? [y/N]: y
+[EXECUTOR] Pulse: linear.x=0.12, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.12, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.12, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.12, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Motion watch: cutting pulse short after 1.60s of 2.03s planned -- Motion blocked: nearest obstacle at 0.47m, below the 0.50m stop distance.
+vlm_project@vlmproject-ThinkPad-X1:~/VLM_Navigation_Project$ 

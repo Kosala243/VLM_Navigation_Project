@@ -1,0 +1,30 @@
+| Item                        | Confirmed value                 |
+| --------------------------- | ------------------------------- |
+| LiDAR model                 | `RSHELIOS_16P`                  |
+| LiDAR driver                | RoboSense `rslidar_sdk`         |
+| Point-cloud topic           | `/rslidar_points`               |
+| Message type                | `sensor_msgs/PointCloud2`       |
+| Point fields                | `x`, `y`, `z`, `intensity`      |
+| Coordinate frame            | `rslidar`                       |
+| Point-cloud rate            | approximately `10 Hz`           |
+| Robot front                 | `+X`                            |
+| Robot left                  | `+Y`                            |
+| Robot right                 | `-Y`                            |
+| Robot rear                  | `-X`                            |
+| Angle formula               | `atan2(y, x)`                   |
+| Forward angle               | `0 rad` / `0°`                  |
+| Left angle                  | positive                        |
+| Right angle                 | negative                        |
+| Robot command topic         | `/cmd_vel`                      |
+| Command type                | `geometry_msgs/Twist`           |
+| Robot-state topic           | `/high_state`                   |
+| State type                  | `unitree_legged_msgs/HighState` |
+| IMU location                | `/high_state/imu`               |
+| IMU orientation field       | `/high_state/imu/rpy`           |
+| `rpy` order                 | roll, pitch, yaw                |
+| State rate                  | approximately `50 Hz`           |
+| Odometry topic              | none currently published        |
+| `twist_sub` location        | robot computer                  |
+| `rslidar_sdk_node` location | robot computer                  |
+| `roscore` location          | ThinkPad                        |
+

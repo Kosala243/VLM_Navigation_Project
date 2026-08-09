@@ -1,0 +1,193 @@
+vlm_project@vlmproject-ThinkPad-X1:~$ source /opt/ros/melodic/setup.bash
+vlm_project@vlmproject-ThinkPad-X1:~$ source ~/go1_ws/devel/setup.bash
+vlm_project@vlmproject-ThinkPad-X1:~$ 
+vlm_project@vlmproject-ThinkPad-X1:~$ export ROS_MASTER_URI=http://192.168.12.212:11311
+vlm_project@vlmproject-ThinkPad-X1:~$ export ROS_IP=192.168.12.212
+vlm_project@vlmproject-ThinkPad-X1:~$ 
+vlm_project@vlmproject-ThinkPad-X1:~$ rostopic list
+/cmd_vel
+/high_state
+/rosout
+/rosout_agg
+/rslidar_points
+vlm_project@vlmproject-ThinkPad-X1:~$ rostopic list | grep -Ei 'odom|odometry|pose|position|velocity|state|imu'
+/high_state
+vlm_project@vlmproject-ThinkPad-X1:~$ rostopic list | grep -E '^/odom$|/odometry|/robot_pose|/base_pose|/base_velocity'
+vlm_project@vlmproject-ThinkPad-X1:~$ rostopic type /high_state
+unitree_legged_msgs/HighState
+vlm_project@vlmproject-ThinkPad-X1:~$ rosmsg show unitree_legged_msgs/HighState
+uint8[2] head
+uint8 levelFlag
+uint8 frameReserve
+uint32[2] SN
+uint32[2] version
+uint16 bandWidth
+unitree_legged_msgs/IMU imu
+  float32[4] quaternion
+  float32[3] gyroscope
+  float32[3] accelerometer
+  float32[3] rpy
+  int8 temperature
+unitree_legged_msgs/MotorState[20] motorState
+  uint8 mode
+  float32 q
+  float32 dq
+  float32 ddq
+  float32 tauEst
+  float32 q_raw
+  float32 dq_raw
+  float32 ddq_raw
+  int8 temperature
+  uint32[2] reserve
+unitree_legged_msgs/BmsState bms
+  uint8 version_h
+  uint8 version_l
+  uint8 bms_status
+  uint8 SOC
+  int32 current
+  uint16 cycle
+  int8[2] BQ_NTC
+  int8[2] MCU_NTC
+  uint16[10] cell_vol
+int16[4] footForce
+int16[4] footForceEst
+uint8 mode
+float32 progress
+uint8 gaitType
+float32 footRaiseHeight
+float32[3] position
+float32 bodyHeight
+float32[3] velocity
+float32 yawSpeed
+float32[4] rangeObstacle
+unitree_legged_msgs/Cartesian[4] footPosition2Body
+  float32 x
+  float32 y
+  float32 z
+unitree_legged_msgs/Cartesian[4] footSpeed2Body
+  float32 x
+  float32 y
+  float32 z
+uint8[40] wirelessRemote
+uint32 reserve
+uint32 crc
+vlm_project@vlmproject-ThinkPad-X1:~$ rosmsg show -r unitree_legged_msgs/HighState
+
+uint8[2] head
+uint8 levelFlag
+uint8 frameReserve
+
+uint32[2] SN
+uint32[2] version
+uint16 bandWidth
+IMU imu
+MotorState[20] motorState
+BmsState bms
+int16[4] footForce
+int16[4] footForceEst
+uint8 mode
+float32 progress
+uint8 gaitType		   
+float32 footRaiseHeight		  
+float32[3] position 
+float32 bodyHeight			  
+float32[3] velocity 
+float32 yawSpeed				   
+float32[4] rangeObstacle
+Cartesian[4] footPosition2Body 
+Cartesian[4] footSpeed2Body	
+uint8[40] wirelessRemote
+uint32 reserve
+uint32 crc
+
+vlm_project@vlmproject-ThinkPad-X1:~$ 
+vlm_project@vlmproject-ThinkPad-X1:~$ rosmsg show -r unitree_legged_msgs/HighState | grep -Ei 'imu|rpy|yaw|position|velocity|speed|location|pose|foot|body'
+IMU imu
+int16[4] footForce
+int16[4] footForceEst
+float32 footRaiseHeight		  
+float32[3] position 
+float32 bodyHeight			  
+float32[3] velocity 
+float32 yawSpeed				   
+Cartesian[4] footPosition2Body 
+Cartesian[4] footSpeed2Body	
+vlm_project@vlmproject-ThinkPad-X1:~$ 
+vlm_project@vlmproject-ThinkPad-X1:~$ rostopic echo -n 1 /high_state/imu
+quaternion: [0.9994491934776306, 0.003210056107491255, -0.0006951387622393668, 0.03302338719367981]
+gyroscope: [-0.012971206568181515, -0.0007029342814348638, -0.0031950813718140125]
+accelerometer: [0.019153613597154617, 0.06344634294509888, 9.715670585632324]
+rpy: [0.006370714865624905, -0.0016015260480344296, 0.06605403870344162]
+temperature: 79
+---
+vlm_project@vlmproject-ThinkPad-X1:~$ 
+vlm_project@vlmproject-ThinkPad-X1:~$ rostopic echo /high_state/imu/rpy
+[0.007315860129892826, -0.0010863434290513396, 0.06597282737493515]
+---
+[0.007337815128266811, -0.001111017307266593, 0.06602388620376587]
+---
+[0.007319625001400709, -0.0011251275427639484, 0.0660431906580925]
+---
+[0.007306591607630253, -0.001082306494936347, 0.06600560992956161]
+---
+[0.007335050031542778, -0.0010875880252569914, 0.06604405492544174]
+---
+[0.007355759385973215, -0.0010975139448419213, 0.06604216247797012]
+---
+[0.007332037203013897, -0.0011033142218366265, 0.06609934568405151]
+---
+[0.007291117683053017, -0.0011224825866520405, 0.06609668582677841]
+---
+[0.0072838612832129, -0.0011184231843799353, 0.06612779945135117]
+---
+[0.007295161485671997, -0.0011015055933967233, 0.06616003811359406]
+---
+[0.007334612775593996, -0.00108097936026752, 0.06621812283992767]
+---
+[0.007361951284110546, -0.0010759375290945172, 0.0661749541759491]
+---
+[0.007333810906857252, -0.0010514603927731514, 0.0661977156996727]
+---
+[0.0073094614781439304, -0.0010539415525272489, 0.06619912385940552]
+---
+[0.007298343814909458, -0.0010637535015121102, 0.06626638770103455]
+---
+^Cvlm_project@vlmproject-ThinkPad-X1:~$
+vlm_project@vlmproject-ThinkPad-X1:~$ rostopic echo -n 1 /high_state | grep -Ei 'position|velocity|speed|location|bodyHeight|forwardSpeed|sideSpeed|yawSpeed'
+position: [0.010744779370725155, -0.0438954196870327, 0.2887504994869232]
+bodyHeight: 0.288911193609
+velocity: [-0.00046215319889597595, 0.00042821469833143055, -0.00816014688462019]
+yawSpeed: -0.00139996851794
+footPosition2Body: 
+footSpeed2Body: 
+vlm_project@vlmproject-ThinkPad-X1:~$ 
+^Cvlm_project@vlmproject-ThinkPad-X1:~$ rostopic echo /high_state/forwardSpeed
+WARNING: topic [/high_state/forwardSpeed] does not appear to be published yet
+^Cvlm_project@vlmproject-ThinkPad-X1:~$ rostopic hz /high_state        
+subscribed to [/high_state]
+average rate: 49.987
+	min: 0.002s max: 0.041s std dev: 0.01121s window: 48
+average rate: 49.935
+	min: 0.002s max: 0.041s std dev: 0.01261s window: 98
+average rate: 49.991
+	min: 0.002s max: 0.041s std dev: 0.01284s window: 148
+average rate: 49.975
+	min: 0.002s max: 0.041s std dev: 0.01311s window: 198
+average rate: 49.999
+	min: 0.002s max: 0.041s std dev: 0.01315s window: 248
+average rate: 49.981
+	min: 0.002s max: 0.041s std dev: 0.01326s window: 298
+average rate: 49.997
+	min: 0.002s max: 0.041s std dev: 0.01327s window: 348
+average rate: 49.980
+	min: 0.002s max: 0.041s std dev: 0.01334s window: 398
+average rate: 49.994
+	min: 0.002s max: 0.041s std dev: 0.01334s window: 448
+average rate: 49.984
+	min: 0.002s max: 0.041s std dev: 0.01339s window: 498
+^Caverage rate: 49.985
+	min: 0.002s max: 0.041s std dev: 0.01340s window: 522
+vlm_project@vlmproject-ThinkPad-X1:~$ rostopic hz /odom
+WARNING: topic [/odom] does not appear to be published yet
+vlm_project@vlmproject-ThinkPad-X1:~$ rostopic type /odom
+unknown topic type [/odom]

@@ -1,0 +1,126 @@
+vlm_project@vlmproject-ThinkPad-X1:~/VLM_Navigation_Project$ python3 -c "
+> import math, time
+> from robot_executor import PersistentCmdVelBridge, PersistentHighStateBridge
+> 
+> hs = PersistentHighStateBridge(topic='/high_state')
+> cv = PersistentCmdVelBridge(topic='/cmd_vel')
+> assert hs.is_ready, hs.ready_error
+> assert cv.is_ready, cv.ready_error
+> 
+> DURATION = 2.0     # seconds
+> LINEAR_X = 0.3     # forward test: set nonzero; ANGULAR_Z must be 0.0
+> ANGULAR_Z = 0.0    # turn test: set nonzero (e.g. 0.3), LINEAR_X must be 0.0
+> 
+> before = hs.get_yaw()
+> print('BEFORE:', before)
+> 
+> result = cv.pulse(LINEAR_X, ANGULAR_Z, DURATION)
+> print('PULSE:', result)
+> cv.stop()
+> time.sleep(0.3)
+> 
+> after = hs.get_yaw()
+> print('AFTER:', after)
+> 
+> if LINEAR_X:
+>     dx = after['position'][0] - before['position'][0]
+>     dy = after['position'][1] - before['position'][1]
+>     dist = math.hypot(dx, dy)
+>     print('Measured forward_speed = {:.3f} m/s (commanded {:.3f})'.format(dist / DURATION, LINEAR_X))
+> if ANGULAR_Z:
+>     dyaw = after['yaw'] - before['yaw']
+>     while dyaw > math.pi: dyaw -= 2 * math.pi
+>     while dyaw < -math.pi: dyaw += 2 * math.pi
+>     print('Measured turn_speed = {:.3f} rad/s ({:.1f} deg, commanded {:.3f} rad/s)'.format(dyaw / DURATION, math.degrees(dyaw), ANGULAR_Z))
+> 
+> hs.shutdown()
+> cv.shutdown()
+> "
+BEFORE: {'position': [23.8939151763916, 42.47722244262695, 0.297639399766922], 'yaw': -0.38500043749809265, 'cmd': 'get_yaw', 'ok': True, 'age': 0.021007061004638672}
+PULSE: {'connections': 1, 'elapsed': 2.0007359981536865, 'cmd': 'pulse', 'ok': True, 'published': 20}
+AFTER: {'position': [24.547534942626953, 42.15720748901367, 0.2978401184082031], 'yaw': -0.4193859100341797, 'cmd': 'get_yaw', 'ok': True, 'age': 0.0048830509185791016}
+Measured forward_speed = 0.364 m/s (commanded 0.300)
+vlm_project@vlmproject-ThinkPad-X1:~/VLM_Navigation_Project$ python3 -c "
+import math, time
+from robot_executor import PersistentCmdVelBridge, PersistentHighStateBridge
+
+hs = PersistentHighStateBridge(topic='/high_state')
+cv = PersistentCmdVelBridge(topic='/cmd_vel')
+assert hs.is_ready, hs.ready_error
+assert cv.is_ready, cv.ready_error
+
+DURATION = 2.0     # seconds
+LINEAR_X = 0.3     # forward test: set nonzero; ANGULAR_Z must be 0.0
+ANGULAR_Z = 0.0    # turn test: set nonzero (e.g. 0.3), LINEAR_X must be 0.0
+
+before = hs.get_yaw()
+print('BEFORE:', before)
+
+result = cv.pulse(LINEAR_X, ANGULAR_Z, DURATION)
+print('PULSE:', result)
+cv.stop()
+time.sleep(0.3)
+
+after = hs.get_yaw()
+print('AFTER:', after)
+
+if LINEAR_X:
+    dx = after['position'][0] - before['position'][0]
+    dy = after['position'][1] - before['position'][1]
+    dist = math.hypot(dx, dy)
+    print('Measured forward_speed = {:.3f} m/s (commanded {:.3f})'.format(dist / DURATION, LINEAR_X))
+if ANGULAR_Z:
+    dyaw = after['yaw'] - before['yaw']
+    while dyaw > math.pi: dyaw -= 2 * math.pi
+    while dyaw < -math.pi: dyaw += 2 * math.pi
+    print('Measured turn_speed = {:.3f} rad/s ({:.1f} deg, commanded {:.3f} rad/s)'.format(dyaw / DURATION, math.degrees(dyaw), ANGULAR_Z))
+
+hs.shutdown()
+cv.shutdown()
+"
+BEFORE: {'position': [24.573963165283203, 42.123294830322266, 0.2990710139274597], 'yaw': -0.4094601571559906, 'cmd': 'get_yaw', 'ok': True, 'age': 0.004091978073120117}
+PULSE: {'connections': 1, 'elapsed': 2.000526189804077, 'cmd': 'pulse', 'ok': True, 'published': 20}
+AFTER: {'position': [25.198583602905273, 41.70616912841797, 0.3051019608974457], 'yaw': -0.48872241377830505, 'cmd': 'get_yaw', 'ok': True, 'age': 0.007824897766113281}
+Measured forward_speed = 0.376 m/s (commanded 0.300)
+vlm_project@vlmproject-ThinkPad-X1:~/VLM_Navigation_Project$ python3 -c "
+import math, time
+from robot_executor import PersistentCmdVelBridge, PersistentHighStateBridge
+
+hs = PersistentHighStateBridge(topic='/high_state')
+cv = PersistentCmdVelBridge(topic='/cmd_vel')
+assert hs.is_ready, hs.ready_error
+assert cv.is_ready, cv.ready_error
+
+DURATION = 2.0     # seconds
+LINEAR_X = 0.3     # forward test: set nonzero; ANGULAR_Z must be 0.0
+ANGULAR_Z = 0.0    # turn test: set nonzero (e.g. 0.3), LINEAR_X must be 0.0
+
+before = hs.get_yaw()
+print('BEFORE:', before)
+
+result = cv.pulse(LINEAR_X, ANGULAR_Z, DURATION)
+print('PULSE:', result)
+cv.stop()
+time.sleep(0.3)
+
+after = hs.get_yaw()
+print('AFTER:', after)
+
+if LINEAR_X:
+    dx = after['position'][0] - before['position'][0]
+    dy = after['position'][1] - before['position'][1]
+    dist = math.hypot(dx, dy)
+    print('Measured forward_speed = {:.3f} m/s (commanded {:.3f})'.format(dist / DURATION, LINEAR_X))
+if ANGULAR_Z:
+    dyaw = after['yaw'] - before['yaw']
+    while dyaw > math.pi: dyaw -= 2 * math.pi
+    while dyaw < -math.pi: dyaw += 2 * math.pi
+    print('Measured turn_speed = {:.3f} rad/s ({:.1f} deg, commanded {:.3f} rad/s)'.format(dyaw / DURATION, math.degrees(dyaw), ANGULAR_Z))
+
+hs.shutdown()
+cv.shutdown()
+"
+BEFORE: {'position': [25.233776092529297, 41.68851089477539, 0.29901087284088135], 'yaw': -0.4999122619628906, 'cmd': 'get_yaw', 'ok': True, 'age': 0.0009360313415527344}
+PULSE: {'connections': 1, 'elapsed': 2.0005600452423096, 'cmd': 'pulse', 'ok': True, 'published': 20}
+AFTER: {'position': [25.88134765625, 41.26811218261719, 0.29800355434417725], 'yaw': -0.5264585614204407, 'cmd': 'get_yaw', 'ok': True, 'age': 0.0022699832916259766}
+Measured forward_speed = 0.386 m/s (commanded 0.300)

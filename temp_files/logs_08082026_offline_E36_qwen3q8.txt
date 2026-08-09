@@ -1,0 +1,367 @@
+vlm_project@vlmproject-ThinkPad-X1:~/VLM_Navigation_Project$ python3 thinkpad_robot_capture_to_amd.py \
+>   --mode auto \
+>   --camera-mode separate \
+>   --saved-image-dir robot_live_frames/step_test_E36\
+>   --goal E36 \
+>   --memory true \
+>   --execute false \
+>   --max-steps 50
+[INFO] Mode: auto
+[INFO] Camera mode: separate
+[INFO] Memory: true
+[INFO] Goal: E36
+[INFO] AMD API: http://ernis-amd395:8001
+[INFO] Robot: unitree@192.168.123.14
+[INFO] Front camera: /dev/video2
+[INFO] Left camera: /dev/video4
+[INFO] Right camera: /dev/video3
+[LOG] Run directory: navigation_outputs/live_runs/run_2026_08_09_101307_E36
+[INFO] Memory enabled: using /autonomous/start and /autonomous/step
+[OK] Autonomous session started
+{
+  "status": "started",
+  "goal": "E36",
+  "movement_enabled": false,
+  "external_execution_enabled": false,
+  "keep_memory": false
+}
+
+========== AUTO STEP 1 ==========
+[OK] Loaded saved LEFT: robot_live_frames/step_0001/left.png
+[OK] Loaded saved FRONT: robot_live_frames/step_0001/front.png
+[OK] Loaded saved RIGHT: robot_live_frames/step_0001/right.png
+
+========== ACTION RESULT ==========
+Mode: autonomous_step
+Goal: E36
+Done: False
+Action: SEARCH_FOR_CUE({'search_for': "room label or sign with 'E36' or 'E-36' or 'Room E36' or 'Unit E36'", 'stop_condition': 'capture when a relevant sign or label is found', 'capture_after': True, 'evidence_view': 'NONE', 'horizontal_position': 'unknown', 'horizontal_offset_fraction': None, 'proximity': 'unknown', 'doorway_state': 'unknown', 'threshold_state': 'unknown', 'traversable': True, 'direction': 'left'}) [low, score=0.35] valid - No visible signs, door labels, or directories containing 'E36' or related aliases are present in the current view. The robot must search for a navigation cue to proceed.
+Action name: SEARCH_FOR_CUE
+Params: {'search_for': "room label or sign with 'E36' or 'E-36' or 'Room E36' or 'Unit E36'", 'stop_condition': 'capture when a relevant sign or label is found', 'capture_after': True, 'evidence_view': 'NONE', 'horizontal_position': 'unknown', 'horizontal_offset_fraction': None, 'proximity': 'unknown', 'doorway_state': 'unknown', 'threshold_state': 'unknown', 'traversable': True, 'direction': 'left'}
+Evidence view: NONE
+Reason: No visible signs, door labels, or directories containing 'E36' or related aliases are present in the current view. The robot must search for a navigation cue to proceed.
+Confidence: low
+Evidence score: 0.35
+Saved: navigation_outputs/http_api/autonomous_step_latest_result.json
+===================================
+
+[EXECUTE] Dry run only. Robot will not move.
+[LOG] Step result saved: navigation_outputs/live_runs/run_2026_08_09_101307_E36/step_001_result.json
+
+========== AUTO STEP 2 ==========
+[OK] Loaded saved LEFT: robot_live_frames/step_0002/left.png
+[OK] Loaded saved FRONT: robot_live_frames/step_0002/front.png
+[OK] Loaded saved RIGHT: robot_live_frames/step_0002/right.png
+
+========== ACTION RESULT ==========
+Mode: autonomous_step
+Goal: E36
+Done: False
+Action: SEARCH_FOR_CUE({'search_for': 'room label or sign for E36', 'stop_condition': 'capture when a relevant sign or door label is found', 'capture_after': True, 'evidence_view': 'FRONT', 'horizontal_position': 'center', 'horizontal_offset_fraction': None, 'proximity': 'far', 'doorway_state': 'unknown', 'threshold_state': 'unknown', 'traversable': True, 'direction': 'right'}) [low, score=0.35] valid - No direct evidence for room E36 is visible in the current image. The FRONT view shows a large poster of 'Girl with a Pearl Earring' and some flyers, but no room label or sign matching the goal. The LEFT and RIGHT views show lounge areas with furniture and doors, but no clear indication of room E36. A search for a cue is needed to locate the target.
+Action name: SEARCH_FOR_CUE
+Params: {'search_for': 'room label or sign for E36', 'stop_condition': 'capture when a relevant sign or door label is found', 'capture_after': True, 'evidence_view': 'FRONT', 'horizontal_position': 'center', 'horizontal_offset_fraction': None, 'proximity': 'far', 'doorway_state': 'unknown', 'threshold_state': 'unknown', 'traversable': True, 'direction': 'right'}
+Evidence view: FRONT
+Reason: No direct evidence for room E36 is visible in the current image. The FRONT view shows a large poster of 'Girl with a Pearl Earring' and some flyers, but no room label or sign matching the goal. The LEFT and RIGHT views show lounge areas with furniture and doors, but no clear indication of room E36. A search for a cue is needed to locate the target.
+Confidence: low
+Evidence score: 0.35
+Saved: navigation_outputs/http_api/autonomous_step_latest_result.json
+===================================
+
+[EXECUTE] Dry run only. Robot will not move.
+[LOG] Step result saved: navigation_outputs/live_runs/run_2026_08_09_101307_E36/step_002_result.json
+
+========== AUTO STEP 3 ==========
+[OK] Loaded saved LEFT: robot_live_frames/step_0003/left.png
+[OK] Loaded saved FRONT: robot_live_frames/step_0003/front.png
+[OK] Loaded saved RIGHT: robot_live_frames/step_0003/right.png
+
+========== ACTION RESULT ==========
+Mode: autonomous_step
+Goal: E36
+Done: False
+Action: SEARCH_FOR_CUE({'search_for': 'room label or sign for E36', 'stop_condition': 'capture when a relevant sign or door label is found', 'capture_after': True, 'evidence_view': 'NONE', 'horizontal_position': 'unknown', 'horizontal_offset_fraction': None, 'proximity': 'unknown', 'doorway_state': 'unknown', 'threshold_state': 'unknown', 'traversable': True, 'direction': 'left'}) [low, score=0.35] valid - No visible signs, door labels, or structural landmarks directly indicating 'E36' or its zone/room structure are present in the current views. The corridor is visually sparse, and no clear directional or target evidence is available to guide navigation toward the goal.
+Action name: SEARCH_FOR_CUE
+Params: {'search_for': 'room label or sign for E36', 'stop_condition': 'capture when a relevant sign or door label is found', 'capture_after': True, 'evidence_view': 'NONE', 'horizontal_position': 'unknown', 'horizontal_offset_fraction': None, 'proximity': 'unknown', 'doorway_state': 'unknown', 'threshold_state': 'unknown', 'traversable': True, 'direction': 'left'}
+Evidence view: NONE
+Reason: No visible signs, door labels, or structural landmarks directly indicating 'E36' or its zone/room structure are present in the current views. The corridor is visually sparse, and no clear directional or target evidence is available to guide navigation toward the goal.
+Confidence: low
+Evidence score: 0.35
+Saved: navigation_outputs/http_api/autonomous_step_latest_result.json
+===================================
+
+[EXECUTE] Dry run only. Robot will not move.
+[LOG] Step result saved: navigation_outputs/live_runs/run_2026_08_09_101307_E36/step_003_result.json
+
+========== AUTO STEP 4 ==========
+[OK] Loaded saved LEFT: robot_live_frames/step_0004/left.png
+[OK] Loaded saved FRONT: robot_live_frames/step_0004/front.png
+[OK] Loaded saved RIGHT: robot_live_frames/step_0004/right.png
+
+========== ACTION RESULT ==========
+Mode: autonomous_step
+Goal: E36
+Done: False
+Action: SEARCH_FOR_CUE({'search_for': "room label or sign with 'E36' or similar pattern", 'stop_condition': 'capture when a relevant sign or label is found', 'capture_after': True, 'evidence_view': 'FRONT', 'horizontal_position': 'unknown', 'horizontal_offset_fraction': None, 'proximity': 'far', 'doorway_state': 'unknown', 'threshold_state': 'unknown', 'traversable': True, 'direction': 'right'}) [low, score=0.35] valid - The current view is a corridor with no visible signs or labels matching the goal 'E36'. The LEFT image shows an abstract artwork, and the RIGHT image is a plain wall, providing no useful cues. The FRONT view shows a corridor with a CCTV warning sign and a vending machine, but no direct evidence for 'E36'. Therefore, searching for a cue is the most appropriate action.
+Action name: SEARCH_FOR_CUE
+Params: {'search_for': "room label or sign with 'E36' or similar pattern", 'stop_condition': 'capture when a relevant sign or label is found', 'capture_after': True, 'evidence_view': 'FRONT', 'horizontal_position': 'unknown', 'horizontal_offset_fraction': None, 'proximity': 'far', 'doorway_state': 'unknown', 'threshold_state': 'unknown', 'traversable': True, 'direction': 'right'}
+Evidence view: FRONT
+Reason: The current view is a corridor with no visible signs or labels matching the goal 'E36'. The LEFT image shows an abstract artwork, and the RIGHT image is a plain wall, providing no useful cues. The FRONT view shows a corridor with a CCTV warning sign and a vending machine, but no direct evidence for 'E36'. Therefore, searching for a cue is the most appropriate action.
+Confidence: low
+Evidence score: 0.35
+Saved: navigation_outputs/http_api/autonomous_step_latest_result.json
+===================================
+
+[EXECUTE] Dry run only. Robot will not move.
+[LOG] Step result saved: navigation_outputs/live_runs/run_2026_08_09_101307_E36/step_004_result.json
+
+========== AUTO STEP 5 ==========
+[OK] Loaded saved LEFT: robot_live_frames/step_0005/left.png
+[OK] Loaded saved FRONT: robot_live_frames/step_0005/front.png
+[OK] Loaded saved RIGHT: robot_live_frames/step_0005/right.png
+
+========== ACTION RESULT ==========
+Mode: autonomous_step
+Goal: E36
+Done: False
+Action: SEARCH_FOR_CUE({'search_for': "room label or sign with 'E36' or 'E-36' or 'Room E36' or 'Unit E36'", 'stop_condition': 'capture when a relevant sign or label is found', 'capture_after': True, 'evidence_view': 'NONE', 'horizontal_position': 'unknown', 'horizontal_offset_fraction': None, 'proximity': 'unknown', 'doorway_state': 'unknown', 'threshold_state': 'unknown', 'traversable': True, 'direction': 'left'}) [low, score=0.35] valid - No direct evidence for 'E36' or related room label is visible in the current image. The hallway shows signs for 'Gym' and 'TULU', but no 'E36' or similar identifier. The robot must search for a relevant cue.
+Action name: SEARCH_FOR_CUE
+Params: {'search_for': "room label or sign with 'E36' or 'E-36' or 'Room E36' or 'Unit E36'", 'stop_condition': 'capture when a relevant sign or label is found', 'capture_after': True, 'evidence_view': 'NONE', 'horizontal_position': 'unknown', 'horizontal_offset_fraction': None, 'proximity': 'unknown', 'doorway_state': 'unknown', 'threshold_state': 'unknown', 'traversable': True, 'direction': 'left'}
+Evidence view: NONE
+Reason: No direct evidence for 'E36' or related room label is visible in the current image. The hallway shows signs for 'Gym' and 'TULU', but no 'E36' or similar identifier. The robot must search for a relevant cue.
+Confidence: low
+Evidence score: 0.35
+Saved: navigation_outputs/http_api/autonomous_step_latest_result.json
+===================================
+
+[EXECUTE] Dry run only. Robot will not move.
+[LOG] Step result saved: navigation_outputs/live_runs/run_2026_08_09_101307_E36/step_005_result.json
+
+========== AUTO STEP 6 ==========
+[OK] Loaded saved LEFT: robot_live_frames/step_0006/left.png
+[OK] Loaded saved FRONT: robot_live_frames/step_0006/front.png
+[OK] Loaded saved RIGHT: robot_live_frames/step_0006/right.png
+
+========== ACTION RESULT ==========
+Mode: autonomous_step
+Goal: E36
+Done: False
+Action: SEARCH_FOR_CUE({'search_for': 'sign or door label indicating room E36', 'stop_condition': 'capture when a relevant sign or door label is found', 'capture_after': True, 'evidence_view': 'FRONT', 'horizontal_position': 'center', 'horizontal_offset_fraction': None, 'proximity': 'near', 'doorway_state': 'unknown', 'threshold_state': 'unknown', 'traversable': True, 'direction': 'right'}) [low, score=0.35] valid - The current view shows a laundry room door, but no sign or label indicating room E36 is visible. The robot needs to search for a cue that can guide it to the target room.
+Action name: SEARCH_FOR_CUE
+Params: {'search_for': 'sign or door label indicating room E36', 'stop_condition': 'capture when a relevant sign or door label is found', 'capture_after': True, 'evidence_view': 'FRONT', 'horizontal_position': 'center', 'horizontal_offset_fraction': None, 'proximity': 'near', 'doorway_state': 'unknown', 'threshold_state': 'unknown', 'traversable': True, 'direction': 'right'}
+Evidence view: FRONT
+Reason: The current view shows a laundry room door, but no sign or label indicating room E36 is visible. The robot needs to search for a cue that can guide it to the target room.
+Confidence: low
+Evidence score: 0.35
+Saved: navigation_outputs/http_api/autonomous_step_latest_result.json
+===================================
+
+[EXECUTE] Dry run only. Robot will not move.
+[LOG] Step result saved: navigation_outputs/live_runs/run_2026_08_09_101307_E36/step_006_result.json
+
+========== AUTO STEP 7 ==========
+[OK] Loaded saved LEFT: robot_live_frames/step_0007/left.png
+[OK] Loaded saved FRONT: robot_live_frames/step_0007/front.png
+[OK] Loaded saved RIGHT: robot_live_frames/step_0007/right.png
+
+========== ACTION RESULT ==========
+Mode: autonomous_step
+Goal: E36
+Done: False
+Action: NAVIGATE_TO_LANDMARK({'landmark_id': 'L005', 'direction': 'forward', 'target': None, 'target_description': 'Concrete stairs leading upward to the next floor.', 'floor': None, 'search_for': None, 'stop_condition': 'capture before entering the passage', 'capture_after': True, 'evidence_view': 'FRONT', 'horizontal_position': 'center', 'horizontal_offset_fraction': 0.0, 'proximity': 'near', 'doorway_state': 'unknown', 'threshold_state': 'unknown', 'traversable': True}) [low, score=0.39] valid - The current view is sparse, and the remembered structural landmark L005 (stairs) supports continued progress toward the goal, as the directory sign indicates the target E36 may be on an upper floor.
+Action name: NAVIGATE_TO_LANDMARK
+Params: {'landmark_id': 'L005', 'direction': 'forward', 'target': None, 'target_description': 'Concrete stairs leading upward to the next floor.', 'floor': None, 'search_for': None, 'stop_condition': 'capture before entering the passage', 'capture_after': True, 'evidence_view': 'FRONT', 'horizontal_position': 'center', 'horizontal_offset_fraction': 0.0, 'proximity': 'near', 'doorway_state': 'unknown', 'threshold_state': 'unknown', 'traversable': True}
+Evidence view: FRONT
+Reason: The current view is sparse, and the remembered structural landmark L005 (stairs) supports continued progress toward the goal, as the directory sign indicates the target E36 may be on an upper floor.
+Confidence: low
+Evidence score: 0.385
+Saved: navigation_outputs/http_api/autonomous_step_latest_result.json
+===================================
+
+[EXECUTE] Dry run only. Robot will not move.
+[LOG] Step result saved: navigation_outputs/live_runs/run_2026_08_09_101307_E36/step_007_result.json
+
+========== AUTO STEP 8 ==========
+[OK] Loaded saved LEFT: robot_live_frames/step_0008/left.png
+[OK] Loaded saved FRONT: robot_live_frames/step_0008/front.png
+[OK] Loaded saved RIGHT: robot_live_frames/step_0008/right.png
+
+========== ACTION RESULT ==========
+Mode: autonomous_step
+Goal: E36
+Done: False
+Action: USE_ELEVATOR_OR_STAIRS({'landmark_id': 'L005', 'direction': 'forward', 'floor': 4, 'evidence_view': 'FRONT', 'stop_condition': 'capture after reaching the floor indicated by the directory sign', 'capture_after': True, 'horizontal_position': 'center', 'horizontal_offset_fraction': 0.0, 'proximity': 'near', 'doorway_state': 'unknown', 'threshold_state': 'unknown', 'traversable': True}) [low, score=0.58] valid - The directory sign confirms that the target room E36 is on floor 4, and the current view shows stairs leading upward, which is the most direct route to reach that floor.
+Action name: USE_ELEVATOR_OR_STAIRS
+Params: {'landmark_id': 'L005', 'direction': 'forward', 'floor': 4, 'evidence_view': 'FRONT', 'stop_condition': 'capture after reaching the floor indicated by the directory sign', 'capture_after': True, 'horizontal_position': 'center', 'horizontal_offset_fraction': 0.0, 'proximity': 'near', 'doorway_state': 'unknown', 'threshold_state': 'unknown', 'traversable': True}
+Evidence view: FRONT
+Reason: The directory sign confirms that the target room E36 is on floor 4, and the current view shows stairs leading upward, which is the most direct route to reach that floor.
+Confidence: low
+Evidence score: 0.585
+Saved: navigation_outputs/http_api/autonomous_step_latest_result.json
+===================================
+
+[ELEVATOR] Dry run only. Not prompting for elevator/stairs confirmation.
+[LOG] Step result saved: navigation_outputs/live_runs/run_2026_08_09_101307_E36/step_008_result.json
+
+========== AUTO STEP 9 ==========
+[OK] Loaded saved LEFT: robot_live_frames/step_0009/left.png
+[OK] Loaded saved FRONT: robot_live_frames/step_0009/front.png
+[OK] Loaded saved RIGHT: robot_live_frames/step_0009/right.png
+
+========== ACTION RESULT ==========
+Mode: autonomous_step
+Goal: E36
+Done: False
+Action: USE_ELEVATOR_OR_STAIRS({'landmark_id': 'L005', 'direction': 'forward', 'floor': 4, 'evidence_view': 'FRONT', 'horizontal_position': 'center', 'horizontal_offset_fraction': None, 'proximity': 'near', 'doorway_state': 'unknown', 'threshold_state': 'unknown', 'traversable': True}) [low, score=0.58] valid - The robot is on the current floor, but the goal E36 is on floor 4, requiring a floor transition. The recent evidence indicates stairs are available and needed to reach the correct floor.
+Action name: USE_ELEVATOR_OR_STAIRS
+Params: {'landmark_id': 'L005', 'direction': 'forward', 'floor': 4, 'evidence_view': 'FRONT', 'horizontal_position': 'center', 'horizontal_offset_fraction': None, 'proximity': 'near', 'doorway_state': 'unknown', 'threshold_state': 'unknown', 'traversable': True}
+Evidence view: FRONT
+Reason: The robot is on the current floor, but the goal E36 is on floor 4, requiring a floor transition. The recent evidence indicates stairs are available and needed to reach the correct floor.
+Confidence: low
+Evidence score: 0.585
+Saved: navigation_outputs/http_api/autonomous_step_latest_result.json
+===================================
+
+[ELEVATOR] Dry run only. Not prompting for elevator/stairs confirmation.
+[LOG] Step result saved: navigation_outputs/live_runs/run_2026_08_09_101307_E36/step_009_result.json
+
+========== AUTO STEP 10 ==========
+[OK] Loaded saved LEFT: robot_live_frames/step_0010/left.png
+[OK] Loaded saved FRONT: robot_live_frames/step_0010/front.png
+[OK] Loaded saved RIGHT: robot_live_frames/step_0010/right.png
+
+========== ACTION RESULT ==========
+Mode: autonomous_step
+Goal: E36
+Done: False
+Action: USE_ELEVATOR_OR_STAIRS({'landmark_id': 'L008', 'direction': 'none', 'target': None, 'target_description': 'Elevator control panel with floor 4 lit. Robot is inside the elevator car.', 'floor': 4, 'search_for': None, 'stop_condition': None, 'capture_after': True, 'evidence_view': 'LEFT', 'horizontal_position': 'center', 'horizontal_offset_fraction': 0.0, 'proximity': 'near', 'doorway_state': 'unknown', 'threshold_state': 'unknown', 'traversable': None}) [low, score=0.55] valid - The elevator panel shows floor 4 selected, and the goal E36 is confirmed to be on floor 4. The robot is inside the elevator, so it must use the elevator to reach the correct floor.
+Action name: USE_ELEVATOR_OR_STAIRS
+Params: {'landmark_id': 'L008', 'direction': 'none', 'target': None, 'target_description': 'Elevator control panel with floor 4 lit. Robot is inside the elevator car.', 'floor': 4, 'search_for': None, 'stop_condition': None, 'capture_after': True, 'evidence_view': 'LEFT', 'horizontal_position': 'center', 'horizontal_offset_fraction': 0.0, 'proximity': 'near', 'doorway_state': 'unknown', 'threshold_state': 'unknown', 'traversable': None}
+Evidence view: LEFT
+Reason: The elevator panel shows floor 4 selected, and the goal E36 is confirmed to be on floor 4. The robot is inside the elevator, so it must use the elevator to reach the correct floor.
+Confidence: low
+Evidence score: 0.5549999999999999
+Saved: navigation_outputs/http_api/autonomous_step_latest_result.json
+===================================
+
+[ELEVATOR] Dry run only. Not prompting for elevator/stairs confirmation.
+[LOG] Step result saved: navigation_outputs/live_runs/run_2026_08_09_101307_E36/step_010_result.json
+
+========== AUTO STEP 11 ==========
+[OK] Loaded saved LEFT: robot_live_frames/step_0011/left.png
+[OK] Loaded saved FRONT: robot_live_frames/step_0011/front.png
+[OK] Loaded saved RIGHT: robot_live_frames/step_0011/right.png
+
+========== ACTION RESULT ==========
+Mode: autonomous_step
+Goal: E36
+Done: False
+Action: ALIGN_WITH_LANDMARK({'landmark_id': 'L009', 'direction': 'right', 'target': None, 'target_description': 'Black sign on beige wall in RIGHT view lists room ranges including E36.', 'stop_condition': 'landmark centred in FRONT camera', 'capture_after': True, 'evidence_view': 'RIGHT', 'horizontal_position': 'center', 'horizontal_offset_fraction': 0.0, 'proximity': 'near'}) [medium, score=0.65] valid - Selected landmark is not centred and must be visually aligned before forward movement.
+Action name: ALIGN_WITH_LANDMARK
+Params: {'landmark_id': 'L009', 'direction': 'right', 'target': None, 'target_description': 'Black sign on beige wall in RIGHT view lists room ranges including E36.', 'stop_condition': 'landmark centred in FRONT camera', 'capture_after': True, 'evidence_view': 'RIGHT', 'horizontal_position': 'center', 'horizontal_offset_fraction': 0.0, 'proximity': 'near'}
+Evidence view: RIGHT
+Reason: Selected landmark is not centred and must be visually aligned before forward movement.
+Confidence: medium
+Evidence score: 0.65
+Saved: navigation_outputs/http_api/autonomous_step_latest_result.json
+===================================
+
+[EXECUTE] Dry run only. Robot will not move.
+[LOG] Step result saved: navigation_outputs/live_runs/run_2026_08_09_101307_E36/step_011_result.json
+
+========== AUTO STEP 12 ==========
+[OK] Loaded saved LEFT: robot_live_frames/step_0012/left.png
+[OK] Loaded saved FRONT: robot_live_frames/step_0012/front.png
+[OK] Loaded saved RIGHT: robot_live_frames/step_0012/right.png
+
+========== ACTION RESULT ==========
+Mode: autonomous_step
+Goal: E36
+Done: False
+Action: FOLLOW_DIRECTION({'landmark_id': 'L010', 'direction': 'forward', 'target': None, 'target_description': 'Wall sign lists room ranges including E36, with arrow pointing forward.', 'floor': None, 'search_for': None, 'stop_condition': None, 'capture_after': True, 'evidence_view': 'FRONT', 'horizontal_position': 'center', 'horizontal_offset_fraction': 0.0, 'proximity': 'near', 'doorway_state': 'unknown', 'threshold_state': 'unknown', 'traversable': True}) [medium, score=0.65] valid - The current FRONT view shows a sign explicitly indicating the target room E36 is forward, with a clear directional arrow. This is the strongest current semantic evidence for navigation.
+Action name: FOLLOW_DIRECTION
+Params: {'landmark_id': 'L010', 'direction': 'forward', 'target': None, 'target_description': 'Wall sign lists room ranges including E36, with arrow pointing forward.', 'floor': None, 'search_for': None, 'stop_condition': None, 'capture_after': True, 'evidence_view': 'FRONT', 'horizontal_position': 'center', 'horizontal_offset_fraction': 0.0, 'proximity': 'near', 'doorway_state': 'unknown', 'threshold_state': 'unknown', 'traversable': True}
+Evidence view: FRONT
+Reason: The current FRONT view shows a sign explicitly indicating the target room E36 is forward, with a clear directional arrow. This is the strongest current semantic evidence for navigation.
+Confidence: medium
+Evidence score: 0.65
+Saved: navigation_outputs/http_api/autonomous_step_latest_result.json
+===================================
+
+[EXECUTE] Dry run only. Robot will not move.
+[LOG] Step result saved: navigation_outputs/live_runs/run_2026_08_09_101307_E36/step_012_result.json
+
+========== AUTO STEP 13 ==========
+[OK] Loaded saved LEFT: robot_live_frames/step_0013/left.png
+[OK] Loaded saved FRONT: robot_live_frames/step_0013/front.png
+[OK] Loaded saved RIGHT: robot_live_frames/step_0013/right.png
+
+========== ACTION RESULT ==========
+Mode: autonomous_step
+Goal: E36
+Done: False
+Action: FOLLOW_DIRECTION({'landmark_id': 'L010', 'direction': 'forward', 'target': None, 'target_description': 'Wall sign lists room ranges including E36, with arrow pointing forward.', 'floor': None, 'search_for': None, 'stop_condition': None, 'capture_after': True, 'evidence_view': 'FRONT', 'horizontal_position': 'center', 'horizontal_offset_fraction': 0.0, 'proximity': 'near', 'doorway_state': 'unknown', 'threshold_state': 'before', 'traversable': True}) [low, score=0.00] INVALID: FOLLOW_DIRECTION landmark L010 is not visible in the current observation. - The FRONT view shows a sign indicating the target room E36 is forward, and this is the most direct and relevant cue for navigation.
+Action name: FOLLOW_DIRECTION
+Params: {'landmark_id': 'L010', 'direction': 'forward', 'target': None, 'target_description': 'Wall sign lists room ranges including E36, with arrow pointing forward.', 'floor': None, 'search_for': None, 'stop_condition': None, 'capture_after': True, 'evidence_view': 'FRONT', 'horizontal_position': 'center', 'horizontal_offset_fraction': 0.0, 'proximity': 'near', 'doorway_state': 'unknown', 'threshold_state': 'before', 'traversable': True}
+Evidence view: FRONT
+Reason: The FRONT view shows a sign indicating the target room E36 is forward, and this is the most direct and relevant cue for navigation.
+Confidence: low
+Evidence score: 0.0
+Saved: navigation_outputs/http_api/autonomous_step_latest_result.json
+===================================
+
+[EXECUTE] Dry run only. Robot will not move.
+[LOG] Step result saved: navigation_outputs/live_runs/run_2026_08_09_101307_E36/step_013_result.json
+
+========== AUTO STEP 14 ==========
+[OK] Loaded saved LEFT: robot_live_frames/step_0014/left.png
+[OK] Loaded saved FRONT: robot_live_frames/step_0014/front.png
+[OK] Loaded saved RIGHT: robot_live_frames/step_0014/right.png
+
+========== ACTION RESULT ==========
+Mode: autonomous_step
+Goal: E36
+Done: False
+Action: ALIGN_WITH_LANDMARK({'landmark_id': 'L013', 'direction': 'left', 'target': 'E36', 'target_description': 'Dark grey door with label 50E36 visible on left wall.', 'stop_condition': 'target landmark centred in FRONT camera', 'capture_after': True, 'evidence_view': 'LEFT', 'horizontal_position': 'left', 'horizontal_offset_fraction': -0.4, 'proximity': 'near'}) [medium, score=0.65] valid - The exact target is visible in the LEFT view and must first be turned into the FRONT camera.
+Action name: ALIGN_WITH_LANDMARK
+Params: {'landmark_id': 'L013', 'direction': 'left', 'target': 'E36', 'target_description': 'Dark grey door with label 50E36 visible on left wall.', 'stop_condition': 'target landmark centred in FRONT camera', 'capture_after': True, 'evidence_view': 'LEFT', 'horizontal_position': 'left', 'horizontal_offset_fraction': -0.4, 'proximity': 'near'}
+Evidence view: LEFT
+Reason: The exact target is visible in the LEFT view and must first be turned into the FRONT camera.
+Confidence: medium
+Evidence score: 0.65
+Saved: navigation_outputs/http_api/autonomous_step_latest_result.json
+===================================
+
+[EXECUTE] Dry run only. Robot will not move.
+[LOG] Step result saved: navigation_outputs/live_runs/run_2026_08_09_101307_E36/step_014_result.json
+
+========== AUTO STEP 15 ==========
+[OK] Loaded saved LEFT: robot_live_frames/step_0015/left.png
+[OK] Loaded saved FRONT: robot_live_frames/step_0015/front.png
+[OK] Loaded saved RIGHT: robot_live_frames/step_0015/right.png
+
+========== ACTION RESULT ==========
+Mode: autonomous_step
+Goal: E36
+Done: False
+Action: CHECK_DOOR_LABEL({'landmark_id': 'L015', 'target': 'E36', 'target_description': "Dark grey door with label '50E36' on wall to left.", 'stop_condition': 'capture a clearer target observation', 'capture_after': True, 'evidence_view': 'FRONT', 'horizontal_position': 'center', 'horizontal_offset_fraction': 0.0, 'proximity': 'reached'}) [low, score=0.55] valid - The exact target is visible, but its alignment or proximity is unclear.
+Action name: CHECK_DOOR_LABEL
+Params: {'landmark_id': 'L015', 'target': 'E36', 'target_description': "Dark grey door with label '50E36' on wall to left.", 'stop_condition': 'capture a clearer target observation', 'capture_after': True, 'evidence_view': 'FRONT', 'horizontal_position': 'center', 'horizontal_offset_fraction': 0.0, 'proximity': 'reached'}
+Evidence view: FRONT
+Reason: The exact target is visible, but its alignment or proximity is unclear.
+Confidence: low
+Evidence score: 0.55
+Saved: navigation_outputs/http_api/autonomous_step_latest_result.json
+===================================
+
+[EXECUTE] Dry run only. Robot will not move.
+[LOG] Step result saved: navigation_outputs/live_runs/run_2026_08_09_101307_E36/step_015_result.json
+
+========== AUTO STEP 16 ==========
+[ABORT] Autonomous loop interrupted -- stopping the robot and saving partial run data before exiting.
+[LOG] Final summary saved: navigation_outputs/live_runs/run_2026_08_09_101307_E36/final_run_summary.json
+[LOG] Memory saved: navigation_outputs/live_runs/run_2026_08_09_101307_E36/memory.json
+[LOG] Navigation log saved: navigation_outputs/live_runs/run_2026_08_09_101307_E36/navigation_log.json
+[LOG] Parsed goal saved: navigation_outputs/live_runs/run_2026_08_09_101307_E36/parsed_goal.json
+
+[ERROR] Missing saved LEFT image: robot_live_frames/step_test_E36/step_0016/left.png
+vlm_project@vlmproject-ThinkPad-X1:~/VLM_Navigation_Project$ 

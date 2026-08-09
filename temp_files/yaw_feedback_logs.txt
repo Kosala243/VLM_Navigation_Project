@@ -1,0 +1,279 @@
+vlm_project@vlmproject-ThinkPad-X1:~/VLM_Navigation_Project$ python3 -c "
+> from robot_executor import SafeCmdVelExecutor
+> from robot_safety import RobotSafetyMonitor
+> 
+> safety = RobotSafetyMonitor(sensor_mode='lidar')
+> executor = SafeCmdVelExecutor(
+>     execute_mode='confirm',
+>     turn_speed=0.30,
+>     exploration_turn_pulse_duration=1.30,
+>     safety_monitor=safety,
+>     yaw_feedback_enabled=True,
+>     high_state_topic='/high_state',
+> )
+> executor.execute_action({
+>     'name': 'FOLLOW_DIRECTION',
+>     'params': {'direction': 'left'},
+>     'reason': 'isolated yaw-feedback test',
+>     'confidence': 'high',
+>     'evidence_score': 1.0,
+>     'is_valid': True,
+> })
+> print('RESULT:', executor.last_result)
+> "
+
+========== EXECUTOR DECISION ==========
+Action: FOLLOW_DIRECTION
+Params: {'direction': 'left'}
+Reason: isolated yaw-feedback test
+Mapped command: {'linear_x': 0.0, 'angular_z': 0.3, 'duration': 1.3, 'motion_kind': 'direction_turn'}
+Execute mode: confirm
+=======================================
+
+Execute this small movement pulse? [y/N]: y
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=0.3, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=0.3, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=0.3, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=0.3, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=0.3, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=0.3, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=0.3, duration=0.20000000000000018s
+[EXECUTOR] STOP
+RESULT: {'executed': True, 'status': 'turn_closed_loop_reached', 'reason': 'Turn reached target heading: 20.9 of 22.3 deg planned, in 2.60s.', 'command': {'linear_x': 0.0, 'angular_z': 0.3, 'duration': 1.3, 'motion_kind': 'direction_turn', 'elapsed_duration': 2.6, 'target_angle_rad': 0.39, 'achieved_angle_rad': 0.3648736774921417}, 'safety': {'allowed': True, 'sensor_ready': True, 'sensor_mode': 'lidar', 'bypassed': False, 'reason': 'Pure turn - not gated by the LiDAR forward-cone check.', 'action_name': 'FOLLOW_DIRECTION', 'motion_kind': 'direction_turn'}}
+vlm_project@vlmproject-ThinkPad-X1:~/VLM_Navigation_Project$ python3 -c "
+from robot_executor import SafeCmdVelExecutor
+from robot_safety import RobotSafetyMonitor
+
+safety = RobotSafetyMonitor(sensor_mode='lidar')
+executor = SafeCmdVelExecutor(
+    execute_mode='confirm',
+    turn_speed=0.30,
+    exploration_turn_pulse_duration=1.30,
+    safety_monitor=safety,
+    yaw_feedback_enabled=True,
+    high_state_topic='/high_state',
+)
+executor.execute_action({
+    'name': 'FOLLOW_DIRECTION',
+    'params': {'direction': 'left'},
+    'reason': 'isolated yaw-feedback test',
+    'confidence': 'high',
+    'evidence_score': 1.0,
+    'is_valid': True,
+})
+print('RESULT:', executor.last_result)
+"
+
+========== EXECUTOR DECISION ==========
+Action: FOLLOW_DIRECTION
+Params: {'direction': 'left'}
+Reason: isolated yaw-feedback test
+Mapped command: {'linear_x': 0.0, 'angular_z': 0.3, 'duration': 1.3, 'motion_kind': 'direction_turn'}
+Execute mode: confirm
+=======================================
+
+Execute this small movement pulse? [y/N]: y
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=0.3, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=0.3, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=0.3, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=0.3, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=0.3, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=0.3, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=0.3, duration=0.20000000000000018s
+[EXECUTOR] STOP
+RESULT: {'executed': True, 'status': 'turn_closed_loop_reached', 'reason': 'Turn reached target heading: 21.1 of 22.3 deg planned, in 2.60s.', 'command': {'linear_x': 0.0, 'angular_z': 0.3, 'duration': 1.3, 'motion_kind': 'direction_turn', 'elapsed_duration': 2.6, 'target_angle_rad': 0.39, 'achieved_angle_rad': 0.3675449788570404}, 'safety': {'allowed': True, 'sensor_ready': True, 'sensor_mode': 'lidar', 'bypassed': False, 'reason': 'Pure turn - not gated by the LiDAR forward-cone check.', 'action_name': 'FOLLOW_DIRECTION', 'motion_kind': 'direction_turn'}}
+vlm_project@vlmproject-ThinkPad-X1:~/VLM_Navigation_Project$ python3 -c "
+from robot_executor import SafeCmdVelExecutor
+from robot_safety import RobotSafetyMonitor
+
+safety = RobotSafetyMonitor(sensor_mode='lidar')
+executor = SafeCmdVelExecutor(
+    execute_mode='confirm',
+    turn_speed=0.30,
+    exploration_turn_pulse_duration=1.30,
+    safety_monitor=safety,
+    yaw_feedback_enabled=True,
+    high_state_topic='/high_state',
+)
+executor.execute_action({
+    'name': 'FOLLOW_DIRECTION',
+    'params': {'direction': 'left'},
+    'reason': 'isolated yaw-feedback test',
+    'confidence': 'high',
+    'evidence_score': 1.0,
+    'is_valid': True,
+})
+print('RESULT:', executor.last_result)
+"
+
+========== EXECUTOR DECISION ==========
+Action: FOLLOW_DIRECTION
+Params: {'direction': 'left'}
+Reason: isolated yaw-feedback test
+Mapped command: {'linear_x': 0.0, 'angular_z': 0.3, 'duration': 1.3, 'motion_kind': 'direction_turn'}
+Execute mode: confirm
+=======================================
+
+Execute this small movement pulse? [y/N]: y
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=0.3, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=0.3, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=0.3, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=0.3, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=0.3, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=0.3, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=0.3, duration=0.20000000000000018s
+[EXECUTOR] STOP
+RESULT: {'executed': True, 'status': 'turn_closed_loop_reached', 'reason': 'Turn reached target heading: 20.8 of 22.3 deg planned, in 2.60s.', 'command': {'linear_x': 0.0, 'angular_z': 0.3, 'duration': 1.3, 'motion_kind': 'direction_turn', 'elapsed_duration': 2.6, 'target_angle_rad': 0.39, 'achieved_angle_rad': 0.36306220293045044}, 'safety': {'allowed': True, 'sensor_ready': True, 'sensor_mode': 'lidar', 'bypassed': False, 'reason': 'Pure turn - not gated by the LiDAR forward-cone check.', 'action_name': 'FOLLOW_DIRECTION', 'motion_kind': 'direction_turn'}}
+vlm_project@vlmproject-ThinkPad-X1:~/VLM_Navigation_Project$ python3 -c "
+from robot_executor import SafeCmdVelExecutor
+from robot_safety import RobotSafetyMonitor
+
+safety = RobotSafetyMonitor(sensor_mode='lidar')
+executor = SafeCmdVelExecutor(
+    execute_mode='confirm',
+    turn_speed=0.30,
+    exploration_turn_pulse_duration=1.30,
+    safety_monitor=safety,
+    yaw_feedback_enabled=True,
+    high_state_topic='/high_state',
+)
+executor.execute_action({
+    'name': 'FOLLOW_DIRECTION',
+    'params': {'direction': 'right'},
+    'reason': 'isolated yaw-feedback test',
+    'confidence': 'high',
+    'evidence_score': 1.0,
+    'is_valid': True,
+})
+print('RESULT:', executor.last_result)
+"
+
+========== EXECUTOR DECISION ==========
+Action: FOLLOW_DIRECTION
+Params: {'direction': 'right'}
+Reason: isolated yaw-feedback test
+Mapped command: {'linear_x': 0.0, 'angular_z': -0.3, 'duration': 1.3, 'motion_kind': 'direction_turn'}
+Execute mode: confirm
+=======================================
+
+Execute this small movement pulse? [y/N]: y
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=-0.3, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=-0.3, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=-0.3, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=-0.3, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=-0.3, duration=0.4s
+[EXECUTOR] STOP
+RESULT: {'executed': True, 'status': 'turn_closed_loop_reached', 'reason': 'Turn reached target heading: -20.6 of -22.3 deg planned, in 2.00s.', 'command': {'linear_x': 0.0, 'angular_z': -0.3, 'duration': 1.3, 'motion_kind': 'direction_turn', 'elapsed_duration': 2.0, 'target_angle_rad': -0.39, 'achieved_angle_rad': -0.3590783476829529}, 'safety': {'allowed': True, 'sensor_ready': True, 'sensor_mode': 'lidar', 'bypassed': False, 'reason': 'Pure turn - not gated by the LiDAR forward-cone check.', 'action_name': 'FOLLOW_DIRECTION', 'motion_kind': 'direction_turn'}}
+vlm_project@vlmproject-ThinkPad-X1:~/VLM_Navigation_Project$ python3 -c "
+from robot_executor import SafeCmdVelExecutor
+from robot_safety import RobotSafetyMonitor
+
+safety = RobotSafetyMonitor(sensor_mode='lidar')
+executor = SafeCmdVelExecutor(
+    execute_mode='confirm',
+    turn_speed=0.30,
+    exploration_turn_pulse_duration=1.30,
+    safety_monitor=safety,
+    yaw_feedback_enabled=True,
+    high_state_topic='/high_state',
+)
+executor.execute_action({
+    'name': 'FOLLOW_DIRECTION',
+    'params': {'direction': 'right'},
+    'reason': 'isolated yaw-feedback test',
+    'confidence': 'high',
+    'evidence_score': 1.0,
+    'is_valid': True,
+})
+print('RESULT:', executor.last_result)
+"
+
+========== EXECUTOR DECISION ==========
+Action: FOLLOW_DIRECTION
+Params: {'direction': 'right'}
+Reason: isolated yaw-feedback test
+Mapped command: {'linear_x': 0.0, 'angular_z': -0.3, 'duration': 1.3, 'motion_kind': 'direction_turn'}
+Execute mode: confirm
+=======================================
+
+Execute this small movement pulse? [y/N]: y
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=-0.3, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=-0.3, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=-0.3, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=-0.3, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=-0.3, duration=0.4s
+[EXECUTOR] STOP
+RESULT: {'executed': True, 'status': 'turn_closed_loop_reached', 'reason': 'Turn reached target heading: -23.0 of -22.3 deg planned, in 2.00s.', 'command': {'linear_x': 0.0, 'angular_z': -0.3, 'duration': 1.3, 'motion_kind': 'direction_turn', 'elapsed_duration': 2.0, 'target_angle_rad': -0.39, 'achieved_angle_rad': -0.40166403353214264}, 'safety': {'allowed': True, 'sensor_ready': True, 'sensor_mode': 'lidar', 'bypassed': False, 'reason': 'Pure turn - not gated by the LiDAR forward-cone check.', 'action_name': 'FOLLOW_DIRECTION', 'motion_kind': 'direction_turn'}}
+vlm_project@vlmproject-ThinkPad-X1:~/VLM_Navigation_Project$ python3 -c "
+from robot_executor import SafeCmdVelExecutor
+from robot_safety import RobotSafetyMonitor
+
+safety = RobotSafetyMonitor(sensor_mode='lidar')
+executor = SafeCmdVelExecutor(
+    execute_mode='confirm',
+    turn_speed=0.30,
+    exploration_turn_pulse_duration=1.30,
+    safety_monitor=safety,
+    yaw_feedback_enabled=True,
+    high_state_topic='/high_state',
+)
+executor.execute_action({
+    'name': 'FOLLOW_DIRECTION',
+    'params': {'direction': 'right'},
+    'reason': 'isolated yaw-feedback test',
+    'confidence': 'high',
+    'evidence_score': 1.0,
+    'is_valid': True,
+})
+print('RESULT:', executor.last_result)
+"
+
+========== EXECUTOR DECISION ==========
+Action: FOLLOW_DIRECTION
+Params: {'direction': 'right'}
+Reason: isolated yaw-feedback test
+Mapped command: {'linear_x': 0.0, 'angular_z': -0.3, 'duration': 1.3, 'motion_kind': 'direction_turn'}
+Execute mode: confirm
+=======================================
+
+Execute this small movement pulse? [y/N]: y
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=-0.3, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=-0.3, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=-0.3, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=-0.3, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=-0.3, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=-0.3, duration=0.4s
+[EXECUTOR] STOP
+RESULT: {'executed': True, 'status': 'turn_closed_loop_reached', 'reason': 'Turn reached target heading: -24.6 of -22.3 deg planned, in 2.40s.', 'command': {'linear_x': 0.0, 'angular_z': -0.3, 'duration': 1.3, 'motion_kind': 'direction_turn', 'elapsed_duration': 2.4, 'target_angle_rad': -0.39, 'achieved_angle_rad': -0.4291929453611374}, 'safety': {'allowed': True, 'sensor_ready': True, 'sensor_mode': 'lidar', 'bypassed': False, 'reason': 'Pure turn - not gated by the LiDAR forward-cone check.', 'action_name': 'FOLLOW_DIRECTION', 'motion_kind': 'direction_turn'}}
+vlm_project@vlmproject-ThinkPad-X1:~/VLM_Navigation_Project$ 

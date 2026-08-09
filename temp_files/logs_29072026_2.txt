@@ -1,0 +1,1414 @@
+vlm_project@vlmproject-ThinkPad-X1:~$ source /opt/ros/melodic/setup.bash
+vlm_project@vlmproject-ThinkPad-X1:~$ source ~/go1_ws/devel/setup.bash
+vlm_project@vlmproject-ThinkPad-X1:~$ export ROS_MASTER_URI=http://192.168.12.212:11311
+vlm_project@vlmproject-ThinkPad-X1:~$ export ROS_IP=192.168.12.212
+vlm_project@vlmproject-ThinkPad-X1:~$ cd ~/VLM_Navigation_Project
+vlm_project@vlmproject-ThinkPad-X1:~/VLM_Navigation_Project$ python3 thinkpad_robot_capture_to_amd.py \
+>   --mode auto \
+>   --camera-mode separate \
+>   --goal C0.004 \
+>   --memory true \
+>   --execute confirm \
+>   --max-steps 20 \
+>   --interval 2 \
+>   --forward-speed 0.3 \
+>   --turn-speed 0.3 \
+>   --forward-pulse-duration 20.0 \
+>   --turn-pulse-duration 4.0 \
+>   --exploration-turn-pulse-duration 4.0 \
+>   --approach-pulse-duration 15.0 \
+>   --doorway-pulse-duration 15.0 \
+>   --search-pulse-duration 6.0 \
+>   --scp-timeout 60 \
+>   --ssh-timeout 60 \
+>   --safety-mode lidar \
+>   --allow-low-confidence \
+>   --min-evidence-score 0.0 \
+>   --use-yaw-feedback
+[INFO] Mode: auto
+[INFO] Camera mode: separate
+[INFO] Memory: true
+[INFO] Goal: C0.004
+[INFO] AMD API: http://ernis-amd395:8001
+[INFO] Robot: unitree@192.168.123.14
+[INFO] Front camera: /dev/video2
+[INFO] Left camera: /dev/video4
+[INFO] Right camera: /dev/video3
+[LOG] Run directory: navigation_outputs/live_runs/run_2026_07_29_170237_C0_004
+[INFO] Memory enabled: using /autonomous/start and /autonomous/step
+[OK] Autonomous session started
+{
+  "status": "started",
+  "goal": "C0.004",
+  "movement_enabled": false,
+  "external_execution_enabled": true,
+  "keep_memory": false
+}
+
+========== AUTO STEP 1 ==========
+[CMD] ssh -o ConnectTimeout=10 unitree@192.168.123.14 
+    set -e
+    rm -f /tmp/vlm_front.png /tmp/vlm_left.png /tmp/vlm_right.png /tmp/vlm_three_cameras.tar
+    timeout 8 ffmpeg -y -loglevel error -f v4l2 -video_size 960x720 -i /dev/video2 -frames:v 1 -q:v 2 /tmp/vlm_front.png
+    timeout 8 ffmpeg -y -loglevel error -f v4l2 -video_size 960x720 -i /dev/video4 -frames:v 1 -q:v 2 /tmp/vlm_left.png
+    timeout 8 ffmpeg -y -loglevel error -f v4l2 -video_size 960x720 -i /dev/video3 -frames:v 1 -q:v 2 /tmp/vlm_right.png
+    tar -cf /tmp/vlm_three_cameras.tar -C /tmp vlm_front.png vlm_left.png vlm_right.png
+    ls -lh /tmp/vlm_front.png /tmp/vlm_left.png /tmp/vlm_right.png /tmp/vlm_three_cameras.tar
+    
+[STDOUT]
+-rw-rw-r-- 1 unitree unitree 1.4M 12月 15 17:21 /tmp/vlm_front.png
+-rw-rw-r-- 1 unitree unitree 1.2M 12月 15 17:21 /tmp/vlm_left.png
+-rw-rw-r-- 1 unitree unitree 709K 12月 15 17:21 /tmp/vlm_right.png
+-rw-rw-r-- 1 unitree unitree 3.2M 12月 15 17:21 /tmp/vlm_three_cameras.tar
+
+[CMD] scp -o ConnectTimeout=10 unitree@192.168.123.14:/tmp/vlm_three_cameras.tar robot_live_frames/step_0001/vlm_three_cameras.tar
+[OK] Left image: robot_live_frames/step_0001/left.png
+[OK] Front image: robot_live_frames/step_0001/front.png
+[OK] Right image: robot_live_frames/step_0001/right.png
+
+========== ACTION RESULT ==========
+Mode: autonomous_step
+Goal: C0.004
+Done: False
+Action: PASS_THROUGH_DOORWAY({'landmark_id': 'L002', 'direction': 'forward', 'target': 'L002', 'target_description': 'Open double glass doors leading into a lobby area with wood paneling.', 'floor': None, 'search_for': None, 'stop_condition': 'doorway threshold reached', 'capture_after': True, 'evidence_view': 'FRONT', 'horizontal_position': 'center', 'horizontal_offset_fraction': 0.0, 'proximity': 'near', 'doorway_state': 'open', 'threshold_state': 'at', 'traversable': True}) [low, score=0.56] valid - The robot is currently at the entrance to Zone C, confirmed by the 'C' label on the door (L001). The open double glass doors (L002) are directly ahead and serve as the primary route into the building to search for the specific room C0.004.
+Action name: PASS_THROUGH_DOORWAY
+Params: {'landmark_id': 'L002', 'direction': 'forward', 'target': 'L002', 'target_description': 'Open double glass doors leading into a lobby area with wood paneling.', 'floor': None, 'search_for': None, 'stop_condition': 'doorway threshold reached', 'capture_after': True, 'evidence_view': 'FRONT', 'horizontal_position': 'center', 'horizontal_offset_fraction': 0.0, 'proximity': 'near', 'doorway_state': 'open', 'threshold_state': 'at', 'traversable': True}
+Evidence view: FRONT
+Reason: The robot is currently at the entrance to Zone C, confirmed by the 'C' label on the door (L001). The open double glass doors (L002) are directly ahead and serve as the primary route into the building to search for the specific room C0.004.
+Confidence: low
+Evidence score: 0.5625
+Saved: navigation_outputs/http_api/autonomous_step_latest_result.json
+===================================
+
+
+========== EXECUTOR DECISION ==========
+Action: PASS_THROUGH_DOORWAY
+Params: {'landmark_id': 'L002', 'direction': 'forward', 'target': 'L002', 'target_description': 'Open double glass doors leading into a lobby area with wood paneling.', 'floor': None, 'search_for': None, 'stop_condition': 'doorway threshold reached', 'capture_after': True, 'evidence_view': 'FRONT', 'horizontal_position': 'center', 'horizontal_offset_fraction': 0.0, 'proximity': 'near', 'doorway_state': 'open', 'threshold_state': 'at', 'traversable': True}
+Reason: The robot is currently at the entrance to Zone C, confirmed by the 'C' label on the door (L001). The open double glass doors (L002) are directly ahead and serve as the primary route into the building to search for the specific room C0.004.
+Mapped command: {'linear_x': 0.3, 'angular_z': 0.0, 'duration': 15.0, 'motion_kind': 'doorway_traversal'}
+Execute mode: confirm
+=======================================
+
+Execute this small movement pulse? [y/N]: y
+[EXECUTOR] Pulse: linear.x=0.3, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.3, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.3, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.3, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.3, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.3, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.3, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.3, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.3, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.3, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.3, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.3, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.3, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.3, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.3, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.3, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.3, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.3, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.3, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.3, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.3, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.3, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.3, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.3, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.3, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.3, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.3, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.3, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.3, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.3, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.3, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.3, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.3, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.3, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.3, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.3, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.3, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.3, angular.z=0.0, duration=0.19999999999999096s
+[EXECUTOR] STOP
+[LOG] Step result saved: navigation_outputs/live_runs/run_2026_07_29_170237_C0_004/step_001_result.json
+
+========== AUTO STEP 2 ==========
+[CMD] ssh -o ConnectTimeout=10 unitree@192.168.123.14 
+    set -e
+    rm -f /tmp/vlm_front.png /tmp/vlm_left.png /tmp/vlm_right.png /tmp/vlm_three_cameras.tar
+    timeout 8 ffmpeg -y -loglevel error -f v4l2 -video_size 960x720 -i /dev/video2 -frames:v 1 -q:v 2 /tmp/vlm_front.png
+    timeout 8 ffmpeg -y -loglevel error -f v4l2 -video_size 960x720 -i /dev/video4 -frames:v 1 -q:v 2 /tmp/vlm_left.png
+    timeout 8 ffmpeg -y -loglevel error -f v4l2 -video_size 960x720 -i /dev/video3 -frames:v 1 -q:v 2 /tmp/vlm_right.png
+    tar -cf /tmp/vlm_three_cameras.tar -C /tmp vlm_front.png vlm_left.png vlm_right.png
+    ls -lh /tmp/vlm_front.png /tmp/vlm_left.png /tmp/vlm_right.png /tmp/vlm_three_cameras.tar
+    
+[STDOUT]
+-rw-rw-r-- 1 unitree unitree 1.4M 12月 15 17:23 /tmp/vlm_front.png
+-rw-rw-r-- 1 unitree unitree 1.2M 12月 15 17:23 /tmp/vlm_left.png
+-rw-rw-r-- 1 unitree unitree 1.2M 12月 15 17:23 /tmp/vlm_right.png
+-rw-rw-r-- 1 unitree unitree 3.7M 12月 15 17:23 /tmp/vlm_three_cameras.tar
+
+[CMD] scp -o ConnectTimeout=10 unitree@192.168.123.14:/tmp/vlm_three_cameras.tar robot_live_frames/step_0002/vlm_three_cameras.tar
+[OK] Left image: robot_live_frames/step_0002/left.png
+[OK] Front image: robot_live_frames/step_0002/front.png
+[OK] Right image: robot_live_frames/step_0002/right.png
+
+========== ACTION RESULT ==========
+Mode: autonomous_step
+Goal: C0.004
+Done: False
+Action: NAVIGATE_TO_LANDMARK({'landmark_id': 'L005', 'direction': 'forward', 'target': 'L005', 'target_description': 'Wood slat corridor continuing forward towards a glass door', 'floor': None, 'search_for': None, 'stop_condition': 'capture when near the glass door at the end of the corridor', 'capture_after': True, 'evidence_view': 'FRONT', 'horizontal_position': 'center', 'horizontal_offset_fraction': 0.0, 'proximity': 'medium', 'doorway_state': 'unknown', 'threshold_state': 'before', 'traversable': True}) [low, score=0.37] valid - The current view is sparse, but the remembered route landmark L005 (corridor) provides a clear, traversable path forward towards the glass door, which is the most likely location for room labels.
+Action name: NAVIGATE_TO_LANDMARK
+Params: {'landmark_id': 'L005', 'direction': 'forward', 'target': 'L005', 'target_description': 'Wood slat corridor continuing forward towards a glass door', 'floor': None, 'search_for': None, 'stop_condition': 'capture when near the glass door at the end of the corridor', 'capture_after': True, 'evidence_view': 'FRONT', 'horizontal_position': 'center', 'horizontal_offset_fraction': 0.0, 'proximity': 'medium', 'doorway_state': 'unknown', 'threshold_state': 'before', 'traversable': True}
+Evidence view: FRONT
+Reason: The current view is sparse, but the remembered route landmark L005 (corridor) provides a clear, traversable path forward towards the glass door, which is the most likely location for room labels.
+Confidence: low
+Evidence score: 0.367
+Saved: navigation_outputs/http_api/autonomous_step_latest_result.json
+===================================
+
+
+========== EXECUTOR DECISION ==========
+Action: NAVIGATE_TO_LANDMARK
+Params: {'landmark_id': 'L005', 'direction': 'forward', 'target': 'L005', 'target_description': 'Wood slat corridor continuing forward towards a glass door', 'floor': None, 'search_for': None, 'stop_condition': 'capture when near the glass door at the end of the corridor', 'capture_after': True, 'evidence_view': 'FRONT', 'horizontal_position': 'center', 'horizontal_offset_fraction': 0.0, 'proximity': 'medium', 'doorway_state': 'unknown', 'threshold_state': 'before', 'traversable': True}
+Reason: The current view is sparse, but the remembered route landmark L005 (corridor) provides a clear, traversable path forward towards the glass door, which is the most likely location for room labels.
+Mapped command: {'linear_x': 0.3, 'angular_z': 0.0, 'duration': 20.0, 'motion_kind': 'route_advance'}
+Execute mode: confirm
+=======================================
+
+Execute this small movement pulse? [y/N]: y
+Mapped command (LiDAR-scaled duration): {'linear_x': 0.3, 'angular_z': 0.0, 'duration': 2.0, 'motion_kind': 'route_advance'}
+[EXECUTOR] Pulse: linear.x=0.3, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.3, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.3, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.3, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.3, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[LOG] Step result saved: navigation_outputs/live_runs/run_2026_07_29_170237_C0_004/step_002_result.json
+
+========== AUTO STEP 3 ==========
+[CMD] ssh -o ConnectTimeout=10 unitree@192.168.123.14 
+    set -e
+    rm -f /tmp/vlm_front.png /tmp/vlm_left.png /tmp/vlm_right.png /tmp/vlm_three_cameras.tar
+    timeout 8 ffmpeg -y -loglevel error -f v4l2 -video_size 960x720 -i /dev/video2 -frames:v 1 -q:v 2 /tmp/vlm_front.png
+    timeout 8 ffmpeg -y -loglevel error -f v4l2 -video_size 960x720 -i /dev/video4 -frames:v 1 -q:v 2 /tmp/vlm_left.png
+    timeout 8 ffmpeg -y -loglevel error -f v4l2 -video_size 960x720 -i /dev/video3 -frames:v 1 -q:v 2 /tmp/vlm_right.png
+    tar -cf /tmp/vlm_three_cameras.tar -C /tmp vlm_front.png vlm_left.png vlm_right.png
+    ls -lh /tmp/vlm_front.png /tmp/vlm_left.png /tmp/vlm_right.png /tmp/vlm_three_cameras.tar
+    
+[STDOUT]
+-rw-rw-r-- 1 unitree unitree 1.6M 12月 15 17:24 /tmp/vlm_front.png
+-rw-rw-r-- 1 unitree unitree 1.3M 12月 15 17:24 /tmp/vlm_left.png
+-rw-rw-r-- 1 unitree unitree 629K 12月 15 17:24 /tmp/vlm_right.png
+-rw-rw-r-- 1 unitree unitree 3.5M 12月 15 17:25 /tmp/vlm_three_cameras.tar
+
+[CMD] scp -o ConnectTimeout=10 unitree@192.168.123.14:/tmp/vlm_three_cameras.tar robot_live_frames/step_0003/vlm_three_cameras.tar
+[OK] Left image: robot_live_frames/step_0003/left.png
+[OK] Front image: robot_live_frames/step_0003/front.png
+[OK] Right image: robot_live_frames/step_0003/right.png
+
+========== ACTION RESULT ==========
+Mode: autonomous_step
+Goal: C0.004
+Done: False
+Action: NAVIGATE_TO_LANDMARK({'landmark_id': 'L008', 'direction': 'forward', 'target': 'L008', 'target_description': 'Wooden slat corridor continuing forward towards a glass door', 'floor': None, 'search_for': None, 'stop_condition': 'capture when near the corridor bend or glass door', 'capture_after': True, 'evidence_view': 'FRONT', 'horizontal_position': 'center', 'horizontal_offset_fraction': 0.0, 'proximity': 'medium', 'doorway_state': 'unknown', 'threshold_state': 'before', 'traversable': True}) [low, score=0.36] valid - The current front view is sparse, but the remembered corridor landmark (L008) provides a clear route continuation towards the glass door at the end of the hall, which is the most logical path to find the target room.
+Action name: NAVIGATE_TO_LANDMARK
+Params: {'landmark_id': 'L008', 'direction': 'forward', 'target': 'L008', 'target_description': 'Wooden slat corridor continuing forward towards a glass door', 'floor': None, 'search_for': None, 'stop_condition': 'capture when near the corridor bend or glass door', 'capture_after': True, 'evidence_view': 'FRONT', 'horizontal_position': 'center', 'horizontal_offset_fraction': 0.0, 'proximity': 'medium', 'doorway_state': 'unknown', 'threshold_state': 'before', 'traversable': True}
+Evidence view: FRONT
+Reason: The current front view is sparse, but the remembered corridor landmark (L008) provides a clear route continuation towards the glass door at the end of the hall, which is the most logical path to find the target room.
+Confidence: low
+Evidence score: 0.35950000000000004
+Saved: navigation_outputs/http_api/autonomous_step_latest_result.json
+===================================
+
+
+========== EXECUTOR DECISION ==========
+Action: NAVIGATE_TO_LANDMARK
+Params: {'landmark_id': 'L008', 'direction': 'forward', 'target': 'L008', 'target_description': 'Wooden slat corridor continuing forward towards a glass door', 'floor': None, 'search_for': None, 'stop_condition': 'capture when near the corridor bend or glass door', 'capture_after': True, 'evidence_view': 'FRONT', 'horizontal_position': 'center', 'horizontal_offset_fraction': 0.0, 'proximity': 'medium', 'doorway_state': 'unknown', 'threshold_state': 'before', 'traversable': True}
+Reason: The current front view is sparse, but the remembered corridor landmark (L008) provides a clear route continuation towards the glass door at the end of the hall, which is the most logical path to find the target room.
+Mapped command: {'linear_x': 0.3, 'angular_z': 0.0, 'duration': 20.0, 'motion_kind': 'route_advance'}
+Execute mode: confirm
+=======================================
+
+Execute this small movement pulse? [y/N]: y
+Mapped command (LiDAR-scaled duration): {'linear_x': 0.3, 'angular_z': 0.0, 'duration': 2.0, 'motion_kind': 'route_advance'}
+[EXECUTOR] Pulse: linear.x=0.3, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.3, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.3, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.3, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.3, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[LOG] Step result saved: navigation_outputs/live_runs/run_2026_07_29_170237_C0_004/step_003_result.json
+
+========== AUTO STEP 4 ==========
+[CMD] ssh -o ConnectTimeout=10 unitree@192.168.123.14 
+    set -e
+    rm -f /tmp/vlm_front.png /tmp/vlm_left.png /tmp/vlm_right.png /tmp/vlm_three_cameras.tar
+    timeout 8 ffmpeg -y -loglevel error -f v4l2 -video_size 960x720 -i /dev/video2 -frames:v 1 -q:v 2 /tmp/vlm_front.png
+    timeout 8 ffmpeg -y -loglevel error -f v4l2 -video_size 960x720 -i /dev/video4 -frames:v 1 -q:v 2 /tmp/vlm_left.png
+    timeout 8 ffmpeg -y -loglevel error -f v4l2 -video_size 960x720 -i /dev/video3 -frames:v 1 -q:v 2 /tmp/vlm_right.png
+    tar -cf /tmp/vlm_three_cameras.tar -C /tmp vlm_front.png vlm_left.png vlm_right.png
+    ls -lh /tmp/vlm_front.png /tmp/vlm_left.png /tmp/vlm_right.png /tmp/vlm_three_cameras.tar
+    
+[STDOUT]
+-rw-rw-r-- 1 unitree unitree 1.6M 12月 15 17:26 /tmp/vlm_front.png
+-rw-rw-r-- 1 unitree unitree 1.3M 12月 15 17:26 /tmp/vlm_left.png
+-rw-rw-r-- 1 unitree unitree 545K 12月 15 17:26 /tmp/vlm_right.png
+-rw-rw-r-- 1 unitree unitree 3.3M 12月 15 17:26 /tmp/vlm_three_cameras.tar
+
+[CMD] scp -o ConnectTimeout=10 unitree@192.168.123.14:/tmp/vlm_three_cameras.tar robot_live_frames/step_0004/vlm_three_cameras.tar
+[OK] Left image: robot_live_frames/step_0004/left.png
+[OK] Front image: robot_live_frames/step_0004/front.png
+[OK] Right image: robot_live_frames/step_0004/right.png
+
+========== ACTION RESULT ==========
+Mode: autonomous_step
+Goal: C0.004
+Done: False
+Action: ALIGN_WITH_LANDMARK({'landmark_id': 'L010', 'direction': 'left', 'target': 'L010', 'target_description': 'Wood-paneled corridor extending forward with an open doorway visible at the far end.', 'stop_condition': 'landmark centred in FRONT camera', 'capture_after': True, 'evidence_view': 'LEFT', 'horizontal_position': 'center', 'horizontal_offset_fraction': 0.0, 'proximity': 'medium'}) [medium, score=0.62] valid - Selected landmark is not centred and must be visually aligned before forward movement.
+Action name: ALIGN_WITH_LANDMARK
+Params: {'landmark_id': 'L010', 'direction': 'left', 'target': 'L010', 'target_description': 'Wood-paneled corridor extending forward with an open doorway visible at the far end.', 'stop_condition': 'landmark centred in FRONT camera', 'capture_after': True, 'evidence_view': 'LEFT', 'horizontal_position': 'center', 'horizontal_offset_fraction': 0.0, 'proximity': 'medium'}
+Evidence view: LEFT
+Reason: Selected landmark is not centred and must be visually aligned before forward movement.
+Confidence: medium
+Evidence score: 0.617
+Saved: navigation_outputs/http_api/autonomous_step_latest_result.json
+===================================
+
+
+========== EXECUTOR DECISION ==========
+Action: ALIGN_WITH_LANDMARK
+Params: {'landmark_id': 'L010', 'direction': 'left', 'target': 'L010', 'target_description': 'Wood-paneled corridor extending forward with an open doorway visible at the far end.', 'stop_condition': 'landmark centred in FRONT camera', 'capture_after': True, 'evidence_view': 'LEFT', 'horizontal_position': 'center', 'horizontal_offset_fraction': 0.0, 'proximity': 'medium'}
+Reason: Selected landmark is not centred and must be visually aligned before forward movement.
+Mapped command: {'linear_x': 0.0, 'angular_z': 0.3, 'duration': 5.235987755982989, 'motion_kind': 'visual_alignment'}
+Execute mode: confirm
+=======================================
+
+Execute this small movement pulse? [y/N]: y
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=0.3, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=0.3, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=0.3, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=0.3, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=0.3, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=0.3, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=0.3, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=0.3, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=0.3, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=0.3, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=0.3, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=0.3, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=0.3, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=0.3, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=0.3, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=0.3, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=0.3, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=0.3, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=0.3, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=0.3, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=0.3, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=0.3, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=0.3, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=0.3, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=0.3, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=0.3, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=0.3, duration=0.07197551196597374s
+[EXECUTOR] STOP
+[LOG] Step result saved: navigation_outputs/live_runs/run_2026_07_29_170237_C0_004/step_004_result.json
+
+========== AUTO STEP 5 ==========
+[CMD] ssh -o ConnectTimeout=10 unitree@192.168.123.14 
+    set -e
+    rm -f /tmp/vlm_front.png /tmp/vlm_left.png /tmp/vlm_right.png /tmp/vlm_three_cameras.tar
+    timeout 8 ffmpeg -y -loglevel error -f v4l2 -video_size 960x720 -i /dev/video2 -frames:v 1 -q:v 2 /tmp/vlm_front.png
+    timeout 8 ffmpeg -y -loglevel error -f v4l2 -video_size 960x720 -i /dev/video4 -frames:v 1 -q:v 2 /tmp/vlm_left.png
+    timeout 8 ffmpeg -y -loglevel error -f v4l2 -video_size 960x720 -i /dev/video3 -frames:v 1 -q:v 2 /tmp/vlm_right.png
+    tar -cf /tmp/vlm_three_cameras.tar -C /tmp vlm_front.png vlm_left.png vlm_right.png
+    ls -lh /tmp/vlm_front.png /tmp/vlm_left.png /tmp/vlm_right.png /tmp/vlm_three_cameras.tar
+    
+[STDOUT]
+-rw-rw-r-- 1 unitree unitree  1.2M 12月 15 17:28 /tmp/vlm_front.png
+-rw-rw-r-- 1 unitree unitree  1.3M 12月 15 17:28 /tmp/vlm_left.png
+-rw-rw-r-- 1 unitree unitree 1014K 12月 15 17:28 /tmp/vlm_right.png
+-rw-rw-r-- 1 unitree unitree  3.5M 12月 15 17:28 /tmp/vlm_three_cameras.tar
+
+[CMD] scp -o ConnectTimeout=10 unitree@192.168.123.14:/tmp/vlm_three_cameras.tar robot_live_frames/step_0005/vlm_three_cameras.tar
+[OK] Left image: robot_live_frames/step_0005/left.png
+[OK] Front image: robot_live_frames/step_0005/front.png
+[OK] Right image: robot_live_frames/step_0005/right.png
+
+========== ACTION RESULT ==========
+Mode: autonomous_step
+Goal: C0.004
+Done: False
+Action: NAVIGATE_TO_LANDMARK({'landmark_id': 'L013', 'direction': 'forward', 'target': 'L013', 'target_description': 'Wood-paneled corridor extending forward with a clear path.', 'floor': None, 'search_for': None, 'stop_condition': 'capture when near the corridor bend or junction', 'capture_after': True, 'evidence_view': 'FRONT', 'horizontal_position': 'center', 'horizontal_offset_fraction': 0.0, 'proximity': 'near', 'doorway_state': 'unknown', 'threshold_state': 'before', 'traversable': True}) [low, score=0.37] valid - The current view shows a clear corridor (L013) extending forward, which is the most logical path to continue searching for the target room C0004, as the sign on the right wall indicates the room is likely further along this route.
+Action name: NAVIGATE_TO_LANDMARK
+Params: {'landmark_id': 'L013', 'direction': 'forward', 'target': 'L013', 'target_description': 'Wood-paneled corridor extending forward with a clear path.', 'floor': None, 'search_for': None, 'stop_condition': 'capture when near the corridor bend or junction', 'capture_after': True, 'evidence_view': 'FRONT', 'horizontal_position': 'center', 'horizontal_offset_fraction': 0.0, 'proximity': 'near', 'doorway_state': 'unknown', 'threshold_state': 'before', 'traversable': True}
+Evidence view: FRONT
+Reason: The current view shows a clear corridor (L013) extending forward, which is the most logical path to continue searching for the target room C0004, as the sign on the right wall indicates the room is likely further along this route.
+Confidence: low
+Evidence score: 0.367
+Saved: navigation_outputs/http_api/autonomous_step_latest_result.json
+===================================
+
+
+========== EXECUTOR DECISION ==========
+Action: NAVIGATE_TO_LANDMARK
+Params: {'landmark_id': 'L013', 'direction': 'forward', 'target': 'L013', 'target_description': 'Wood-paneled corridor extending forward with a clear path.', 'floor': None, 'search_for': None, 'stop_condition': 'capture when near the corridor bend or junction', 'capture_after': True, 'evidence_view': 'FRONT', 'horizontal_position': 'center', 'horizontal_offset_fraction': 0.0, 'proximity': 'near', 'doorway_state': 'unknown', 'threshold_state': 'before', 'traversable': True}
+Reason: The current view shows a clear corridor (L013) extending forward, which is the most logical path to continue searching for the target room C0004, as the sign on the right wall indicates the room is likely further along this route.
+Mapped command: {'linear_x': 0.3, 'angular_z': 0.0, 'duration': 20.0, 'motion_kind': 'route_advance'}
+Execute mode: confirm
+=======================================
+
+Execute this small movement pulse? [y/N]: y
+Mapped command (LiDAR-scaled duration): {'linear_x': 0.3, 'angular_z': 0.0, 'duration': 2.0, 'motion_kind': 'route_advance'}
+[EXECUTOR] Pulse: linear.x=0.3, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.3, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.3, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.3, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.3, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[LOG] Step result saved: navigation_outputs/live_runs/run_2026_07_29_170237_C0_004/step_005_result.json
+
+========== AUTO STEP 6 ==========
+[CMD] ssh -o ConnectTimeout=10 unitree@192.168.123.14 
+    set -e
+    rm -f /tmp/vlm_front.png /tmp/vlm_left.png /tmp/vlm_right.png /tmp/vlm_three_cameras.tar
+    timeout 8 ffmpeg -y -loglevel error -f v4l2 -video_size 960x720 -i /dev/video2 -frames:v 1 -q:v 2 /tmp/vlm_front.png
+    timeout 8 ffmpeg -y -loglevel error -f v4l2 -video_size 960x720 -i /dev/video4 -frames:v 1 -q:v 2 /tmp/vlm_left.png
+    timeout 8 ffmpeg -y -loglevel error -f v4l2 -video_size 960x720 -i /dev/video3 -frames:v 1 -q:v 2 /tmp/vlm_right.png
+    tar -cf /tmp/vlm_three_cameras.tar -C /tmp vlm_front.png vlm_left.png vlm_right.png
+    ls -lh /tmp/vlm_front.png /tmp/vlm_left.png /tmp/vlm_right.png /tmp/vlm_three_cameras.tar
+    
+[STDOUT]
+-rw-rw-r-- 1 unitree unitree 1.3M 12月 15 17:29 /tmp/vlm_front.png
+-rw-rw-r-- 1 unitree unitree 1.5M 12月 15 17:29 /tmp/vlm_left.png
+-rw-rw-r-- 1 unitree unitree 1.4M 12月 15 17:29 /tmp/vlm_right.png
+-rw-rw-r-- 1 unitree unitree 4.1M 12月 15 17:29 /tmp/vlm_three_cameras.tar
+
+[CMD] scp -o ConnectTimeout=10 unitree@192.168.123.14:/tmp/vlm_three_cameras.tar robot_live_frames/step_0006/vlm_three_cameras.tar
+[OK] Left image: robot_live_frames/step_0006/left.png
+[OK] Front image: robot_live_frames/step_0006/front.png
+[OK] Right image: robot_live_frames/step_0006/right.png
+
+========== ACTION RESULT ==========
+Mode: autonomous_step
+Goal: C0.004
+Done: False
+Action: NAVIGATE_TO_LANDMARK({'landmark_id': 'L017', 'direction': 'forward', 'target': 'L017', 'target_description': 'Corridor continuing forward with wooden slat walls and a dark ceiling.', 'floor': None, 'search_for': None, 'stop_condition': 'capture when near the corridor bend or junction', 'capture_after': True, 'evidence_view': 'FRONT', 'horizontal_position': 'center', 'horizontal_offset_fraction': 0.0, 'proximity': 'near', 'doorway_state': 'unknown', 'threshold_state': 'before', 'traversable': True}) [low, score=0.37] valid - The current front view shows a clear corridor path (L017) that continues forward, which is the most reliable structural route anchor available to progress toward the target room C0.004.
+Action name: NAVIGATE_TO_LANDMARK
+Params: {'landmark_id': 'L017', 'direction': 'forward', 'target': 'L017', 'target_description': 'Corridor continuing forward with wooden slat walls and a dark ceiling.', 'floor': None, 'search_for': None, 'stop_condition': 'capture when near the corridor bend or junction', 'capture_after': True, 'evidence_view': 'FRONT', 'horizontal_position': 'center', 'horizontal_offset_fraction': 0.0, 'proximity': 'near', 'doorway_state': 'unknown', 'threshold_state': 'before', 'traversable': True}
+Evidence view: FRONT
+Reason: The current front view shows a clear corridor path (L017) that continues forward, which is the most reliable structural route anchor available to progress toward the target room C0.004.
+Confidence: low
+Evidence score: 0.367
+Saved: navigation_outputs/http_api/autonomous_step_latest_result.json
+===================================
+
+
+========== EXECUTOR DECISION ==========
+Action: NAVIGATE_TO_LANDMARK
+Params: {'landmark_id': 'L017', 'direction': 'forward', 'target': 'L017', 'target_description': 'Corridor continuing forward with wooden slat walls and a dark ceiling.', 'floor': None, 'search_for': None, 'stop_condition': 'capture when near the corridor bend or junction', 'capture_after': True, 'evidence_view': 'FRONT', 'horizontal_position': 'center', 'horizontal_offset_fraction': 0.0, 'proximity': 'near', 'doorway_state': 'unknown', 'threshold_state': 'before', 'traversable': True}
+Reason: The current front view shows a clear corridor path (L017) that continues forward, which is the most reliable structural route anchor available to progress toward the target room C0.004.
+Mapped command: {'linear_x': 0.3, 'angular_z': 0.0, 'duration': 20.0, 'motion_kind': 'route_advance'}
+Execute mode: confirm
+=======================================
+
+Execute this small movement pulse? [y/N]: y
+Mapped command (LiDAR-scaled duration): {'linear_x': 0.3, 'angular_z': 0.0, 'duration': 2.0, 'motion_kind': 'route_advance'}
+[EXECUTOR] Pulse: linear.x=0.3, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.3, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.3, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.3, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.3, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[LOG] Step result saved: navigation_outputs/live_runs/run_2026_07_29_170237_C0_004/step_006_result.json
+
+========== AUTO STEP 7 ==========
+[CMD] ssh -o ConnectTimeout=10 unitree@192.168.123.14 
+    set -e
+    rm -f /tmp/vlm_front.png /tmp/vlm_left.png /tmp/vlm_right.png /tmp/vlm_three_cameras.tar
+    timeout 8 ffmpeg -y -loglevel error -f v4l2 -video_size 960x720 -i /dev/video2 -frames:v 1 -q:v 2 /tmp/vlm_front.png
+    timeout 8 ffmpeg -y -loglevel error -f v4l2 -video_size 960x720 -i /dev/video4 -frames:v 1 -q:v 2 /tmp/vlm_left.png
+    timeout 8 ffmpeg -y -loglevel error -f v4l2 -video_size 960x720 -i /dev/video3 -frames:v 1 -q:v 2 /tmp/vlm_right.png
+    tar -cf /tmp/vlm_three_cameras.tar -C /tmp vlm_front.png vlm_left.png vlm_right.png
+    ls -lh /tmp/vlm_front.png /tmp/vlm_left.png /tmp/vlm_right.png /tmp/vlm_three_cameras.tar
+    
+[STDOUT]
+-rw-rw-r-- 1 unitree unitree  1.3M 12月 15 17:30 /tmp/vlm_front.png
+-rw-rw-r-- 1 unitree unitree  1.4M 12月 15 17:30 /tmp/vlm_left.png
+-rw-rw-r-- 1 unitree unitree 1008K 12月 15 17:30 /tmp/vlm_right.png
+-rw-rw-r-- 1 unitree unitree  3.7M 12月 15 17:30 /tmp/vlm_three_cameras.tar
+
+[CMD] scp -o ConnectTimeout=10 unitree@192.168.123.14:/tmp/vlm_three_cameras.tar robot_live_frames/step_0007/vlm_three_cameras.tar
+[OK] Left image: robot_live_frames/step_0007/left.png
+[OK] Front image: robot_live_frames/step_0007/front.png
+[OK] Right image: robot_live_frames/step_0007/right.png
+
+========== ACTION RESULT ==========
+Mode: autonomous_step
+Goal: C0.004
+Done: False
+Action: ALIGN_WITH_LANDMARK({'landmark_id': 'L019', 'direction': 'left', 'target': 'L019', 'target_description': 'Corridor extending forward with wooden slat walls on the right and a dark ceiling.', 'stop_condition': 'landmark centred in FRONT camera', 'capture_after': True, 'evidence_view': 'FRONT', 'horizontal_position': 'left', 'horizontal_offset_fraction': -0.5, 'proximity': 'near'}) [medium, score=0.61] valid - Selected landmark is not centred and must be visually aligned before forward movement.
+Action name: ALIGN_WITH_LANDMARK
+Params: {'landmark_id': 'L019', 'direction': 'left', 'target': 'L019', 'target_description': 'Corridor extending forward with wooden slat walls on the right and a dark ceiling.', 'stop_condition': 'landmark centred in FRONT camera', 'capture_after': True, 'evidence_view': 'FRONT', 'horizontal_position': 'left', 'horizontal_offset_fraction': -0.5, 'proximity': 'near'}
+Evidence view: FRONT
+Reason: Selected landmark is not centred and must be visually aligned before forward movement.
+Confidence: medium
+Evidence score: 0.6095
+Saved: navigation_outputs/http_api/autonomous_step_latest_result.json
+===================================
+
+
+========== EXECUTOR DECISION ==========
+Action: ALIGN_WITH_LANDMARK
+Params: {'landmark_id': 'L019', 'direction': 'left', 'target': 'L019', 'target_description': 'Corridor extending forward with wooden slat walls on the right and a dark ceiling.', 'stop_condition': 'landmark centred in FRONT camera', 'capture_after': True, 'evidence_view': 'FRONT', 'horizontal_position': 'left', 'horizontal_offset_fraction': -0.5, 'proximity': 'near'}
+Reason: Selected landmark is not centred and must be visually aligned before forward movement.
+Mapped command: {'linear_x': 0.0, 'angular_z': 0.3, 'duration': 1.0239264945033402, 'motion_kind': 'visual_alignment'}
+Execute mode: confirm
+=======================================
+
+Execute this small movement pulse? [y/N]: y
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=0.3, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=0.3, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=0.3, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=0.3, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=0.3, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=0.3, duration=0.047852989006680335s
+[EXECUTOR] STOP
+[LOG] Step result saved: navigation_outputs/live_runs/run_2026_07_29_170237_C0_004/step_007_result.json
+
+========== AUTO STEP 8 ==========
+[CMD] ssh -o ConnectTimeout=10 unitree@192.168.123.14 
+    set -e
+    rm -f /tmp/vlm_front.png /tmp/vlm_left.png /tmp/vlm_right.png /tmp/vlm_three_cameras.tar
+    timeout 8 ffmpeg -y -loglevel error -f v4l2 -video_size 960x720 -i /dev/video2 -frames:v 1 -q:v 2 /tmp/vlm_front.png
+    timeout 8 ffmpeg -y -loglevel error -f v4l2 -video_size 960x720 -i /dev/video4 -frames:v 1 -q:v 2 /tmp/vlm_left.png
+    timeout 8 ffmpeg -y -loglevel error -f v4l2 -video_size 960x720 -i /dev/video3 -frames:v 1 -q:v 2 /tmp/vlm_right.png
+    tar -cf /tmp/vlm_three_cameras.tar -C /tmp vlm_front.png vlm_left.png vlm_right.png
+    ls -lh /tmp/vlm_front.png /tmp/vlm_left.png /tmp/vlm_right.png /tmp/vlm_three_cameras.tar
+    
+[STDOUT]
+-rw-rw-r-- 1 unitree unitree 1.3M 12月 15 17:32 /tmp/vlm_front.png
+-rw-rw-r-- 1 unitree unitree 1.4M 12月 15 17:32 /tmp/vlm_left.png
+-rw-rw-r-- 1 unitree unitree 736K 12月 15 17:32 /tmp/vlm_right.png
+-rw-rw-r-- 1 unitree unitree 3.4M 12月 15 17:32 /tmp/vlm_three_cameras.tar
+
+[CMD] scp -o ConnectTimeout=10 unitree@192.168.123.14:/tmp/vlm_three_cameras.tar robot_live_frames/step_0008/vlm_three_cameras.tar
+[OK] Left image: robot_live_frames/step_0008/left.png
+[OK] Front image: robot_live_frames/step_0008/front.png
+[OK] Right image: robot_live_frames/step_0008/right.png
+
+========== ACTION RESULT ==========
+Mode: autonomous_step
+Goal: C0.004
+Done: False
+Action: NAVIGATE_TO_LANDMARK({'landmark_id': 'L021', 'direction': 'forward', 'target': 'L021', 'target_description': 'Corridor extending forward with wooden slat walls and a dark ceiling.', 'floor': None, 'search_for': None, 'stop_condition': 'capture when near the corridor bend or junction', 'capture_after': True, 'evidence_view': 'FRONT', 'horizontal_position': 'center', 'horizontal_offset_fraction': 0.0, 'proximity': 'near', 'doorway_state': 'unknown', 'threshold_state': 'before', 'traversable': True}) [low, score=0.36] valid - The current view is a corridor (L021) that continues forward, and since the target room C0.004 is not in the range of the sign pointing right (C0.016-C0.020), the goal is likely further down the corridor or in a different branch, making the corridor the best route anchor.
+Action name: NAVIGATE_TO_LANDMARK
+Params: {'landmark_id': 'L021', 'direction': 'forward', 'target': 'L021', 'target_description': 'Corridor extending forward with wooden slat walls and a dark ceiling.', 'floor': None, 'search_for': None, 'stop_condition': 'capture when near the corridor bend or junction', 'capture_after': True, 'evidence_view': 'FRONT', 'horizontal_position': 'center', 'horizontal_offset_fraction': 0.0, 'proximity': 'near', 'doorway_state': 'unknown', 'threshold_state': 'before', 'traversable': True}
+Evidence view: FRONT
+Reason: The current view is a corridor (L021) that continues forward, and since the target room C0.004 is not in the range of the sign pointing right (C0.016-C0.020), the goal is likely further down the corridor or in a different branch, making the corridor the best route anchor.
+Confidence: low
+Evidence score: 0.35950000000000004
+Saved: navigation_outputs/http_api/autonomous_step_latest_result.json
+===================================
+
+
+========== EXECUTOR DECISION ==========
+Action: NAVIGATE_TO_LANDMARK
+Params: {'landmark_id': 'L021', 'direction': 'forward', 'target': 'L021', 'target_description': 'Corridor extending forward with wooden slat walls and a dark ceiling.', 'floor': None, 'search_for': None, 'stop_condition': 'capture when near the corridor bend or junction', 'capture_after': True, 'evidence_view': 'FRONT', 'horizontal_position': 'center', 'horizontal_offset_fraction': 0.0, 'proximity': 'near', 'doorway_state': 'unknown', 'threshold_state': 'before', 'traversable': True}
+Reason: The current view is a corridor (L021) that continues forward, and since the target room C0.004 is not in the range of the sign pointing right (C0.016-C0.020), the goal is likely further down the corridor or in a different branch, making the corridor the best route anchor.
+Mapped command: {'linear_x': 0.3, 'angular_z': 0.0, 'duration': 20.0, 'motion_kind': 'route_advance'}
+Execute mode: confirm
+=======================================
+
+Execute this small movement pulse? [y/N]: y
+Mapped command (LiDAR-scaled duration): {'linear_x': 0.3, 'angular_z': 0.0, 'duration': 2.0, 'motion_kind': 'route_advance'}
+[EXECUTOR] Pulse: linear.x=0.3, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.3, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.3, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.3, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.3, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[LOG] Step result saved: navigation_outputs/live_runs/run_2026_07_29_170237_C0_004/step_008_result.json
+
+========== AUTO STEP 9 ==========
+[CMD] ssh -o ConnectTimeout=10 unitree@192.168.123.14 
+    set -e
+    rm -f /tmp/vlm_front.png /tmp/vlm_left.png /tmp/vlm_right.png /tmp/vlm_three_cameras.tar
+    timeout 8 ffmpeg -y -loglevel error -f v4l2 -video_size 960x720 -i /dev/video2 -frames:v 1 -q:v 2 /tmp/vlm_front.png
+    timeout 8 ffmpeg -y -loglevel error -f v4l2 -video_size 960x720 -i /dev/video4 -frames:v 1 -q:v 2 /tmp/vlm_left.png
+    timeout 8 ffmpeg -y -loglevel error -f v4l2 -video_size 960x720 -i /dev/video3 -frames:v 1 -q:v 2 /tmp/vlm_right.png
+    tar -cf /tmp/vlm_three_cameras.tar -C /tmp vlm_front.png vlm_left.png vlm_right.png
+    ls -lh /tmp/vlm_front.png /tmp/vlm_left.png /tmp/vlm_right.png /tmp/vlm_three_cameras.tar
+    
+[STDOUT]
+-rw-rw-r-- 1 unitree unitree 1.4M 12月 15 17:33 /tmp/vlm_front.png
+-rw-rw-r-- 1 unitree unitree 1.5M 12月 15 17:33 /tmp/vlm_left.png
+-rw-rw-r-- 1 unitree unitree 595K 12月 15 17:33 /tmp/vlm_right.png
+-rw-rw-r-- 1 unitree unitree 3.4M 12月 15 17:33 /tmp/vlm_three_cameras.tar
+
+[CMD] scp -o ConnectTimeout=10 unitree@192.168.123.14:/tmp/vlm_three_cameras.tar robot_live_frames/step_0009/vlm_three_cameras.tar
+[OK] Left image: robot_live_frames/step_0009/left.png
+[OK] Front image: robot_live_frames/step_0009/front.png
+[OK] Right image: robot_live_frames/step_0009/right.png
+
+========== ACTION RESULT ==========
+Mode: autonomous_step
+Goal: C0.004
+Done: False
+Action: NAVIGATE_TO_LANDMARK({'landmark_id': 'L021', 'direction': 'forward', 'target': 'L021', 'target_description': 'Corridor extending forward with wooden slat walls and a dark ceiling.', 'floor': None, 'search_for': None, 'stop_condition': 'capture when near the corridor bend', 'capture_after': True, 'evidence_view': 'FRONT', 'horizontal_position': 'center', 'horizontal_offset_fraction': 0.0, 'proximity': 'near', 'doorway_state': 'unknown', 'threshold_state': 'before', 'traversable': True}) [low, score=0.36] valid - The current view is sparse, but the remembered corridor landmark (L021) supports continued progress toward the target room C0.004, which is indicated to be in the forward direction by the recent sign L023.
+Action name: NAVIGATE_TO_LANDMARK
+Params: {'landmark_id': 'L021', 'direction': 'forward', 'target': 'L021', 'target_description': 'Corridor extending forward with wooden slat walls and a dark ceiling.', 'floor': None, 'search_for': None, 'stop_condition': 'capture when near the corridor bend', 'capture_after': True, 'evidence_view': 'FRONT', 'horizontal_position': 'center', 'horizontal_offset_fraction': 0.0, 'proximity': 'near', 'doorway_state': 'unknown', 'threshold_state': 'before', 'traversable': True}
+Evidence view: FRONT
+Reason: The current view is sparse, but the remembered corridor landmark (L021) supports continued progress toward the target room C0.004, which is indicated to be in the forward direction by the recent sign L023.
+Confidence: low
+Evidence score: 0.35950000000000004
+Saved: navigation_outputs/http_api/autonomous_step_latest_result.json
+===================================
+
+
+========== EXECUTOR DECISION ==========
+Action: NAVIGATE_TO_LANDMARK
+Params: {'landmark_id': 'L021', 'direction': 'forward', 'target': 'L021', 'target_description': 'Corridor extending forward with wooden slat walls and a dark ceiling.', 'floor': None, 'search_for': None, 'stop_condition': 'capture when near the corridor bend', 'capture_after': True, 'evidence_view': 'FRONT', 'horizontal_position': 'center', 'horizontal_offset_fraction': 0.0, 'proximity': 'near', 'doorway_state': 'unknown', 'threshold_state': 'before', 'traversable': True}
+Reason: The current view is sparse, but the remembered corridor landmark (L021) supports continued progress toward the target room C0.004, which is indicated to be in the forward direction by the recent sign L023.
+Mapped command: {'linear_x': 0.3, 'angular_z': 0.0, 'duration': 20.0, 'motion_kind': 'route_advance'}
+Execute mode: confirm
+=======================================
+
+Execute this small movement pulse? [y/N]: y
+Mapped command (LiDAR-scaled duration): {'linear_x': 0.3, 'angular_z': 0.0, 'duration': 2.0, 'motion_kind': 'route_advance'}
+[EXECUTOR] Pulse: linear.x=0.3, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.3, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.3, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.3, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.3, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[LOG] Step result saved: navigation_outputs/live_runs/run_2026_07_29_170237_C0_004/step_009_result.json
+
+========== AUTO STEP 10 ==========
+[CMD] ssh -o ConnectTimeout=10 unitree@192.168.123.14 
+    set -e
+    rm -f /tmp/vlm_front.png /tmp/vlm_left.png /tmp/vlm_right.png /tmp/vlm_three_cameras.tar
+    timeout 8 ffmpeg -y -loglevel error -f v4l2 -video_size 960x720 -i /dev/video2 -frames:v 1 -q:v 2 /tmp/vlm_front.png
+    timeout 8 ffmpeg -y -loglevel error -f v4l2 -video_size 960x720 -i /dev/video4 -frames:v 1 -q:v 2 /tmp/vlm_left.png
+    timeout 8 ffmpeg -y -loglevel error -f v4l2 -video_size 960x720 -i /dev/video3 -frames:v 1 -q:v 2 /tmp/vlm_right.png
+    tar -cf /tmp/vlm_three_cameras.tar -C /tmp vlm_front.png vlm_left.png vlm_right.png
+    ls -lh /tmp/vlm_front.png /tmp/vlm_left.png /tmp/vlm_right.png /tmp/vlm_three_cameras.tar
+    
+[STDOUT]
+-rw-rw-r-- 1 unitree unitree  1.4M 12月 15 17:35 /tmp/vlm_front.png
+-rw-rw-r-- 1 unitree unitree  1.5M 12月 15 17:35 /tmp/vlm_left.png
+-rw-rw-r-- 1 unitree unitree 1012K 12月 15 17:35 /tmp/vlm_right.png
+-rw-rw-r-- 1 unitree unitree  3.9M 12月 15 17:35 /tmp/vlm_three_cameras.tar
+
+[CMD] scp -o ConnectTimeout=10 unitree@192.168.123.14:/tmp/vlm_three_cameras.tar robot_live_frames/step_0010/vlm_three_cameras.tar
+[OK] Left image: robot_live_frames/step_0010/left.png
+[OK] Front image: robot_live_frames/step_0010/front.png
+[OK] Right image: robot_live_frames/step_0010/right.png
+
+========== ACTION RESULT ==========
+Mode: autonomous_step
+Goal: C0.004
+Done: False
+Action: ALIGN_WITH_LANDMARK({'landmark_id': 'L026', 'direction': 'left', 'target': 'L026', 'target_description': 'A corridor extending forward with wooden slat walls and a dark ceiling.', 'stop_condition': 'landmark centred in FRONT camera', 'capture_after': True, 'evidence_view': 'FRONT', 'horizontal_position': 'left', 'horizontal_offset_fraction': -0.3, 'proximity': 'near'}) [medium, score=0.62] valid - Selected landmark is not centred and must be visually aligned before forward movement.
+Action name: ALIGN_WITH_LANDMARK
+Params: {'landmark_id': 'L026', 'direction': 'left', 'target': 'L026', 'target_description': 'A corridor extending forward with wooden slat walls and a dark ceiling.', 'stop_condition': 'landmark centred in FRONT camera', 'capture_after': True, 'evidence_view': 'FRONT', 'horizontal_position': 'left', 'horizontal_offset_fraction': -0.3, 'proximity': 'near'}
+Evidence view: FRONT
+Reason: Selected landmark is not centred and must be visually aligned before forward movement.
+Confidence: medium
+Evidence score: 0.617
+Saved: navigation_outputs/http_api/autonomous_step_latest_result.json
+===================================
+
+
+========== EXECUTOR DECISION ==========
+Action: ALIGN_WITH_LANDMARK
+Params: {'landmark_id': 'L026', 'direction': 'left', 'target': 'L026', 'target_description': 'A corridor extending forward with wooden slat walls and a dark ceiling.', 'stop_condition': 'landmark centred in FRONT camera', 'capture_after': True, 'evidence_view': 'FRONT', 'horizontal_position': 'left', 'horizontal_offset_fraction': -0.3, 'proximity': 'near'}
+Reason: Selected landmark is not centred and must be visually aligned before forward movement.
+Mapped command: {'linear_x': 0.0, 'angular_z': 0.3, 'duration': 0.614355896702004, 'motion_kind': 'visual_alignment'}
+Execute mode: confirm
+=======================================
+
+Execute this small movement pulse? [y/N]: y
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=0.3, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=0.3, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=0.3, duration=0.4s
+[EXECUTOR] STOP
+[LOG] Step result saved: navigation_outputs/live_runs/run_2026_07_29_170237_C0_004/step_010_result.json
+
+========== AUTO STEP 11 ==========
+[CMD] ssh -o ConnectTimeout=10 unitree@192.168.123.14 
+    set -e
+    rm -f /tmp/vlm_front.png /tmp/vlm_left.png /tmp/vlm_right.png /tmp/vlm_three_cameras.tar
+    timeout 8 ffmpeg -y -loglevel error -f v4l2 -video_size 960x720 -i /dev/video2 -frames:v 1 -q:v 2 /tmp/vlm_front.png
+    timeout 8 ffmpeg -y -loglevel error -f v4l2 -video_size 960x720 -i /dev/video4 -frames:v 1 -q:v 2 /tmp/vlm_left.png
+    timeout 8 ffmpeg -y -loglevel error -f v4l2 -video_size 960x720 -i /dev/video3 -frames:v 1 -q:v 2 /tmp/vlm_right.png
+    tar -cf /tmp/vlm_three_cameras.tar -C /tmp vlm_front.png vlm_left.png vlm_right.png
+    ls -lh /tmp/vlm_front.png /tmp/vlm_left.png /tmp/vlm_right.png /tmp/vlm_three_cameras.tar
+    
+[STDOUT]
+-rw-rw-r-- 1 unitree unitree 1.3M 12月 15 17:36 /tmp/vlm_front.png
+-rw-rw-r-- 1 unitree unitree 1.5M 12月 15 17:36 /tmp/vlm_left.png
+-rw-rw-r-- 1 unitree unitree 1.3M 12月 15 17:36 /tmp/vlm_right.png
+-rw-rw-r-- 1 unitree unitree 4.0M 12月 15 17:36 /tmp/vlm_three_cameras.tar
+
+[CMD] scp -o ConnectTimeout=10 unitree@192.168.123.14:/tmp/vlm_three_cameras.tar robot_live_frames/step_0011/vlm_three_cameras.tar
+[OK] Left image: robot_live_frames/step_0011/left.png
+[OK] Front image: robot_live_frames/step_0011/front.png
+[OK] Right image: robot_live_frames/step_0011/right.png
+
+========== ACTION RESULT ==========
+Mode: autonomous_step
+Goal: C0.004
+Done: False
+Action: NAVIGATE_TO_LANDMARK({'landmark_id': 'L029', 'direction': 'forward', 'target': 'L029', 'target_description': 'Corridor continuing forward with wooden slat walls and a white door on the left side.', 'floor': None, 'search_for': None, 'stop_condition': 'landmark centred in FRONT', 'capture_after': True, 'evidence_view': 'FRONT', 'horizontal_position': 'center', 'horizontal_offset_fraction': 0.0, 'proximity': 'medium', 'doorway_state': 'unknown', 'threshold_state': 'before', 'traversable': True}) [low, score=0.37] valid - The current view is a corridor (L029) that continues forward, which is the most reliable structural route anchor available to progress toward the target room C0.004.
+Action name: NAVIGATE_TO_LANDMARK
+Params: {'landmark_id': 'L029', 'direction': 'forward', 'target': 'L029', 'target_description': 'Corridor continuing forward with wooden slat walls and a white door on the left side.', 'floor': None, 'search_for': None, 'stop_condition': 'landmark centred in FRONT', 'capture_after': True, 'evidence_view': 'FRONT', 'horizontal_position': 'center', 'horizontal_offset_fraction': 0.0, 'proximity': 'medium', 'doorway_state': 'unknown', 'threshold_state': 'before', 'traversable': True}
+Evidence view: FRONT
+Reason: The current view is a corridor (L029) that continues forward, which is the most reliable structural route anchor available to progress toward the target room C0.004.
+Confidence: low
+Evidence score: 0.367
+Saved: navigation_outputs/http_api/autonomous_step_latest_result.json
+===================================
+
+
+========== EXECUTOR DECISION ==========
+Action: NAVIGATE_TO_LANDMARK
+Params: {'landmark_id': 'L029', 'direction': 'forward', 'target': 'L029', 'target_description': 'Corridor continuing forward with wooden slat walls and a white door on the left side.', 'floor': None, 'search_for': None, 'stop_condition': 'landmark centred in FRONT', 'capture_after': True, 'evidence_view': 'FRONT', 'horizontal_position': 'center', 'horizontal_offset_fraction': 0.0, 'proximity': 'medium', 'doorway_state': 'unknown', 'threshold_state': 'before', 'traversable': True}
+Reason: The current view is a corridor (L029) that continues forward, which is the most reliable structural route anchor available to progress toward the target room C0.004.
+Mapped command: {'linear_x': 0.3, 'angular_z': 0.0, 'duration': 20.0, 'motion_kind': 'route_advance'}
+Execute mode: confirm
+=======================================
+
+Execute this small movement pulse? [y/N]: y
+Mapped command (LiDAR-scaled duration): {'linear_x': 0.3, 'angular_z': 0.0, 'duration': 2.0, 'motion_kind': 'route_advance'}
+[EXECUTOR] Pulse: linear.x=0.3, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.3, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.3, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.3, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.3, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[LOG] Step result saved: navigation_outputs/live_runs/run_2026_07_29_170237_C0_004/step_011_result.json
+
+========== AUTO STEP 12 ==========
+[CMD] ssh -o ConnectTimeout=10 unitree@192.168.123.14 
+    set -e
+    rm -f /tmp/vlm_front.png /tmp/vlm_left.png /tmp/vlm_right.png /tmp/vlm_three_cameras.tar
+    timeout 8 ffmpeg -y -loglevel error -f v4l2 -video_size 960x720 -i /dev/video2 -frames:v 1 -q:v 2 /tmp/vlm_front.png
+    timeout 8 ffmpeg -y -loglevel error -f v4l2 -video_size 960x720 -i /dev/video4 -frames:v 1 -q:v 2 /tmp/vlm_left.png
+    timeout 8 ffmpeg -y -loglevel error -f v4l2 -video_size 960x720 -i /dev/video3 -frames:v 1 -q:v 2 /tmp/vlm_right.png
+    tar -cf /tmp/vlm_three_cameras.tar -C /tmp vlm_front.png vlm_left.png vlm_right.png
+    ls -lh /tmp/vlm_front.png /tmp/vlm_left.png /tmp/vlm_right.png /tmp/vlm_three_cameras.tar
+    
+[STDOUT]
+-rw-rw-r-- 1 unitree unitree 1.3M 12月 15 17:38 /tmp/vlm_front.png
+-rw-rw-r-- 1 unitree unitree 1.4M 12月 15 17:38 /tmp/vlm_left.png
+-rw-rw-r-- 1 unitree unitree 1.2M 12月 15 17:38 /tmp/vlm_right.png
+-rw-rw-r-- 1 unitree unitree 3.8M 12月 15 17:38 /tmp/vlm_three_cameras.tar
+
+[CMD] scp -o ConnectTimeout=10 unitree@192.168.123.14:/tmp/vlm_three_cameras.tar robot_live_frames/step_0012/vlm_three_cameras.tar
+[OK] Left image: robot_live_frames/step_0012/left.png
+[OK] Front image: robot_live_frames/step_0012/front.png
+[OK] Right image: robot_live_frames/step_0012/right.png
+
+========== ACTION RESULT ==========
+Mode: autonomous_step
+Goal: C0.004
+Done: False
+Action: NAVIGATE_TO_LANDMARK({'landmark_id': 'L031', 'direction': 'forward', 'target': 'L031', 'target_description': 'Wooden slat corridor extending forward with an exit sign visible in the distance.', 'floor': None, 'search_for': None, 'stop_condition': 'capture when near the corridor bend or exit sign', 'capture_after': True, 'evidence_view': 'FRONT', 'horizontal_position': 'center', 'horizontal_offset_fraction': 0.0, 'proximity': 'near', 'doorway_state': 'unknown', 'threshold_state': 'before', 'traversable': True}) [low, score=0.37] valid - The current view is sparse with wooden slat walls, but the remembered route landmark L031 (corridor extending forward) supports continued progress toward the target room range C0.004-C0.008 indicated by the sign in the previous step.
+Action name: NAVIGATE_TO_LANDMARK
+Params: {'landmark_id': 'L031', 'direction': 'forward', 'target': 'L031', 'target_description': 'Wooden slat corridor extending forward with an exit sign visible in the distance.', 'floor': None, 'search_for': None, 'stop_condition': 'capture when near the corridor bend or exit sign', 'capture_after': True, 'evidence_view': 'FRONT', 'horizontal_position': 'center', 'horizontal_offset_fraction': 0.0, 'proximity': 'near', 'doorway_state': 'unknown', 'threshold_state': 'before', 'traversable': True}
+Evidence view: FRONT
+Reason: The current view is sparse with wooden slat walls, but the remembered route landmark L031 (corridor extending forward) supports continued progress toward the target room range C0.004-C0.008 indicated by the sign in the previous step.
+Confidence: low
+Evidence score: 0.367
+Saved: navigation_outputs/http_api/autonomous_step_latest_result.json
+===================================
+
+
+========== EXECUTOR DECISION ==========
+Action: NAVIGATE_TO_LANDMARK
+Params: {'landmark_id': 'L031', 'direction': 'forward', 'target': 'L031', 'target_description': 'Wooden slat corridor extending forward with an exit sign visible in the distance.', 'floor': None, 'search_for': None, 'stop_condition': 'capture when near the corridor bend or exit sign', 'capture_after': True, 'evidence_view': 'FRONT', 'horizontal_position': 'center', 'horizontal_offset_fraction': 0.0, 'proximity': 'near', 'doorway_state': 'unknown', 'threshold_state': 'before', 'traversable': True}
+Reason: The current view is sparse with wooden slat walls, but the remembered route landmark L031 (corridor extending forward) supports continued progress toward the target room range C0.004-C0.008 indicated by the sign in the previous step.
+Mapped command: {'linear_x': 0.3, 'angular_z': 0.0, 'duration': 20.0, 'motion_kind': 'route_advance'}
+Execute mode: confirm
+=======================================
+
+Execute this small movement pulse? [y/N]: y
+[EXECUTOR] ABORT (safety_blocked): Motion blocked: nearest obstacle at 0.45m, below the 0.50m stop distance. Side clearance: left 5.87m, right 0.24m, left is clearer.
+[EXECUTOR] STOP
+[LOG] Step result saved: navigation_outputs/live_runs/run_2026_07_29_170237_C0_004/step_012_result.json
+
+========== AUTO STEP 13 ==========
+[CMD] ssh -o ConnectTimeout=10 unitree@192.168.123.14 
+    set -e
+    rm -f /tmp/vlm_front.png /tmp/vlm_left.png /tmp/vlm_right.png /tmp/vlm_three_cameras.tar
+    timeout 8 ffmpeg -y -loglevel error -f v4l2 -video_size 960x720 -i /dev/video2 -frames:v 1 -q:v 2 /tmp/vlm_front.png
+    timeout 8 ffmpeg -y -loglevel error -f v4l2 -video_size 960x720 -i /dev/video4 -frames:v 1 -q:v 2 /tmp/vlm_left.png
+    timeout 8 ffmpeg -y -loglevel error -f v4l2 -video_size 960x720 -i /dev/video3 -frames:v 1 -q:v 2 /tmp/vlm_right.png
+    tar -cf /tmp/vlm_three_cameras.tar -C /tmp vlm_front.png vlm_left.png vlm_right.png
+    ls -lh /tmp/vlm_front.png /tmp/vlm_left.png /tmp/vlm_right.png /tmp/vlm_three_cameras.tar
+    
+[STDOUT]
+-rw-rw-r-- 1 unitree unitree 1.4M 12月 15 17:39 /tmp/vlm_front.png
+-rw-rw-r-- 1 unitree unitree 1.4M 12月 15 17:39 /tmp/vlm_left.png
+-rw-rw-r-- 1 unitree unitree 1.1M 12月 15 17:39 /tmp/vlm_right.png
+-rw-rw-r-- 1 unitree unitree 3.8M 12月 15 17:39 /tmp/vlm_three_cameras.tar
+
+[CMD] scp -o ConnectTimeout=10 unitree@192.168.123.14:/tmp/vlm_three_cameras.tar robot_live_frames/step_0013/vlm_three_cameras.tar
+[OK] Left image: robot_live_frames/step_0013/left.png
+[OK] Front image: robot_live_frames/step_0013/front.png
+[OK] Right image: robot_live_frames/step_0013/right.png
+
+========== ACTION RESULT ==========
+Mode: autonomous_step
+Goal: C0.004
+Done: False
+Action: NAVIGATE_TO_LANDMARK({'landmark_id': 'L031', 'direction': 'forward', 'target': 'L031', 'target_description': 'Wooden slat corridor extending forward with an exit sign visible in the distance.', 'floor': None, 'search_for': None, 'stop_condition': 'capture when near the corridor bend or exit sign', 'capture_after': True, 'evidence_view': 'FRONT', 'horizontal_position': 'center', 'horizontal_offset_fraction': 0.0, 'proximity': 'near', 'doorway_state': 'unknown', 'threshold_state': 'before', 'traversable': True}) [low, score=0.37] valid - The current view is sparse with a wall on the right, but the remembered corridor landmark (L031) visible in the front view provides a clear, traversable path forward towards the exit sign, which is the most logical route to continue searching for room C0004.
+Action name: NAVIGATE_TO_LANDMARK
+Params: {'landmark_id': 'L031', 'direction': 'forward', 'target': 'L031', 'target_description': 'Wooden slat corridor extending forward with an exit sign visible in the distance.', 'floor': None, 'search_for': None, 'stop_condition': 'capture when near the corridor bend or exit sign', 'capture_after': True, 'evidence_view': 'FRONT', 'horizontal_position': 'center', 'horizontal_offset_fraction': 0.0, 'proximity': 'near', 'doorway_state': 'unknown', 'threshold_state': 'before', 'traversable': True}
+Evidence view: FRONT
+Reason: The current view is sparse with a wall on the right, but the remembered corridor landmark (L031) visible in the front view provides a clear, traversable path forward towards the exit sign, which is the most logical route to continue searching for room C0004.
+Confidence: low
+Evidence score: 0.367
+Saved: navigation_outputs/http_api/autonomous_step_latest_result.json
+===================================
+
+
+========== EXECUTOR DECISION ==========
+Action: NAVIGATE_TO_LANDMARK
+Params: {'landmark_id': 'L031', 'direction': 'forward', 'target': 'L031', 'target_description': 'Wooden slat corridor extending forward with an exit sign visible in the distance.', 'floor': None, 'search_for': None, 'stop_condition': 'capture when near the corridor bend or exit sign', 'capture_after': True, 'evidence_view': 'FRONT', 'horizontal_position': 'center', 'horizontal_offset_fraction': 0.0, 'proximity': 'near', 'doorway_state': 'unknown', 'threshold_state': 'before', 'traversable': True}
+Reason: The current view is sparse with a wall on the right, but the remembered corridor landmark (L031) visible in the front view provides a clear, traversable path forward towards the exit sign, which is the most logical route to continue searching for room C0004.
+Mapped command: {'linear_x': 0.3, 'angular_z': 0.0, 'duration': 20.0, 'motion_kind': 'route_advance'}
+Execute mode: confirm
+=======================================
+
+Execute this small movement pulse? [y/N]: y
+Mapped command (LiDAR-scaled duration): {'linear_x': 0.3, 'angular_z': 0.0, 'duration': 2.0, 'motion_kind': 'route_advance'}
+[EXECUTOR] Pulse: linear.x=0.3, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.3, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.3, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.3, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.3, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[LOG] Step result saved: navigation_outputs/live_runs/run_2026_07_29_170237_C0_004/step_013_result.json
+
+========== AUTO STEP 14 ==========
+[CMD] ssh -o ConnectTimeout=10 unitree@192.168.123.14 
+    set -e
+    rm -f /tmp/vlm_front.png /tmp/vlm_left.png /tmp/vlm_right.png /tmp/vlm_three_cameras.tar
+    timeout 8 ffmpeg -y -loglevel error -f v4l2 -video_size 960x720 -i /dev/video2 -frames:v 1 -q:v 2 /tmp/vlm_front.png
+    timeout 8 ffmpeg -y -loglevel error -f v4l2 -video_size 960x720 -i /dev/video4 -frames:v 1 -q:v 2 /tmp/vlm_left.png
+    timeout 8 ffmpeg -y -loglevel error -f v4l2 -video_size 960x720 -i /dev/video3 -frames:v 1 -q:v 2 /tmp/vlm_right.png
+    tar -cf /tmp/vlm_three_cameras.tar -C /tmp vlm_front.png vlm_left.png vlm_right.png
+    ls -lh /tmp/vlm_front.png /tmp/vlm_left.png /tmp/vlm_right.png /tmp/vlm_three_cameras.tar
+    
+[STDOUT]
+-rw-rw-r-- 1 unitree unitree 1.4M 12月 15 17:41 /tmp/vlm_front.png
+-rw-rw-r-- 1 unitree unitree 1.3M 12月 15 17:41 /tmp/vlm_left.png
+-rw-rw-r-- 1 unitree unitree 1.3M 12月 15 17:41 /tmp/vlm_right.png
+-rw-rw-r-- 1 unitree unitree 3.9M 12月 15 17:41 /tmp/vlm_three_cameras.tar
+
+[CMD] scp -o ConnectTimeout=10 unitree@192.168.123.14:/tmp/vlm_three_cameras.tar robot_live_frames/step_0014/vlm_three_cameras.tar
+[OK] Left image: robot_live_frames/step_0014/left.png
+[OK] Front image: robot_live_frames/step_0014/front.png
+[OK] Right image: robot_live_frames/step_0014/right.png
+
+========== ACTION RESULT ==========
+Mode: autonomous_step
+Goal: C0.004
+Done: False
+Action: NAVIGATE_TO_LANDMARK({'landmark_id': 'L036', 'direction': 'left', 'target': 'L036', 'target_description': 'Blue directory sign on wooden wall indicating room ranges and directions.', 'floor': None, 'search_for': None, 'stop_condition': 'capture when near the directory sign', 'capture_after': True, 'evidence_view': 'FRONT', 'horizontal_position': 'center', 'horizontal_offset_fraction': 0.0, 'proximity': 'near', 'doorway_state': 'unknown', 'threshold_state': 'before', 'traversable': True}) [medium, score=0.75] valid - The robot is currently facing a directory sign (L036) that indicates the target room C0.004 is to the left; navigating to this sign will allow for a precise reading of the room range and confirmation of the correct path.
+Action name: NAVIGATE_TO_LANDMARK
+Params: {'landmark_id': 'L036', 'direction': 'left', 'target': 'L036', 'target_description': 'Blue directory sign on wooden wall indicating room ranges and directions.', 'floor': None, 'search_for': None, 'stop_condition': 'capture when near the directory sign', 'capture_after': True, 'evidence_view': 'FRONT', 'horizontal_position': 'center', 'horizontal_offset_fraction': 0.0, 'proximity': 'near', 'doorway_state': 'unknown', 'threshold_state': 'before', 'traversable': True}
+Evidence view: FRONT
+Reason: The robot is currently facing a directory sign (L036) that indicates the target room C0.004 is to the left; navigating to this sign will allow for a precise reading of the room range and confirmation of the correct path.
+Confidence: medium
+Evidence score: 0.75
+Saved: navigation_outputs/http_api/autonomous_step_latest_result.json
+===================================
+
+
+========== EXECUTOR DECISION ==========
+Action: NAVIGATE_TO_LANDMARK
+Params: {'landmark_id': 'L036', 'direction': 'left', 'target': 'L036', 'target_description': 'Blue directory sign on wooden wall indicating room ranges and directions.', 'floor': None, 'search_for': None, 'stop_condition': 'capture when near the directory sign', 'capture_after': True, 'evidence_view': 'FRONT', 'horizontal_position': 'center', 'horizontal_offset_fraction': 0.0, 'proximity': 'near', 'doorway_state': 'unknown', 'threshold_state': 'before', 'traversable': True}
+Reason: The robot is currently facing a directory sign (L036) that indicates the target room C0.004 is to the left; navigating to this sign will allow for a precise reading of the room range and confirmation of the correct path.
+Mapped command: {'linear_x': 0.0, 'angular_z': 0.3, 'duration': 4.0, 'motion_kind': 'route_alignment'}
+Execute mode: confirm
+=======================================
+
+Execute this small movement pulse? [y/N]: y
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=0.3, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=0.3, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=0.3, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=0.3, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=0.3, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=0.3, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=0.3, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=0.3, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=0.3, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=0.3, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=0.3, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=0.3, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=0.3, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=0.3, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=0.3, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=0.3, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=0.3, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=0.3, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=0.3, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=0.3, duration=0.3999999999999977s
+[EXECUTOR] STOP
+[LOG] Step result saved: navigation_outputs/live_runs/run_2026_07_29_170237_C0_004/step_014_result.json
+
+========== AUTO STEP 15 ==========
+[CMD] ssh -o ConnectTimeout=10 unitree@192.168.123.14 
+    set -e
+    rm -f /tmp/vlm_front.png /tmp/vlm_left.png /tmp/vlm_right.png /tmp/vlm_three_cameras.tar
+    timeout 8 ffmpeg -y -loglevel error -f v4l2 -video_size 960x720 -i /dev/video2 -frames:v 1 -q:v 2 /tmp/vlm_front.png
+    timeout 8 ffmpeg -y -loglevel error -f v4l2 -video_size 960x720 -i /dev/video4 -frames:v 1 -q:v 2 /tmp/vlm_left.png
+    timeout 8 ffmpeg -y -loglevel error -f v4l2 -video_size 960x720 -i /dev/video3 -frames:v 1 -q:v 2 /tmp/vlm_right.png
+    tar -cf /tmp/vlm_three_cameras.tar -C /tmp vlm_front.png vlm_left.png vlm_right.png
+    ls -lh /tmp/vlm_front.png /tmp/vlm_left.png /tmp/vlm_right.png /tmp/vlm_three_cameras.tar
+    
+[STDOUT]
+-rw-rw-r-- 1 unitree unitree 1.1M 12月 15 17:42 /tmp/vlm_front.png
+-rw-rw-r-- 1 unitree unitree 1.4M 12月 15 17:42 /tmp/vlm_left.png
+-rw-rw-r-- 1 unitree unitree 1.1M 12月 15 17:42 /tmp/vlm_right.png
+-rw-rw-r-- 1 unitree unitree 3.6M 12月 15 17:42 /tmp/vlm_three_cameras.tar
+
+[CMD] scp -o ConnectTimeout=10 unitree@192.168.123.14:/tmp/vlm_three_cameras.tar robot_live_frames/step_0015/vlm_three_cameras.tar
+[OK] Left image: robot_live_frames/step_0015/left.png
+[OK] Front image: robot_live_frames/step_0015/front.png
+[OK] Right image: robot_live_frames/step_0015/right.png
+
+========== ACTION RESULT ==========
+Mode: autonomous_step
+Goal: C0.004
+Done: False
+Action: NAVIGATE_TO_LANDMARK({'landmark_id': 'L037', 'direction': 'left', 'target': 'L037', 'target_description': 'Open doorway visible to the left of the directory sign', 'floor': None, 'search_for': None, 'stop_condition': 'capture when near the doorway threshold', 'capture_after': True, 'evidence_view': 'FRONT', 'horizontal_position': 'left', 'horizontal_offset_fraction': -0.4, 'proximity': 'near', 'doorway_state': 'open', 'threshold_state': 'before', 'traversable': True}) [low, score=0.36] valid - The robot is currently blocked by an obstacle in the forward path, but the left side is clear. A directory sign (L036) and a corresponding open doorway (L037) are visible in the front view, indicating the target room C0.004 is to the left. Navigating to the doorway allows the robot to bypass the obstacle and enter the correct room.
+Action name: NAVIGATE_TO_LANDMARK
+Params: {'landmark_id': 'L037', 'direction': 'left', 'target': 'L037', 'target_description': 'Open doorway visible to the left of the directory sign', 'floor': None, 'search_for': None, 'stop_condition': 'capture when near the doorway threshold', 'capture_after': True, 'evidence_view': 'FRONT', 'horizontal_position': 'left', 'horizontal_offset_fraction': -0.4, 'proximity': 'near', 'doorway_state': 'open', 'threshold_state': 'before', 'traversable': True}
+Evidence view: FRONT
+Reason: The robot is currently blocked by an obstacle in the forward path, but the left side is clear. A directory sign (L036) and a corresponding open doorway (L037) are visible in the front view, indicating the target room C0.004 is to the left. Navigating to the doorway allows the robot to bypass the obstacle and enter the correct room.
+Confidence: low
+Evidence score: 0.36250000000000004
+Saved: navigation_outputs/http_api/autonomous_step_latest_result.json
+===================================
+
+
+========== EXECUTOR DECISION ==========
+Action: NAVIGATE_TO_LANDMARK
+Params: {'landmark_id': 'L037', 'direction': 'left', 'target': 'L037', 'target_description': 'Open doorway visible to the left of the directory sign', 'floor': None, 'search_for': None, 'stop_condition': 'capture when near the doorway threshold', 'capture_after': True, 'evidence_view': 'FRONT', 'horizontal_position': 'left', 'horizontal_offset_fraction': -0.4, 'proximity': 'near', 'doorway_state': 'open', 'threshold_state': 'before', 'traversable': True}
+Reason: The robot is currently blocked by an obstacle in the forward path, but the left side is clear. A directory sign (L036) and a corresponding open doorway (L037) are visible in the front view, indicating the target room C0.004 is to the left. Navigating to the doorway allows the robot to bypass the obstacle and enter the correct room.
+Mapped command: {'linear_x': 0.0, 'angular_z': 0.3, 'duration': 4.0, 'motion_kind': 'route_alignment'}
+Execute mode: confirm
+=======================================
+
+Execute this small movement pulse? [y/N]: y
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=0.3, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=0.3, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=0.3, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=0.3, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=0.3, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=0.3, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=0.3, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=0.3, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=0.3, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=0.3, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=0.3, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=0.3, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=0.3, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=0.3, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=0.3, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=0.3, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=0.3, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=0.3, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=0.3, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=0.3, duration=0.3999999999999977s
+[EXECUTOR] STOP
+[LOG] Step result saved: navigation_outputs/live_runs/run_2026_07_29_170237_C0_004/step_015_result.json
+
+========== AUTO STEP 16 ==========
+[CMD] ssh -o ConnectTimeout=10 unitree@192.168.123.14 
+    set -e
+    rm -f /tmp/vlm_front.png /tmp/vlm_left.png /tmp/vlm_right.png /tmp/vlm_three_cameras.tar
+    timeout 8 ffmpeg -y -loglevel error -f v4l2 -video_size 960x720 -i /dev/video2 -frames:v 1 -q:v 2 /tmp/vlm_front.png
+    timeout 8 ffmpeg -y -loglevel error -f v4l2 -video_size 960x720 -i /dev/video4 -frames:v 1 -q:v 2 /tmp/vlm_left.png
+    timeout 8 ffmpeg -y -loglevel error -f v4l2 -video_size 960x720 -i /dev/video3 -frames:v 1 -q:v 2 /tmp/vlm_right.png
+    tar -cf /tmp/vlm_three_cameras.tar -C /tmp vlm_front.png vlm_left.png vlm_right.png
+    ls -lh /tmp/vlm_front.png /tmp/vlm_left.png /tmp/vlm_right.png /tmp/vlm_three_cameras.tar
+    
+[STDOUT]
+-rw-rw-r-- 1 unitree unitree 1.5M 12月 15 17:44 /tmp/vlm_front.png
+-rw-rw-r-- 1 unitree unitree 1.1M 12月 15 17:44 /tmp/vlm_left.png
+-rw-rw-r-- 1 unitree unitree 966K 12月 15 17:44 /tmp/vlm_right.png
+-rw-rw-r-- 1 unitree unitree 3.5M 12月 15 17:44 /tmp/vlm_three_cameras.tar
+
+[CMD] scp -o ConnectTimeout=10 unitree@192.168.123.14:/tmp/vlm_three_cameras.tar robot_live_frames/step_0016/vlm_three_cameras.tar
+[OK] Left image: robot_live_frames/step_0016/left.png
+[OK] Front image: robot_live_frames/step_0016/front.png
+[OK] Right image: robot_live_frames/step_0016/right.png
+
+========== ACTION RESULT ==========
+Mode: autonomous_step
+Goal: C0.004
+Done: False
+Action: ALIGN_WITH_LANDMARK({'landmark_id': 'L041', 'direction': 'left', 'target': 'L041', 'target_description': 'White double door on the left wall with a dark label plate.', 'stop_condition': 'landmark centred in FRONT camera', 'capture_after': True, 'evidence_view': 'LEFT', 'horizontal_position': 'center', 'horizontal_offset_fraction': 0.0, 'proximity': 'near'}) [low, score=0.57] valid - Selected landmark is not centred and must be visually aligned before forward movement.
+Action name: ALIGN_WITH_LANDMARK
+Params: {'landmark_id': 'L041', 'direction': 'left', 'target': 'L041', 'target_description': 'White double door on the left wall with a dark label plate.', 'stop_condition': 'landmark centred in FRONT camera', 'capture_after': True, 'evidence_view': 'LEFT', 'horizontal_position': 'center', 'horizontal_offset_fraction': 0.0, 'proximity': 'near'}
+Evidence view: LEFT
+Reason: Selected landmark is not centred and must be visually aligned before forward movement.
+Confidence: low
+Evidence score: 0.5675
+Saved: navigation_outputs/http_api/autonomous_step_latest_result.json
+===================================
+
+
+========== EXECUTOR DECISION ==========
+Action: ALIGN_WITH_LANDMARK
+Params: {'landmark_id': 'L041', 'direction': 'left', 'target': 'L041', 'target_description': 'White double door on the left wall with a dark label plate.', 'stop_condition': 'landmark centred in FRONT camera', 'capture_after': True, 'evidence_view': 'LEFT', 'horizontal_position': 'center', 'horizontal_offset_fraction': 0.0, 'proximity': 'near'}
+Reason: Selected landmark is not centred and must be visually aligned before forward movement.
+Mapped command: {'linear_x': 0.0, 'angular_z': 0.3, 'duration': 5.235987755982989, 'motion_kind': 'visual_alignment'}
+Execute mode: confirm
+=======================================
+
+Execute this small movement pulse? [y/N]: y
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=0.3, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=0.3, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=0.3, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=0.3, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=0.3, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=0.3, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=0.3, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=0.3, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=0.3, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=0.3, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=0.3, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=0.3, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=0.3, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=0.3, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=0.3, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=0.3, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=0.3, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=0.3, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=0.3, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=0.3, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=0.3, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=0.3, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=0.3, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=0.3, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=0.3, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=0.3, duration=0.4s
+[EXECUTOR] STOP
+[LOG] Step result saved: navigation_outputs/live_runs/run_2026_07_29_170237_C0_004/step_016_result.json
+
+========== AUTO STEP 17 ==========
+[CMD] ssh -o ConnectTimeout=10 unitree@192.168.123.14 
+    set -e
+    rm -f /tmp/vlm_front.png /tmp/vlm_left.png /tmp/vlm_right.png /tmp/vlm_three_cameras.tar
+    timeout 8 ffmpeg -y -loglevel error -f v4l2 -video_size 960x720 -i /dev/video2 -frames:v 1 -q:v 2 /tmp/vlm_front.png
+    timeout 8 ffmpeg -y -loglevel error -f v4l2 -video_size 960x720 -i /dev/video4 -frames:v 1 -q:v 2 /tmp/vlm_left.png
+    timeout 8 ffmpeg -y -loglevel error -f v4l2 -video_size 960x720 -i /dev/video3 -frames:v 1 -q:v 2 /tmp/vlm_right.png
+    tar -cf /tmp/vlm_three_cameras.tar -C /tmp vlm_front.png vlm_left.png vlm_right.png
+    ls -lh /tmp/vlm_front.png /tmp/vlm_left.png /tmp/vlm_right.png /tmp/vlm_three_cameras.tar
+    
+[STDOUT]
+-rw-rw-r-- 1 unitree unitree 1.2M 12月 15 17:45 /tmp/vlm_front.png
+-rw-rw-r-- 1 unitree unitree 925K 12月 15 17:45 /tmp/vlm_left.png
+-rw-rw-r-- 1 unitree unitree 1.6M 12月 15 17:45 /tmp/vlm_right.png
+-rw-rw-r-- 1 unitree unitree 3.6M 12月 15 17:46 /tmp/vlm_three_cameras.tar
+
+[CMD] scp -o ConnectTimeout=10 unitree@192.168.123.14:/tmp/vlm_three_cameras.tar robot_live_frames/step_0017/vlm_three_cameras.tar
+[OK] Left image: robot_live_frames/step_0017/left.png
+[OK] Front image: robot_live_frames/step_0017/front.png
+[OK] Right image: robot_live_frames/step_0017/right.png
+
+========== ACTION RESULT ==========
+Mode: autonomous_step
+Goal: C0.004
+Done: False
+Action: ALIGN_WITH_LANDMARK({'landmark_id': 'L044', 'direction': 'left', 'target': 'L044', 'target_description': 'Closed white double doors with a dark room label plate.', 'stop_condition': 'landmark centred in FRONT camera', 'capture_after': True, 'evidence_view': 'FRONT', 'horizontal_position': 'left', 'horizontal_offset_fraction': -0.3, 'proximity': 'near'}) [low, score=0.58] valid - Selected landmark is not centred and must be visually aligned before forward movement.
+Action name: ALIGN_WITH_LANDMARK
+Params: {'landmark_id': 'L044', 'direction': 'left', 'target': 'L044', 'target_description': 'Closed white double doors with a dark room label plate.', 'stop_condition': 'landmark centred in FRONT camera', 'capture_after': True, 'evidence_view': 'FRONT', 'horizontal_position': 'left', 'horizontal_offset_fraction': -0.3, 'proximity': 'near'}
+Evidence view: FRONT
+Reason: Selected landmark is not centred and must be visually aligned before forward movement.
+Confidence: low
+Evidence score: 0.5825
+Saved: navigation_outputs/http_api/autonomous_step_latest_result.json
+===================================
+
+
+========== EXECUTOR DECISION ==========
+Action: ALIGN_WITH_LANDMARK
+Params: {'landmark_id': 'L044', 'direction': 'left', 'target': 'L044', 'target_description': 'Closed white double doors with a dark room label plate.', 'stop_condition': 'landmark centred in FRONT camera', 'capture_after': True, 'evidence_view': 'FRONT', 'horizontal_position': 'left', 'horizontal_offset_fraction': -0.3, 'proximity': 'near'}
+Reason: Selected landmark is not centred and must be visually aligned before forward movement.
+Mapped command: {'linear_x': 0.0, 'angular_z': 0.3, 'duration': 0.614355896702004, 'motion_kind': 'visual_alignment'}
+Execute mode: confirm
+=======================================
+
+Execute this small movement pulse? [y/N]: y
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=0.3, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=0.3, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.0, angular.z=0.3, duration=0.4s
+[EXECUTOR] STOP
+[LOG] Step result saved: navigation_outputs/live_runs/run_2026_07_29_170237_C0_004/step_017_result.json
+
+========== AUTO STEP 18 ==========
+[CMD] ssh -o ConnectTimeout=10 unitree@192.168.123.14 
+    set -e
+    rm -f /tmp/vlm_front.png /tmp/vlm_left.png /tmp/vlm_right.png /tmp/vlm_three_cameras.tar
+    timeout 8 ffmpeg -y -loglevel error -f v4l2 -video_size 960x720 -i /dev/video2 -frames:v 1 -q:v 2 /tmp/vlm_front.png
+    timeout 8 ffmpeg -y -loglevel error -f v4l2 -video_size 960x720 -i /dev/video4 -frames:v 1 -q:v 2 /tmp/vlm_left.png
+    timeout 8 ffmpeg -y -loglevel error -f v4l2 -video_size 960x720 -i /dev/video3 -frames:v 1 -q:v 2 /tmp/vlm_right.png
+    tar -cf /tmp/vlm_three_cameras.tar -C /tmp vlm_front.png vlm_left.png vlm_right.png
+    ls -lh /tmp/vlm_front.png /tmp/vlm_left.png /tmp/vlm_right.png /tmp/vlm_three_cameras.tar
+    
+[STDOUT]
+-rw-rw-r-- 1 unitree unitree 1.1M 12月 15 17:47 /tmp/vlm_front.png
+-rw-rw-r-- 1 unitree unitree 1.1M 12月 15 17:47 /tmp/vlm_left.png
+-rw-rw-r-- 1 unitree unitree 1.4M 12月 15 17:47 /tmp/vlm_right.png
+-rw-rw-r-- 1 unitree unitree 3.5M 12月 15 17:47 /tmp/vlm_three_cameras.tar
+
+[CMD] scp -o ConnectTimeout=10 unitree@192.168.123.14:/tmp/vlm_three_cameras.tar robot_live_frames/step_0018/vlm_three_cameras.tar
+[OK] Left image: robot_live_frames/step_0018/left.png
+[OK] Front image: robot_live_frames/step_0018/front.png
+[OK] Right image: robot_live_frames/step_0018/right.png
+
+========== ACTION RESULT ==========
+Mode: autonomous_step
+Goal: C0.004
+Done: False
+Action: CHECK_DOOR_LABEL({'landmark_id': 'L046', 'direction': 'forward', 'target': 'L046', 'target_description': 'Closed double doors with room labels and QR code visible in front view.', 'floor': None, 'search_for': None, 'stop_condition': 'robot near doorway', 'capture_after': True, 'evidence_view': 'FRONT', 'horizontal_position': 'center', 'horizontal_offset_fraction': 0.0, 'proximity': 'near', 'doorway_state': 'closed', 'threshold_state': 'at', 'traversable': True}) [low, score=0.47] valid - The robot is positioned directly in front of the closed double doors (L046) which display room labels and a QR code; checking this label is the most direct way to confirm if this is the target room C0.004.
+Action name: CHECK_DOOR_LABEL
+Params: {'landmark_id': 'L046', 'direction': 'forward', 'target': 'L046', 'target_description': 'Closed double doors with room labels and QR code visible in front view.', 'floor': None, 'search_for': None, 'stop_condition': 'robot near doorway', 'capture_after': True, 'evidence_view': 'FRONT', 'horizontal_position': 'center', 'horizontal_offset_fraction': 0.0, 'proximity': 'near', 'doorway_state': 'closed', 'threshold_state': 'at', 'traversable': True}
+Evidence view: FRONT
+Reason: The robot is positioned directly in front of the closed double doors (L046) which display room labels and a QR code; checking this label is the most direct way to confirm if this is the target room C0.004.
+Confidence: low
+Evidence score: 0.475
+Saved: navigation_outputs/http_api/autonomous_step_latest_result.json
+===================================
+
+
+========== EXECUTOR DECISION ==========
+Action: CHECK_DOOR_LABEL
+Params: {'landmark_id': 'L046', 'direction': 'forward', 'target': 'L046', 'target_description': 'Closed double doors with room labels and QR code visible in front view.', 'floor': None, 'search_for': None, 'stop_condition': 'robot near doorway', 'capture_after': True, 'evidence_view': 'FRONT', 'horizontal_position': 'center', 'horizontal_offset_fraction': 0.0, 'proximity': 'near', 'doorway_state': 'closed', 'threshold_state': 'at', 'traversable': True}
+Reason: The robot is positioned directly in front of the closed double doors (L046) which display room labels and a QR code; checking this label is the most direct way to confirm if this is the target room C0.004.
+Mapped command: {'linear_x': 0.3, 'angular_z': 0.0, 'duration': 15.0, 'motion_kind': 'cue_approach'}
+Execute mode: confirm
+=======================================
+
+Execute this small movement pulse? [y/N]: y
+[EXECUTOR] Pulse: linear.x=0.3, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.3, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.3, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.3, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.3, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.3, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.3, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.3, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.3, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.3, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.3, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.3, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.3, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.3, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.3, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.3, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.3, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.3, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.3, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.3, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Pulse: linear.x=0.3, angular.z=0.0, duration=0.4s
+[EXECUTOR] STOP
+[EXECUTOR] Motion watch: cutting pulse short after 8.40s of 15.00s planned -- Motion blocked: nearest obstacle at 0.39m, below the 0.50m stop distance. Side clearance: left 0.40m, right 0.79m, right is clearer.
+[LOG] Step result saved: navigation_outputs/live_runs/run_2026_07_29_170237_C0_004/step_018_result.json
+
+========== AUTO STEP 19 ==========
+[CMD] ssh -o ConnectTimeout=10 unitree@192.168.123.14 
+    set -e
+    rm -f /tmp/vlm_front.png /tmp/vlm_left.png /tmp/vlm_right.png /tmp/vlm_three_cameras.tar
+    timeout 8 ffmpeg -y -loglevel error -f v4l2 -video_size 960x720 -i /dev/video2 -frames:v 1 -q:v 2 /tmp/vlm_front.png
+    timeout 8 ffmpeg -y -loglevel error -f v4l2 -video_size 960x720 -i /dev/video4 -frames:v 1 -q:v 2 /tmp/vlm_left.png
+    timeout 8 ffmpeg -y -loglevel error -f v4l2 -video_size 960x720 -i /dev/video3 -frames:v 1 -q:v 2 /tmp/vlm_right.png
+    tar -cf /tmp/vlm_three_cameras.tar -C /tmp vlm_front.png vlm_left.png vlm_right.png
+    ls -lh /tmp/vlm_front.png /tmp/vlm_left.png /tmp/vlm_right.png /tmp/vlm_three_cameras.tar
+    
+[STDOUT]
+-rw-rw-r-- 1 unitree unitree 938K 12月 15 17:48 /tmp/vlm_front.png
+-rw-rw-r-- 1 unitree unitree 802K 12月 15 17:48 /tmp/vlm_left.png
+-rw-rw-r-- 1 unitree unitree 1.3M 12月 15 17:48 /tmp/vlm_right.png
+-rw-rw-r-- 1 unitree unitree 3.0M 12月 15 17:48 /tmp/vlm_three_cameras.tar
+
+[CMD] scp -o ConnectTimeout=10 unitree@192.168.123.14:/tmp/vlm_three_cameras.tar robot_live_frames/step_0019/vlm_three_cameras.tar
+[OK] Left image: robot_live_frames/step_0019/left.png
+[OK] Front image: robot_live_frames/step_0019/front.png
+[OK] Right image: robot_live_frames/step_0019/right.png
+
+========== ACTION RESULT ==========
+Mode: autonomous_step
+Goal: C0.004
+Done: False
+Action: NAVIGATE_TO_LANDMARK({'landmark_id': 'L042', 'direction': 'forward', 'target': 'L042', 'target_description': 'Wood-paneled corridor extending forward with a glass exit door at the far end.', 'floor': None, 'search_for': None, 'stop_condition': 'capture when near the corridor bend', 'capture_after': True, 'evidence_view': 'FRONT', 'horizontal_position': 'center', 'horizontal_offset_fraction': 0.0, 'proximity': 'medium', 'doorway_state': 'unknown', 'threshold_state': 'before', 'traversable': True}) [low, score=0.37] valid - The current view is blocked by a closed door, but the remembered route landmark L042 indicates a wood-paneled corridor extending forward that likely leads to the target room.
+Action name: NAVIGATE_TO_LANDMARK
+Params: {'landmark_id': 'L042', 'direction': 'forward', 'target': 'L042', 'target_description': 'Wood-paneled corridor extending forward with a glass exit door at the far end.', 'floor': None, 'search_for': None, 'stop_condition': 'capture when near the corridor bend', 'capture_after': True, 'evidence_view': 'FRONT', 'horizontal_position': 'center', 'horizontal_offset_fraction': 0.0, 'proximity': 'medium', 'doorway_state': 'unknown', 'threshold_state': 'before', 'traversable': True}
+Evidence view: FRONT
+Reason: The current view is blocked by a closed door, but the remembered route landmark L042 indicates a wood-paneled corridor extending forward that likely leads to the target room.
+Confidence: low
+Evidence score: 0.367
+Saved: navigation_outputs/http_api/autonomous_step_latest_result.json
+===================================
+
+
+========== EXECUTOR DECISION ==========
+Action: NAVIGATE_TO_LANDMARK
+Params: {'landmark_id': 'L042', 'direction': 'forward', 'target': 'L042', 'target_description': 'Wood-paneled corridor extending forward with a glass exit door at the far end.', 'floor': None, 'search_for': None, 'stop_condition': 'capture when near the corridor bend', 'capture_after': True, 'evidence_view': 'FRONT', 'horizontal_position': 'center', 'horizontal_offset_fraction': 0.0, 'proximity': 'medium', 'doorway_state': 'unknown', 'threshold_state': 'before', 'traversable': True}
+Reason: The current view is blocked by a closed door, but the remembered route landmark L042 indicates a wood-paneled corridor extending forward that likely leads to the target room.
+Mapped command: {'linear_x': 0.3, 'angular_z': 0.0, 'duration': 20.0, 'motion_kind': 'route_advance'}
+Execute mode: confirm
+=======================================
+
+Execute this small movement pulse? [y/N]: N
+[EXECUTOR] ABORT (user_rejected): User rejected movement.
+[EXECUTOR] STOP
+[LOG] Step result saved: navigation_outputs/live_runs/run_2026_07_29_170237_C0_004/step_019_result.json
+
+========== AUTO STEP 20 ==========
+[CMD] ssh -o ConnectTimeout=10 unitree@192.168.123.14 
+    set -e
+    rm -f /tmp/vlm_front.png /tmp/vlm_left.png /tmp/vlm_right.png /tmp/vlm_three_cameras.tar
+    timeout 8 ffmpeg -y -loglevel error -f v4l2 -video_size 960x720 -i /dev/video2 -frames:v 1 -q:v 2 /tmp/vlm_front.png
+    timeout 8 ffmpeg -y -loglevel error -f v4l2 -video_size 960x720 -i /dev/video4 -frames:v 1 -q:v 2 /tmp/vlm_left.png
+    timeout 8 ffmpeg -y -loglevel error -f v4l2 -video_size 960x720 -i /dev/video3 -frames:v 1 -q:v 2 /tmp/vlm_right.png
+    tar -cf /tmp/vlm_three_cameras.tar -C /tmp vlm_front.png vlm_left.png vlm_right.png
+    ls -lh /tmp/vlm_front.png /tmp/vlm_left.png /tmp/vlm_right.png /tmp/vlm_three_cameras.tar
+    
+[STDOUT]
+-rw-rw-r-- 1 unitree unitree 1.5M 12月 15 17:49 /tmp/vlm_front.png
+-rw-rw-r-- 1 unitree unitree 803K 12月 15 17:49 /tmp/vlm_left.png
+-rw-rw-r-- 1 unitree unitree 1.4M 12月 15 17:50 /tmp/vlm_right.png
+-rw-rw-r-- 1 unitree unitree 3.7M 12月 15 17:50 /tmp/vlm_three_cameras.tar
+
+[CMD] scp -o ConnectTimeout=10 unitree@192.168.123.14:/tmp/vlm_three_cameras.tar robot_live_frames/step_0020/vlm_three_cameras.tar
+[OK] Left image: robot_live_frames/step_0020/left.png
+[OK] Front image: robot_live_frames/step_0020/front.png
+[OK] Right image: robot_live_frames/step_0020/right.png
+
+========== ACTION RESULT ==========
+Mode: autonomous_step
+Goal: C0.004
+Done: False
+Action: ALIGN_WITH_LANDMARK({'landmark_id': 'L050', 'direction': 'right', 'target': 'L050', 'target_description': 'Open glass doorway leading into a bright lobby area with seating.', 'stop_condition': 'landmark centred in FRONT camera', 'capture_after': True, 'evidence_view': 'RIGHT', 'horizontal_position': 'center', 'horizontal_offset_fraction': 0.0, 'proximity': 'near'}) [medium, score=0.60] valid - Selected landmark is not centred and must be visually aligned before forward movement.
+Action name: ALIGN_WITH_LANDMARK
+Params: {'landmark_id': 'L050', 'direction': 'right', 'target': 'L050', 'target_description': 'Open glass doorway leading into a bright lobby area with seating.', 'stop_condition': 'landmark centred in FRONT camera', 'capture_after': True, 'evidence_view': 'RIGHT', 'horizontal_position': 'center', 'horizontal_offset_fraction': 0.0, 'proximity': 'near'}
+Evidence view: RIGHT
+Reason: Selected landmark is not centred and must be visually aligned before forward movement.
+Confidence: medium
+Evidence score: 0.605
+Saved: navigation_outputs/http_api/autonomous_step_latest_result.json
+===================================
+
+
+========== EXECUTOR DECISION ==========
+Action: ALIGN_WITHLANDMARK
+Params: {'landmark_id': 'L050', 'direction': 'right', 'target': 'L050', 'target_description': 'Open glass doorway leading into a bright lobby area with seating.', 'stop_condition': 'landmark centred in FRONT camera', 'capture_after': True, 'evidence_view': 'RIGHT', 'horizontal_position': 'center', 'horizontal_offset_fraction': 0.0, 'proximity': 'near'}
+Reason: Selected landmark is not centred and must be visually aligned before forward movement.
+Mapped command: {'linear_x': 0.0, 'angular_z': -0.3, 'duration': 5.235987755982989, 'motion_kind': 'visual_alignment'}
+Execute mode: confirm
+=======================================
+
+Execute this small movement pulse? [y/N]: N
+[EXECUTOR] ABORT (user_rejected): User rejected movement.
+[EXECUTOR] STOP
+[LOG] Step result saved: navigation_outputs/live_runs/run_2026_07_29_170237_C0_004/step_020_result.json
+[LOG] Final summary saved: navigation_outputs/live_runs/run_2026_07_29_170237_C0_004/final_run_summary.json
+[LOG] Memory saved: navigation_outputs/live_runs/run_2026_07_29_170237_C0_004/memory.json
+[LOG] Navigation log saved: navigation_outputs/live_runs/run_2026_07_29_170237_C0_004/navigation_log.json
+[LOG] Parsed goal saved: navigation_outputs/live_runs/run_2026_07_29_170237_C0_004/parsed_goal.json
+vlm_project@vlmproject-ThinkPad-X1:~/VLM_Navigation_Project$ 
