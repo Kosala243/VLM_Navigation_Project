@@ -1,0 +1,51 @@
+{
+  "step": 7,
+  "timestamp": "2026-08-09T09:48:46.119286",
+  "image_path": "robot_live_frames/step_test_E36/step_0007/front.jpg",
+  "run_settings": {
+    "goal": "E36",
+    "mode": "offline_replay",
+    "camera_mode": "separate",
+    "memory": false,
+    "execute": "replay",
+    "model_name": "Qwen/Qwen3-VL-8B-Instruct",
+    "model_backend": "transformers"
+  },
+  "executed": true,
+  "response": {
+    "done": false,
+    "action": {
+      "name": "NAVIGATE_TO_LANDMARK",
+      "params": {
+        "landmark_id": "L004",
+        "direction": "forward",
+        "target": null,
+        "target_description": "Concrete stairs leading up to an upper floor.",
+        "floor": null,
+        "search_for": null,
+        "stop_condition": "capture after advancing toward the remembered junction",
+        "capture_after": true,
+        "evidence_view": "FRONT",
+        "horizontal_position": "center",
+        "horizontal_offset_fraction": 0.0,
+        "proximity": "far",
+        "doorway_state": "unknown",
+        "threshold_state": "unknown",
+        "traversable": true
+      },
+      "reason": "The current view is sparse, and the remembered landmark L004 (stairs) supports continued progress toward the goal E36, which is likely on a different floor.",
+      "confidence": "low",
+      "evidence_score": 0.37750000000000006,
+      "is_valid": true,
+      "invalid_reason": ""
+    }
+  },
+  "execution_result": {
+    "safety": {
+      "sensor_mode": "placeholder",
+      "bypassed": true,
+      "allowed": true,
+      "reason": "Offline replay -- no physical robot/LiDAR involved."
+    }
+  }
+}

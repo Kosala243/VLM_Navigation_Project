@@ -1,0 +1,49 @@
+{
+  "step": 6,
+  "timestamp": "2026-08-09T09:47:12.516655",
+  "image_path": "robot_live_frames/step_test_E36/step_0006/front.jpg",
+  "run_settings": {
+    "goal": "E36",
+    "mode": "offline_replay",
+    "camera_mode": "separate",
+    "memory": false,
+    "execute": "replay",
+    "model_name": "Qwen/Qwen3-VL-8B-Instruct",
+    "model_backend": "transformers"
+  },
+  "executed": true,
+  "response": {
+    "done": false,
+    "action": {
+      "name": "PASS_THROUGH_DOORWAY",
+      "params": {
+        "landmark_id": "L002",
+        "direction": "forward",
+        "target": null,
+        "target_description": "Double door with vertical window, partially open, revealing laundry machines inside.",
+        "stop_condition": "capture immediately after crossing the doorway threshold",
+        "capture_after": true,
+        "evidence_view": "FRONT",
+        "horizontal_position": "center",
+        "proximity": "near",
+        "doorway_state": "open",
+        "threshold_state": "at",
+        "traversable": true,
+        "horizontal_offset_fraction": 0.0
+      },
+      "reason": "Current doorway L002 is open, centred in FRONT, and traversable, so the dedicated doorway traversal skill is used.",
+      "confidence": "low",
+      "evidence_score": 0.5549999999999999,
+      "is_valid": true,
+      "invalid_reason": ""
+    }
+  },
+  "execution_result": {
+    "safety": {
+      "sensor_mode": "placeholder",
+      "bypassed": true,
+      "allowed": true,
+      "reason": "Offline replay -- no physical robot/LiDAR involved."
+    }
+  }
+}

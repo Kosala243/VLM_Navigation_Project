@@ -1,0 +1,43 @@
+{
+  "step": 12,
+  "timestamp": "2026-08-09T09:54:58.327581",
+  "image_path": "robot_live_frames/step_test_E36/step_0012/front.jpg",
+  "run_settings": {
+    "goal": "E36",
+    "mode": "offline_replay",
+    "camera_mode": "separate",
+    "memory": false,
+    "execute": "replay",
+    "model_name": "Qwen/Qwen3-VL-8B-Instruct",
+    "model_backend": "transformers"
+  },
+  "executed": true,
+  "response": {
+    "done": false,
+    "action": {
+      "name": "FOLLOW_DIRECTION",
+      "params": {
+        "landmark_id": "L012",
+        "direction": "right",
+        "target": "E36",
+        "target_description": "Black sign with white text mounted on wall, visible in front view.",
+        "stop_condition": "robot aligned with the right route indicated by the current sign",
+        "capture_after": true,
+        "evidence_view": "FRONT"
+      },
+      "reason": "Current sign L012 indicates right toward E36: Studios 50E01-50E15\nStudios 50E36-50E50\nStudios 50E16-50E35",
+      "confidence": "medium",
+      "evidence_score": 0.65,
+      "is_valid": true,
+      "invalid_reason": ""
+    }
+  },
+  "execution_result": {
+    "safety": {
+      "sensor_mode": "placeholder",
+      "bypassed": true,
+      "allowed": true,
+      "reason": "Offline replay -- no physical robot/LiDAR involved."
+    }
+  }
+}

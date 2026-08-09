@@ -1,0 +1,46 @@
+{
+  "step": 11,
+  "timestamp": "2026-08-09T09:53:36.007118",
+  "image_path": "robot_live_frames/step_test_E36/step_0011/front.jpg",
+  "run_settings": {
+    "goal": "E36",
+    "mode": "offline_replay",
+    "camera_mode": "separate",
+    "memory": false,
+    "execute": "replay",
+    "model_name": "Qwen/Qwen3-VL-8B-Instruct",
+    "model_backend": "transformers"
+  },
+  "executed": true,
+  "response": {
+    "done": false,
+    "action": {
+      "name": "ALIGN_WITH_LANDMARK",
+      "params": {
+        "landmark_id": "L011",
+        "direction": "right",
+        "target": "E36",
+        "target_description": "Dark door on left wall with a sign indicating '50E15' and room ranges.",
+        "stop_condition": "target landmark centred in FRONT camera",
+        "capture_after": true,
+        "evidence_view": "RIGHT",
+        "horizontal_position": "left",
+        "horizontal_offset_fraction": -0.4,
+        "proximity": "near"
+      },
+      "reason": "The exact target is visible in the RIGHT view and must first be turned into the FRONT camera.",
+      "confidence": "medium",
+      "evidence_score": 0.65,
+      "is_valid": true,
+      "invalid_reason": ""
+    }
+  },
+  "execution_result": {
+    "safety": {
+      "sensor_mode": "placeholder",
+      "bypassed": true,
+      "allowed": true,
+      "reason": "Offline replay -- no physical robot/LiDAR involved."
+    }
+  }
+}

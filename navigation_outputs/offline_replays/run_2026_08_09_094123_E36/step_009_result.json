@@ -1,0 +1,51 @@
+{
+  "step": 9,
+  "timestamp": "2026-08-09T09:51:05.731490",
+  "image_path": "robot_live_frames/step_test_E36/step_0009/front.jpg",
+  "run_settings": {
+    "goal": "E36",
+    "mode": "offline_replay",
+    "camera_mode": "separate",
+    "memory": false,
+    "execute": "replay",
+    "model_name": "Qwen/Qwen3-VL-8B-Instruct",
+    "model_backend": "transformers"
+  },
+  "executed": true,
+  "response": {
+    "done": false,
+    "action": {
+      "name": "NAVIGATE_TO_LANDMARK",
+      "params": {
+        "landmark_id": "L005",
+        "direction": "forward",
+        "target": null,
+        "target_description": "White door visible at the end of the hallway.",
+        "floor": null,
+        "search_for": null,
+        "stop_condition": "capture when near the white door",
+        "capture_after": true,
+        "evidence_view": "FRONT",
+        "horizontal_position": "center",
+        "horizontal_offset_fraction": 0.0,
+        "proximity": "far",
+        "doorway_state": "unknown",
+        "threshold_state": "unknown",
+        "traversable": true
+      },
+      "reason": "The current view is sparse, and the remembered landmark L005 (a white door at the end of the hallway) supports continued progress toward the goal. The goal E36 is located on floor 3, and the directory sign confirms it is in the corridor ahead.",
+      "confidence": "low",
+      "evidence_score": 0.34750000000000003,
+      "is_valid": true,
+      "invalid_reason": ""
+    }
+  },
+  "execution_result": {
+    "safety": {
+      "sensor_mode": "placeholder",
+      "bypassed": true,
+      "allowed": true,
+      "reason": "Offline replay -- no physical robot/LiDAR involved."
+    }
+  }
+}

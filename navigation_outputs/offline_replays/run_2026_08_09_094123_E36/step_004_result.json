@@ -1,0 +1,47 @@
+{
+  "step": 4,
+  "timestamp": "2026-08-09T09:45:01.806542",
+  "image_path": "robot_live_frames/step_test_E36/step_0004/front.jpg",
+  "run_settings": {
+    "goal": "E36",
+    "mode": "offline_replay",
+    "camera_mode": "separate",
+    "memory": false,
+    "execute": "replay",
+    "model_name": "Qwen/Qwen3-VL-8B-Instruct",
+    "model_backend": "transformers"
+  },
+  "executed": true,
+  "response": {
+    "done": false,
+    "action": {
+      "name": "SEARCH_FOR_CUE",
+      "params": {
+        "search_for": "sign, directory, room label, elevator, stairs, target, reception/help desk",
+        "stop_condition": "capture when a useful cue is found or the corridor is fully explored",
+        "capture_after": true,
+        "evidence_view": "FRONT",
+        "horizontal_position": "center",
+        "horizontal_offset_fraction": null,
+        "proximity": "medium",
+        "doorway_state": "unknown",
+        "threshold_state": "unknown",
+        "traversable": true,
+        "direction": "left"
+      },
+      "reason": "The current view is a sparse corridor with no visible signs, directories, or room labels that directly reference the goal E36. No clear directional cues or landmarks are visible to guide navigation toward the target room.",
+      "confidence": "low",
+      "evidence_score": 0.35,
+      "is_valid": true,
+      "invalid_reason": ""
+    }
+  },
+  "execution_result": {
+    "safety": {
+      "sensor_mode": "placeholder",
+      "bypassed": true,
+      "allowed": true,
+      "reason": "Offline replay -- no physical robot/LiDAR involved."
+    }
+  }
+}
