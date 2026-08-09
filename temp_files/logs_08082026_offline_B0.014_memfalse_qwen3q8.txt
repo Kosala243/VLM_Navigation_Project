@@ -1,0 +1,533 @@
+vlm_project@vlmproject-ThinkPad-X1:~$ cd VLM_Navigation_Project
+vlm_project@vlmproject-ThinkPad-X1:~/VLM_Navigation_Project$ python3 thinkpad_robot_capture_to_amd.py \
+>   --mode auto \
+>   --camera-mode separate \
+>   --saved-image-dir robot_live_frames/step_test_B0.001 \
+>   --goal B0.014 \
+>   --memory false \
+>   --execute false \
+>   --max-steps 50
+[INFO] Mode: auto
+[INFO] Camera mode: separate
+[INFO] Memory: false
+[INFO] Goal: B0.014
+[INFO] AMD API: http://ernis-amd395:8001
+[INFO] Robot: unitree@192.168.123.14
+[INFO] Front camera: /dev/video2
+[INFO] Left camera: /dev/video4
+[INFO] Right camera: /dev/video3
+[LOG] Run directory: navigation_outputs/live_runs/run_2026_08_09_173158_B0_014
+[INFO] Memory disabled: using fresh /single_step for every auto step
+
+========== AUTO STEP 1 ==========
+[OK] Loaded saved LEFT: robot_live_frames/step_0001/left.png
+[OK] Loaded saved FRONT: robot_live_frames/step_0001/front.png
+[OK] Loaded saved RIGHT: robot_live_frames/step_0001/right.png
+
+========== ACTION RESULT ==========
+Mode: single_step
+Goal: B0.014
+Done: False
+Action: FOLLOW_DIRECTION({'landmark_id': None, 'direction': 'left', 'target': None, 'target_description': None, 'floor': None, 'search_for': None, 'stop_condition': None, 'capture_after': True, 'evidence_view': 'LEFT', 'horizontal_position': 'unknown', 'horizontal_offset_fraction': None, 'proximity': 'far', 'doorway_state': 'unknown', 'threshold_state': 'unknown', 'traversable': True}) [low, score=0.00] INVALID: FOLLOW_DIRECTION requires a current semantic landmark_id. - The LEFT view shows a corridor leading toward a doorway with directional signs for 'Tower B' and 'Tower C', which may lead to the target room B0.014. Following the left direction is the most logical step based on the visible cues.
+Action name: FOLLOW_DIRECTION
+Params: {'landmark_id': None, 'direction': 'left', 'target': None, 'target_description': None, 'floor': None, 'search_for': None, 'stop_condition': None, 'capture_after': True, 'evidence_view': 'LEFT', 'horizontal_position': 'unknown', 'horizontal_offset_fraction': None, 'proximity': 'far', 'doorway_state': 'unknown', 'threshold_state': 'unknown', 'traversable': True}
+Evidence view: LEFT
+Reason: The LEFT view shows a corridor leading toward a doorway with directional signs for 'Tower B' and 'Tower C', which may lead to the target room B0.014. Following the left direction is the most logical step based on the visible cues.
+Confidence: low
+Evidence score: 0.0
+Saved: navigation_outputs/http_api/single_step_latest_result.json
+===================================
+
+[EXECUTE] Dry run only. Robot will not move.
+[LOG] Step result saved: navigation_outputs/live_runs/run_2026_08_09_173158_B0_014/step_001_result.json
+
+========== AUTO STEP 2 ==========
+[OK] Loaded saved LEFT: robot_live_frames/step_0002/left.png
+[OK] Loaded saved FRONT: robot_live_frames/step_0002/front.png
+[OK] Loaded saved RIGHT: robot_live_frames/step_0002/right.png
+
+========== ACTION RESULT ==========
+Mode: single_step
+Goal: B0.014
+Done: False
+Action: SEARCH_FOR_CUE({'search_for': 'room label or directional sign for B0.014', 'stop_condition': 'capture when a relevant sign or door label is found', 'capture_after': True, 'evidence_view': 'FRONT', 'horizontal_position': 'unknown', 'horizontal_offset_fraction': None, 'proximity': 'far', 'doorway_state': 'unknown', 'threshold_state': 'unknown', 'traversable': True, 'direction': 'left'}) [low, score=0.35] valid - No visible signs, door labels, or directional cues for room B0.014 are present in the current view. The environment appears to be a common area with seating and a service counter, but no specific navigation aids for the target room are visible.
+Action name: SEARCH_FOR_CUE
+Params: {'search_for': 'room label or directional sign for B0.014', 'stop_condition': 'capture when a relevant sign or door label is found', 'capture_after': True, 'evidence_view': 'FRONT', 'horizontal_position': 'unknown', 'horizontal_offset_fraction': None, 'proximity': 'far', 'doorway_state': 'unknown', 'threshold_state': 'unknown', 'traversable': True, 'direction': 'left'}
+Evidence view: FRONT
+Reason: No visible signs, door labels, or directional cues for room B0.014 are present in the current view. The environment appears to be a common area with seating and a service counter, but no specific navigation aids for the target room are visible.
+Confidence: low
+Evidence score: 0.35
+Saved: navigation_outputs/http_api/single_step_latest_result.json
+===================================
+
+[EXECUTE] Dry run only. Robot will not move.
+[LOG] Step result saved: navigation_outputs/live_runs/run_2026_08_09_173158_B0_014/step_002_result.json
+
+========== AUTO STEP 3 ==========
+[OK] Loaded saved LEFT: robot_live_frames/step_0003/left.png
+[OK] Loaded saved FRONT: robot_live_frames/step_0003/front.png
+[OK] Loaded saved RIGHT: robot_live_frames/step_0003/right.png
+
+========== ACTION RESULT ==========
+Mode: single_step
+Goal: B0.014
+Done: False
+Action: NAVIGATE_TO_LANDMARK({'landmark_id': 'L003', 'direction': 'forward', 'target': None, 'target_description': 'White door visible inside lobby behind display cases.', 'floor': None, 'search_for': None, 'stop_condition': 'capture before entering the passage', 'capture_after': True, 'evidence_view': 'FRONT', 'horizontal_position': 'center', 'horizontal_offset_fraction': 0.5, 'proximity': 'medium', 'doorway_state': 'closed', 'threshold_state': 'unknown', 'traversable': None}) [low, score=0.33] valid - The current view is sparse and the recently remembered landmark L003 (a white door inside the lobby) supports continued progress toward the goal, as it is the most relevant structural landmark compatible with the active goal and direction.
+Action name: NAVIGATE_TO_LANDMARK
+Params: {'landmark_id': 'L003', 'direction': 'forward', 'target': None, 'target_description': 'White door visible inside lobby behind display cases.', 'floor': None, 'search_for': None, 'stop_condition': 'capture before entering the passage', 'capture_after': True, 'evidence_view': 'FRONT', 'horizontal_position': 'center', 'horizontal_offset_fraction': 0.5, 'proximity': 'medium', 'doorway_state': 'closed', 'threshold_state': 'unknown', 'traversable': None}
+Evidence view: FRONT
+Reason: The current view is sparse and the recently remembered landmark L003 (a white door inside the lobby) supports continued progress toward the goal, as it is the most relevant structural landmark compatible with the active goal and direction.
+Confidence: low
+Evidence score: 0.3325
+Saved: navigation_outputs/http_api/single_step_latest_result.json
+===================================
+
+[EXECUTE] Dry run only. Robot will not move.
+[LOG] Step result saved: navigation_outputs/live_runs/run_2026_08_09_173158_B0_014/step_003_result.json
+
+========== AUTO STEP 4 ==========
+[OK] Loaded saved LEFT: robot_live_frames/step_0004/left.png
+[OK] Loaded saved FRONT: robot_live_frames/step_0004/front.png
+[OK] Loaded saved RIGHT: robot_live_frames/step_0004/right.png
+
+========== ACTION RESULT ==========
+Mode: single_step
+Goal: B0.014
+Done: False
+Action: FOLLOW_DIRECTION({'landmark_id': 'L001', 'direction': 'forward', 'target': None, 'target_description': "Wall-mounted sign showing 'MSP Alumni Community' map and room directions.", 'floor': '0', 'search_for': None, 'stop_condition': None, 'capture_after': True, 'evidence_view': 'FRONT', 'horizontal_position': 'center', 'horizontal_offset_fraction': 0.0, 'proximity': 'near', 'doorway_state': 'unknown', 'threshold_state': 'unknown', 'traversable': None}) [medium, score=0.65] valid - The digital sign on the wall (L001) explicitly indicates that B0.014 is in the forward direction, making this the most direct and reliable path to the goal.
+Action name: FOLLOW_DIRECTION
+Params: {'landmark_id': 'L001', 'direction': 'forward', 'target': None, 'target_description': "Wall-mounted sign showing 'MSP Alumni Community' map and room directions.", 'floor': '0', 'search_for': None, 'stop_condition': None, 'capture_after': True, 'evidence_view': 'FRONT', 'horizontal_position': 'center', 'horizontal_offset_fraction': 0.0, 'proximity': 'near', 'doorway_state': 'unknown', 'threshold_state': 'unknown', 'traversable': None}
+Evidence view: FRONT
+Reason: The digital sign on the wall (L001) explicitly indicates that B0.014 is in the forward direction, making this the most direct and reliable path to the goal.
+Confidence: medium
+Evidence score: 0.65
+Saved: navigation_outputs/http_api/single_step_latest_result.json
+===================================
+
+[EXECUTE] Dry run only. Robot will not move.
+[LOG] Step result saved: navigation_outputs/live_runs/run_2026_08_09_173158_B0_014/step_004_result.json
+
+========== AUTO STEP 5 ==========
+[OK] Loaded saved LEFT: robot_live_frames/step_0005/left.png
+[OK] Loaded saved FRONT: robot_live_frames/step_0005/front.png
+[OK] Loaded saved RIGHT: robot_live_frames/step_0005/right.png
+
+========== ACTION RESULT ==========
+Mode: single_step
+Goal: B0.014
+Done: False
+Action: FOLLOW_DIRECTION({'landmark_id': 'L001', 'direction': 'forward', 'target': 'B0.014', 'target_description': 'Directional sign showing B0.014 forward, visible in front view.', 'stop_condition': 'robot aligned with the forward route indicated by the current sign', 'capture_after': True, 'evidence_view': 'FRONT'}) [medium, score=0.80] valid - Current sign L001 indicates forward toward B0.014: B0.014
+Action name: FOLLOW_DIRECTION
+Params: {'landmark_id': 'L001', 'direction': 'forward', 'target': 'B0.014', 'target_description': 'Directional sign showing B0.014 forward, visible in front view.', 'stop_condition': 'robot aligned with the forward route indicated by the current sign', 'capture_after': True, 'evidence_view': 'FRONT'}
+Evidence view: FRONT
+Reason: Current sign L001 indicates forward toward B0.014: B0.014
+Confidence: medium
+Evidence score: 0.8
+Saved: navigation_outputs/http_api/single_step_latest_result.json
+===================================
+
+[EXECUTE] Dry run only. Robot will not move.
+[LOG] Step result saved: navigation_outputs/live_runs/run_2026_08_09_173158_B0_014/step_005_result.json
+
+========== AUTO STEP 6 ==========
+[OK] Loaded saved LEFT: robot_live_frames/step_0006/left.png
+[OK] Loaded saved FRONT: robot_live_frames/step_0006/front.png
+[OK] Loaded saved RIGHT: robot_live_frames/step_0006/right.png
+
+========== ACTION RESULT ==========
+Mode: single_step
+Goal: B0.014
+Done: False
+Action: FOLLOW_DIRECTION({'landmark_id': 'L001', 'direction': 'forward', 'target': 'B0.014', 'target_description': 'Directional sign in RIGHT view shows B0.014 is forward.', 'stop_condition': 'robot aligned with the forward route indicated by the current sign', 'capture_after': True, 'evidence_view': 'RIGHT'}) [medium, score=0.80] valid - Current sign L001 indicates forward toward B0.014: → B0.014
+Action name: FOLLOW_DIRECTION
+Params: {'landmark_id': 'L001', 'direction': 'forward', 'target': 'B0.014', 'target_description': 'Directional sign in RIGHT view shows B0.014 is forward.', 'stop_condition': 'robot aligned with the forward route indicated by the current sign', 'capture_after': True, 'evidence_view': 'RIGHT'}
+Evidence view: RIGHT
+Reason: Current sign L001 indicates forward toward B0.014: → B0.014
+Confidence: medium
+Evidence score: 0.8
+Saved: navigation_outputs/http_api/single_step_latest_result.json
+===================================
+
+[EXECUTE] Dry run only. Robot will not move.
+[LOG] Step result saved: navigation_outputs/live_runs/run_2026_08_09_173158_B0_014/step_006_result.json
+
+========== AUTO STEP 7 ==========
+[OK] Loaded saved LEFT: robot_live_frames/step_0007/left.png
+[OK] Loaded saved FRONT: robot_live_frames/step_0007/front.png
+[OK] Loaded saved RIGHT: robot_live_frames/step_0007/right.png
+
+========== ACTION RESULT ==========
+Mode: single_step
+Goal: B0.014
+Done: False
+Action: FOLLOW_DIRECTION({'landmark_id': 'L001', 'direction': 'forward', 'target': 'B0.014', 'target_description': 'Directional sign in front view shows B0.014 forward.', 'stop_condition': 'robot aligned with the forward route indicated by the current sign', 'capture_after': True, 'evidence_view': 'FRONT'}) [medium, score=0.80] valid - Current sign L001 indicates forward toward B0.014: B0.014
+Action name: FOLLOW_DIRECTION
+Params: {'landmark_id': 'L001', 'direction': 'forward', 'target': 'B0.014', 'target_description': 'Directional sign in front view shows B0.014 forward.', 'stop_condition': 'robot aligned with the forward route indicated by the current sign', 'capture_after': True, 'evidence_view': 'FRONT'}
+Evidence view: FRONT
+Reason: Current sign L001 indicates forward toward B0.014: B0.014
+Confidence: medium
+Evidence score: 0.8
+Saved: navigation_outputs/http_api/single_step_latest_result.json
+===================================
+
+[EXECUTE] Dry run only. Robot will not move.
+[LOG] Step result saved: navigation_outputs/live_runs/run_2026_08_09_173158_B0_014/step_007_result.json
+
+========== AUTO STEP 8 ==========
+[OK] Loaded saved LEFT: robot_live_frames/step_0008/left.png
+[OK] Loaded saved FRONT: robot_live_frames/step_0008/front.png
+[OK] Loaded saved RIGHT: robot_live_frames/step_0008/right.png
+
+========== ACTION RESULT ==========
+Mode: single_step
+Goal: B0.014
+Done: False
+Action: SEARCH_FOR_CUE({'search_for': 'room label or directory with B0.014', 'stop_condition': 'capture when a relevant sign or door label is found', 'capture_after': True, 'evidence_view': 'FRONT', 'horizontal_position': 'unknown', 'horizontal_offset_fraction': None, 'proximity': 'far', 'doorway_state': 'unknown', 'threshold_state': 'unknown', 'traversable': True, 'direction': 'left'}) [low, score=0.35] valid - The current view shows a corridor with display cases and doors, but no visible sign or door label matching the goal B0.014. The robot needs to search for a relevant cue to proceed.
+Action name: SEARCH_FOR_CUE
+Params: {'search_for': 'room label or directory with B0.014', 'stop_condition': 'capture when a relevant sign or door label is found', 'capture_after': True, 'evidence_view': 'FRONT', 'horizontal_position': 'unknown', 'horizontal_offset_fraction': None, 'proximity': 'far', 'doorway_state': 'unknown', 'threshold_state': 'unknown', 'traversable': True, 'direction': 'left'}
+Evidence view: FRONT
+Reason: The current view shows a corridor with display cases and doors, but no visible sign or door label matching the goal B0.014. The robot needs to search for a relevant cue to proceed.
+Confidence: low
+Evidence score: 0.35
+Saved: navigation_outputs/http_api/single_step_latest_result.json
+===================================
+
+[EXECUTE] Dry run only. Robot will not move.
+[LOG] Step result saved: navigation_outputs/live_runs/run_2026_08_09_173158_B0_014/step_008_result.json
+
+========== AUTO STEP 9 ==========
+[OK] Loaded saved LEFT: robot_live_frames/step_0009/left.png
+[OK] Loaded saved FRONT: robot_live_frames/step_0009/front.png
+[OK] Loaded saved RIGHT: robot_live_frames/step_0009/right.png
+
+========== ACTION RESULT ==========
+Mode: single_step
+Goal: B0.014
+Done: False
+Action: SEARCH_FOR_CUE({'search_for': 'room label B0.014 or similar', 'stop_condition': 'capture when a relevant room label or sign is found', 'capture_after': True, 'evidence_view': 'NONE', 'horizontal_position': 'unknown', 'horizontal_offset_fraction': None, 'proximity': 'unknown', 'doorway_state': 'unknown', 'threshold_state': 'unknown', 'traversable': True, 'direction': 'left'}) [low, score=0.35] valid - No visible room label matching B0.014 is present in the current view. The robot must search for a relevant cue to proceed.
+Action name: SEARCH_FOR_CUE
+Params: {'search_for': 'room label B0.014 or similar', 'stop_condition': 'capture when a relevant room label or sign is found', 'capture_after': True, 'evidence_view': 'NONE', 'horizontal_position': 'unknown', 'horizontal_offset_fraction': None, 'proximity': 'unknown', 'doorway_state': 'unknown', 'threshold_state': 'unknown', 'traversable': True, 'direction': 'left'}
+Evidence view: NONE
+Reason: No visible room label matching B0.014 is present in the current view. The robot must search for a relevant cue to proceed.
+Confidence: low
+Evidence score: 0.35
+Saved: navigation_outputs/http_api/single_step_latest_result.json
+===================================
+
+[EXECUTE] Dry run only. Robot will not move.
+[LOG] Step result saved: navigation_outputs/live_runs/run_2026_08_09_173158_B0_014/step_009_result.json
+
+========== AUTO STEP 10 ==========
+[OK] Loaded saved LEFT: robot_live_frames/step_0010/left.png
+[OK] Loaded saved FRONT: robot_live_frames/step_0010/front.png
+[OK] Loaded saved RIGHT: robot_live_frames/step_0010/right.png
+
+========== ACTION RESULT ==========
+Mode: single_step
+Goal: B0.014
+Done: False
+Action: ALIGN_WITH_LANDMARK({'landmark_id': 'L002', 'direction': 'right', 'target': None, 'target_description': 'White door with accessibility symbol. Located on left wall.', 'stop_condition': 'landmark centred in FRONT camera', 'capture_after': True, 'evidence_view': 'RIGHT', 'horizontal_position': 'center', 'horizontal_offset_fraction': 0.0, 'proximity': 'far'}) [medium, score=0.60] valid - Selected landmark is not centred and must be visually aligned before forward movement.
+Action name: ALIGN_WITH_LANDMARK
+Params: {'landmark_id': 'L002', 'direction': 'right', 'target': None, 'target_description': 'White door with accessibility symbol. Located on left wall.', 'stop_condition': 'landmark centred in FRONT camera', 'capture_after': True, 'evidence_view': 'RIGHT', 'horizontal_position': 'center', 'horizontal_offset_fraction': 0.0, 'proximity': 'far'}
+Evidence view: RIGHT
+Reason: Selected landmark is not centred and must be visually aligned before forward movement.
+Confidence: medium
+Evidence score: 0.605
+Saved: navigation_outputs/http_api/single_step_latest_result.json
+===================================
+
+[EXECUTE] Dry run only. Robot will not move.
+[LOG] Step result saved: navigation_outputs/live_runs/run_2026_08_09_173158_B0_014/step_010_result.json
+
+========== AUTO STEP 11 ==========
+[OK] Loaded saved LEFT: robot_live_frames/step_0011/left.png
+[OK] Loaded saved FRONT: robot_live_frames/step_0011/front.png
+[OK] Loaded saved RIGHT: robot_live_frames/step_0011/right.png
+
+========== ACTION RESULT ==========
+Mode: single_step
+Goal: B0.014
+Done: False
+Action: SEARCH_FOR_CUE({'search_for': 'room label or sign for B0.014', 'stop_condition': 'capture when a relevant sign or door label is found', 'capture_after': True, 'evidence_view': 'NONE', 'horizontal_position': 'unknown', 'horizontal_offset_fraction': None, 'proximity': 'unknown', 'doorway_state': 'unknown', 'threshold_state': 'unknown', 'traversable': True, 'direction': 'left'}) [low, score=0.35] valid - No visible signs, door labels, or directories indicating room B0.014 or its location are present in the current view. The robot must search for a navigation cue.
+Action name: SEARCH_FOR_CUE
+Params: {'search_for': 'room label or sign for B0.014', 'stop_condition': 'capture when a relevant sign or door label is found', 'capture_after': True, 'evidence_view': 'NONE', 'horizontal_position': 'unknown', 'horizontal_offset_fraction': None, 'proximity': 'unknown', 'doorway_state': 'unknown', 'threshold_state': 'unknown', 'traversable': True, 'direction': 'left'}
+Evidence view: NONE
+Reason: No visible signs, door labels, or directories indicating room B0.014 or its location are present in the current view. The robot must search for a navigation cue.
+Confidence: low
+Evidence score: 0.35
+Saved: navigation_outputs/http_api/single_step_latest_result.json
+===================================
+
+[EXECUTE] Dry run only. Robot will not move.
+[LOG] Step result saved: navigation_outputs/live_runs/run_2026_08_09_173158_B0_014/step_011_result.json
+
+========== AUTO STEP 12 ==========
+[OK] Loaded saved LEFT: robot_live_frames/step_0012/left.png
+[OK] Loaded saved FRONT: robot_live_frames/step_0012/front.png
+[OK] Loaded saved RIGHT: robot_live_frames/step_0012/right.png
+
+========== ACTION RESULT ==========
+Mode: single_step
+Goal: B0.014
+Done: False
+Action: NAVIGATE_TO_LANDMARK({'landmark_id': 'L003', 'direction': 'forward', 'target': None, 'target_description': 'Open white door revealing office space with white cabinet.', 'floor': '0', 'search_for': None, 'stop_condition': 'capture after advancing toward the remembered junction', 'capture_after': True, 'evidence_view': 'FRONT', 'horizontal_position': 'center', 'horizontal_offset_fraction': 0.0, 'proximity': 'medium', 'doorway_state': 'open', 'threshold_state': 'at', 'traversable': True}) [low, score=0.00] INVALID: Doorway landmark L003 is not linked to the active goal or route. - The current view is sparse, and the remembered landmark L003 (an open doorway forward) supports continued progress toward the goal B0.014, which is likely forward from the current position.
+Action name: NAVIGATE_TO_LANDMARK
+Params: {'landmark_id': 'L003', 'direction': 'forward', 'target': None, 'target_description': 'Open white door revealing office space with white cabinet.', 'floor': '0', 'search_for': None, 'stop_condition': 'capture after advancing toward the remembered junction', 'capture_after': True, 'evidence_view': 'FRONT', 'horizontal_position': 'center', 'horizontal_offset_fraction': 0.0, 'proximity': 'medium', 'doorway_state': 'open', 'threshold_state': 'at', 'traversable': True}
+Evidence view: FRONT
+Reason: The current view is sparse, and the remembered landmark L003 (an open doorway forward) supports continued progress toward the goal B0.014, which is likely forward from the current position.
+Confidence: low
+Evidence score: 0.0
+Saved: navigation_outputs/http_api/single_step_latest_result.json
+===================================
+
+[EXECUTE] Dry run only. Robot will not move.
+[LOG] Step result saved: navigation_outputs/live_runs/run_2026_08_09_173158_B0_014/step_012_result.json
+
+========== AUTO STEP 13 ==========
+[OK] Loaded saved LEFT: robot_live_frames/step_0013/left.png
+[OK] Loaded saved FRONT: robot_live_frames/step_0013/front.png
+[OK] Loaded saved RIGHT: robot_live_frames/step_0013/right.png
+
+========== ACTION RESULT ==========
+Mode: single_step
+Goal: B0.014
+Done: False
+Action: NAVIGATE_TO_LANDMARK({'landmark_id': 'L002', 'direction': 'forward', 'target': None, 'target_description': 'Wooden slat wall corridor continuing forward into a larger space.', 'floor': '0', 'search_for': None, 'stop_condition': 'capture after advancing toward the remembered junction', 'capture_after': True, 'evidence_view': 'FRONT', 'horizontal_position': 'center', 'horizontal_offset_fraction': 0.0, 'proximity': 'medium', 'doorway_state': 'unknown', 'threshold_state': 'unknown', 'traversable': True}) [low, score=0.37] valid - The current view is sparse, and the remembered corridor landmark L002 supports continued progress toward the goal. The corridor continues forward into a larger space, which may lead to Room B0.014 or other relevant areas.
+Action name: NAVIGATE_TO_LANDMARK
+Params: {'landmark_id': 'L002', 'direction': 'forward', 'target': None, 'target_description': 'Wooden slat wall corridor continuing forward into a larger space.', 'floor': '0', 'search_for': None, 'stop_condition': 'capture after advancing toward the remembered junction', 'capture_after': True, 'evidence_view': 'FRONT', 'horizontal_position': 'center', 'horizontal_offset_fraction': 0.0, 'proximity': 'medium', 'doorway_state': 'unknown', 'threshold_state': 'unknown', 'traversable': True}
+Evidence view: FRONT
+Reason: The current view is sparse, and the remembered corridor landmark L002 supports continued progress toward the goal. The corridor continues forward into a larger space, which may lead to Room B0.014 or other relevant areas.
+Confidence: low
+Evidence score: 0.367
+Saved: navigation_outputs/http_api/single_step_latest_result.json
+===================================
+
+[EXECUTE] Dry run only. Robot will not move.
+[LOG] Step result saved: navigation_outputs/live_runs/run_2026_08_09_173158_B0_014/step_013_result.json
+
+========== AUTO STEP 14 ==========
+[OK] Loaded saved LEFT: robot_live_frames/step_0014/left.png
+[OK] Loaded saved FRONT: robot_live_frames/step_0014/front.png
+[OK] Loaded saved RIGHT: robot_live_frames/step_0014/right.png
+
+========== ACTION RESULT ==========
+Mode: single_step
+Goal: B0.014
+Done: False
+Action: ALIGN_WITH_LANDMARK({'landmark_id': 'L003', 'direction': 'right', 'target': None, 'target_description': 'Corridor ahead with wooden slat walls and glass display cases on the right.', 'stop_condition': 'landmark centred in FRONT camera', 'capture_after': True, 'evidence_view': 'RIGHT', 'horizontal_position': 'center', 'horizontal_offset_fraction': 0.0, 'proximity': 'near'}) [medium, score=0.62] valid - Selected landmark is not centred and must be visually aligned before forward movement.
+Action name: ALIGN_WITH_LANDMARK
+Params: {'landmark_id': 'L003', 'direction': 'right', 'target': None, 'target_description': 'Corridor ahead with wooden slat walls and glass display cases on the right.', 'stop_condition': 'landmark centred in FRONT camera', 'capture_after': True, 'evidence_view': 'RIGHT', 'horizontal_position': 'center', 'horizontal_offset_fraction': 0.0, 'proximity': 'near'}
+Evidence view: RIGHT
+Reason: Selected landmark is not centred and must be visually aligned before forward movement.
+Confidence: medium
+Evidence score: 0.617
+Saved: navigation_outputs/http_api/single_step_latest_result.json
+===================================
+
+[EXECUTE] Dry run only. Robot will not move.
+[LOG] Step result saved: navigation_outputs/live_runs/run_2026_08_09_173158_B0_014/step_014_result.json
+
+========== AUTO STEP 15 ==========
+[OK] Loaded saved LEFT: robot_live_frames/step_0015/left.png
+[OK] Loaded saved FRONT: robot_live_frames/step_0015/front.png
+[OK] Loaded saved RIGHT: robot_live_frames/step_0015/right.png
+
+========== ACTION RESULT ==========
+Mode: single_step
+Goal: B0.014
+Done: False
+Action: SEARCH_FOR_CUE({'search_for': 'room label or directory sign for B0.014', 'stop_condition': 'capture when a relevant sign is found or the robot reaches a junction with clear directional cues', 'capture_after': True, 'evidence_view': 'FRONT', 'horizontal_position': 'center', 'horizontal_offset_fraction': None, 'proximity': 'far', 'doorway_state': 'unknown', 'threshold_state': 'unknown', 'traversable': True, 'direction': 'left'}) [low, score=0.35] valid - The current view shows a spacious lobby with no visible signs or labels for room B0.014. The robot must search for a directory, sign, or room label to proceed toward the goal.
+Action name: SEARCH_FOR_CUE
+Params: {'search_for': 'room label or directory sign for B0.014', 'stop_condition': 'capture when a relevant sign is found or the robot reaches a junction with clear directional cues', 'capture_after': True, 'evidence_view': 'FRONT', 'horizontal_position': 'center', 'horizontal_offset_fraction': None, 'proximity': 'far', 'doorway_state': 'unknown', 'threshold_state': 'unknown', 'traversable': True, 'direction': 'left'}
+Evidence view: FRONT
+Reason: The current view shows a spacious lobby with no visible signs or labels for room B0.014. The robot must search for a directory, sign, or room label to proceed toward the goal.
+Confidence: low
+Evidence score: 0.35
+Saved: navigation_outputs/http_api/single_step_latest_result.json
+===================================
+
+[EXECUTE] Dry run only. Robot will not move.
+[LOG] Step result saved: navigation_outputs/live_runs/run_2026_08_09_173158_B0_014/step_015_result.json
+
+========== AUTO STEP 16 ==========
+[OK] Loaded saved LEFT: robot_live_frames/step_0016/left.png
+[OK] Loaded saved FRONT: robot_live_frames/step_0016/front.png
+[OK] Loaded saved RIGHT: robot_live_frames/step_0016/right.png
+
+========== ACTION RESULT ==========
+Mode: single_step
+Goal: B0.014
+Done: False
+Action: NAVIGATE_TO_LANDMARK({'landmark_id': 'L003', 'direction': 'forward', 'target': None, 'target_description': 'Open doorway visible through the elevator area, leading to the main lobby.', 'floor': None, 'search_for': None, 'stop_condition': 'capture after passing through the doorway', 'capture_after': True, 'evidence_view': 'RIGHT', 'horizontal_position': 'center', 'horizontal_offset_fraction': 0.5, 'proximity': 'near', 'doorway_state': 'open', 'threshold_state': 'at', 'traversable': True}) [low, score=0.00] INVALID: Doorway landmark L003 is not linked to the active goal or route. - The current view is sparse, and the remembered doorway landmark L003 is compatible with the goal and visible in the RIGHT view. It supports continued progress toward the main lobby where the target room B0.014 is likely located.
+Action name: NAVIGATE_TO_LANDMARK
+Params: {'landmark_id': 'L003', 'direction': 'forward', 'target': None, 'target_description': 'Open doorway visible through the elevator area, leading to the main lobby.', 'floor': None, 'search_for': None, 'stop_condition': 'capture after passing through the doorway', 'capture_after': True, 'evidence_view': 'RIGHT', 'horizontal_position': 'center', 'horizontal_offset_fraction': 0.5, 'proximity': 'near', 'doorway_state': 'open', 'threshold_state': 'at', 'traversable': True}
+Evidence view: RIGHT
+Reason: The current view is sparse, and the remembered doorway landmark L003 is compatible with the goal and visible in the RIGHT view. It supports continued progress toward the main lobby where the target room B0.014 is likely located.
+Confidence: low
+Evidence score: 0.0
+Saved: navigation_outputs/http_api/single_step_latest_result.json
+===================================
+
+[EXECUTE] Dry run only. Robot will not move.
+[LOG] Step result saved: navigation_outputs/live_runs/run_2026_08_09_173158_B0_014/step_016_result.json
+
+========== AUTO STEP 17 ==========
+[OK] Loaded saved LEFT: robot_live_frames/step_0017/left.png
+[OK] Loaded saved FRONT: robot_live_frames/step_0017/front.png
+[OK] Loaded saved RIGHT: robot_live_frames/step_0017/right.png
+
+========== ACTION RESULT ==========
+Mode: single_step
+Goal: B0.014
+Done: False
+Action: FOLLOW_DIRECTION({'landmark_id': 'L001', 'direction': 'left', 'target': 'B0.014', 'target_description': 'Black sign on wooden wall shows B0.014 with left arrow.', 'stop_condition': 'robot aligned with the left route indicated by the current sign', 'capture_after': True, 'evidence_view': 'RIGHT'}) [medium, score=0.80] valid - Current sign L001 indicates left toward B0.014: B0.014
+Action name: FOLLOW_DIRECTION
+Params: {'landmark_id': 'L001', 'direction': 'left', 'target': 'B0.014', 'target_description': 'Black sign on wooden wall shows B0.014 with left arrow.', 'stop_condition': 'robot aligned with the left route indicated by the current sign', 'capture_after': True, 'evidence_view': 'RIGHT'}
+Evidence view: RIGHT
+Reason: Current sign L001 indicates left toward B0.014: B0.014
+Confidence: medium
+Evidence score: 0.8
+Saved: navigation_outputs/http_api/single_step_latest_result.json
+===================================
+
+[EXECUTE] Dry run only. Robot will not move.
+[LOG] Step result saved: navigation_outputs/live_runs/run_2026_08_09_173158_B0_014/step_017_result.json
+
+========== AUTO STEP 18 ==========
+[OK] Loaded saved LEFT: robot_live_frames/step_0018/left.png
+[OK] Loaded saved FRONT: robot_live_frames/step_0018/front.png
+[OK] Loaded saved RIGHT: robot_live_frames/step_0018/right.png
+
+========== ACTION RESULT ==========
+Mode: single_step
+Goal: B0.014
+Done: False
+Action: FOLLOW_DIRECTION({'landmark_id': 'L001', 'direction': 'left', 'target': 'B0.014', 'target_description': 'Black sign with arrows and room numbers. Right arrow points to B0.014.', 'stop_condition': 'robot aligned with the left route indicated by the current sign', 'capture_after': True, 'evidence_view': 'RIGHT'}) [medium, score=0.80] valid - Current sign L001 indicates left toward B0.014: → | WC | B0.010
+← | ♂♀ | B0.009a - B0.009d
+B0.014
+Action name: FOLLOW_DIRECTION
+Params: {'landmark_id': 'L001', 'direction': 'left', 'target': 'B0.014', 'target_description': 'Black sign with arrows and room numbers. Right arrow points to B0.014.', 'stop_condition': 'robot aligned with the left route indicated by the current sign', 'capture_after': True, 'evidence_view': 'RIGHT'}
+Evidence view: RIGHT
+Reason: Current sign L001 indicates left toward B0.014: → | WC | B0.010
+← | ♂♀ | B0.009a - B0.009d
+B0.014
+Confidence: medium
+Evidence score: 0.8
+Saved: navigation_outputs/http_api/single_step_latest_result.json
+===================================
+
+[EXECUTE] Dry run only. Robot will not move.
+[LOG] Step result saved: navigation_outputs/live_runs/run_2026_08_09_173158_B0_014/step_018_result.json
+
+========== AUTO STEP 19 ==========
+[OK] Loaded saved LEFT: robot_live_frames/step_0019/left.png
+[OK] Loaded saved FRONT: robot_live_frames/step_0019/front.png
+[OK] Loaded saved RIGHT: robot_live_frames/step_0019/right.png
+
+========== ACTION RESULT ==========
+Mode: single_step
+Goal: B0.014
+Done: False
+Action: SEARCH_FOR_CUE({'search_for': 'room label or sign for B0.014', 'stop_condition': 'capture when a relevant sign or door label is found', 'capture_after': True, 'evidence_view': 'FRONT', 'horizontal_position': 'unknown', 'horizontal_offset_fraction': None, 'proximity': 'far', 'doorway_state': 'unknown', 'threshold_state': 'unknown', 'traversable': True, 'direction': 'left'}) [low, score=0.35] valid - The current view shows a long corridor with display cases and windows, but no visible sign or door label matching the goal 'B0.014'. The robot needs to search for a relevant cue.
+Action name: SEARCH_FOR_CUE
+Params: {'search_for': 'room label or sign for B0.014', 'stop_condition': 'capture when a relevant sign or door label is found', 'capture_after': True, 'evidence_view': 'FRONT', 'horizontal_position': 'unknown', 'horizontal_offset_fraction': None, 'proximity': 'far', 'doorway_state': 'unknown', 'threshold_state': 'unknown', 'traversable': True, 'direction': 'left'}
+Evidence view: FRONT
+Reason: The current view shows a long corridor with display cases and windows, but no visible sign or door label matching the goal 'B0.014'. The robot needs to search for a relevant cue.
+Confidence: low
+Evidence score: 0.35
+Saved: navigation_outputs/http_api/single_step_latest_result.json
+===================================
+
+[EXECUTE] Dry run only. Robot will not move.
+[LOG] Step result saved: navigation_outputs/live_runs/run_2026_08_09_173158_B0_014/step_019_result.json
+
+========== AUTO STEP 20 ==========
+[OK] Loaded saved LEFT: robot_live_frames/step_0020/left.png
+[OK] Loaded saved FRONT: robot_live_frames/step_0020/front.png
+[OK] Loaded saved RIGHT: robot_live_frames/step_0020/right.png
+
+========== ACTION RESULT ==========
+Mode: single_step
+Goal: B0.014
+Done: False
+Action: ALIGN_WITH_LANDMARK({'landmark_id': 'L001', 'direction': 'right', 'target': 'B0.014', 'target_description': 'White door with room label B0.012 and gender-neutral symbol visible in the right camera view.', 'stop_condition': 'landmark centred in FRONT camera', 'capture_after': True, 'evidence_view': 'RIGHT', 'horizontal_position': 'left', 'horizontal_offset_fraction': -0.4, 'proximity': 'near'}) [medium, score=0.65] valid - Selected landmark is not centred and must be visually aligned before forward movement.
+Action name: ALIGN_WITH_LANDMARK
+Params: {'landmark_id': 'L001', 'direction': 'right', 'target': 'B0.014', 'target_description': 'White door with room label B0.012 and gender-neutral symbol visible in the right camera view.', 'stop_condition': 'landmark centred in FRONT camera', 'capture_after': True, 'evidence_view': 'RIGHT', 'horizontal_position': 'left', 'horizontal_offset_fraction': -0.4, 'proximity': 'near'}
+Evidence view: RIGHT
+Reason: Selected landmark is not centred and must be visually aligned before forward movement.
+Confidence: medium
+Evidence score: 0.65
+Saved: navigation_outputs/http_api/single_step_latest_result.json
+===================================
+
+[EXECUTE] Dry run only. Robot will not move.
+[LOG] Step result saved: navigation_outputs/live_runs/run_2026_08_09_173158_B0_014/step_020_result.json
+
+========== AUTO STEP 21 ==========
+[OK] Loaded saved LEFT: robot_live_frames/step_0021/left.png
+[OK] Loaded saved FRONT: robot_live_frames/step_0021/front.png
+[OK] Loaded saved RIGHT: robot_live_frames/step_0021/right.png
+
+========== ACTION RESULT ==========
+Mode: single_step
+Goal: B0.014
+Done: False
+Action: NAVIGATE_TO_LANDMARK({'landmark_id': 'L001', 'direction': 'right', 'target': None, 'target_description': 'White door with room label B0.012 and menstrual products sign.', 'floor': '0', 'search_for': None, 'stop_condition': 'capture after advancing toward the remembered junction', 'capture_after': True, 'evidence_view': 'RIGHT', 'horizontal_position': 'center', 'horizontal_offset_fraction': 0.0, 'proximity': 'near', 'doorway_state': 'unknown', 'threshold_state': 'unknown', 'traversable': True}) [low, score=0.40] valid - The current view is sparse, and the recently remembered landmark L001 (door B0.012) is compatible with the goal B0.014, as they are likely on the same floor. Navigating toward this landmark continues the route toward the target.
+Action name: NAVIGATE_TO_LANDMARK
+Params: {'landmark_id': 'L001', 'direction': 'right', 'target': None, 'target_description': 'White door with room label B0.012 and menstrual products sign.', 'floor': '0', 'search_for': None, 'stop_condition': 'capture after advancing toward the remembered junction', 'capture_after': True, 'evidence_view': 'RIGHT', 'horizontal_position': 'center', 'horizontal_offset_fraction': 0.0, 'proximity': 'near', 'doorway_state': 'unknown', 'threshold_state': 'unknown', 'traversable': True}
+Evidence view: RIGHT
+Reason: The current view is sparse, and the recently remembered landmark L001 (door B0.012) is compatible with the goal B0.014, as they are likely on the same floor. Navigating toward this landmark continues the route toward the target.
+Confidence: low
+Evidence score: 0.4
+Saved: navigation_outputs/http_api/single_step_latest_result.json
+===================================
+
+[EXECUTE] Dry run only. Robot will not move.
+[LOG] Step result saved: navigation_outputs/live_runs/run_2026_08_09_173158_B0_014/step_021_result.json
+
+========== AUTO STEP 22 ==========
+[OK] Loaded saved LEFT: robot_live_frames/step_0022/left.png
+[OK] Loaded saved FRONT: robot_live_frames/step_0022/front.png
+[OK] Loaded saved RIGHT: robot_live_frames/step_0022/right.png
+
+========== ACTION RESULT ==========
+Mode: single_step
+Goal: B0.014
+Done: False
+Action: ALIGN_WITH_LANDMARK({'landmark_id': 'L001', 'direction': 'right', 'target': 'B0.014', 'target_description': 'White door with room label B0.014 and bicycle parking sign.', 'stop_condition': 'target landmark centred in FRONT camera', 'capture_after': True, 'evidence_view': 'RIGHT', 'horizontal_position': 'left', 'horizontal_offset_fraction': -0.4, 'proximity': 'near'}) [medium, score=0.80] valid - The exact target is visible in the RIGHT view and must first be turned into the FRONT camera.
+Action name: ALIGN_WITH_LANDMARK
+Params: {'landmark_id': 'L001', 'direction': 'right', 'target': 'B0.014', 'target_description': 'White door with room label B0.014 and bicycle parking sign.', 'stop_condition': 'target landmark centred in FRONT camera', 'capture_after': True, 'evidence_view': 'RIGHT', 'horizontal_position': 'left', 'horizontal_offset_fraction': -0.4, 'proximity': 'near'}
+Evidence view: RIGHT
+Reason: The exact target is visible in the RIGHT view and must first be turned into the FRONT camera.
+Confidence: medium
+Evidence score: 0.8
+Saved: navigation_outputs/http_api/single_step_latest_result.json
+===================================
+
+[EXECUTE] Dry run only. Robot will not move.
+[LOG] Step result saved: navigation_outputs/live_runs/run_2026_08_09_173158_B0_014/step_022_result.json
+
+========== AUTO STEP 23 ==========
+[OK] Loaded saved LEFT: robot_live_frames/step_0023/left.png
+[OK] Loaded saved FRONT: robot_live_frames/step_0023/front.png
+[OK] Loaded saved RIGHT: robot_live_frames/step_0023/right.png
+
+========== ACTION RESULT ==========
+Mode: single_step
+Goal: B0.014
+Done: True
+Action: STOP_AND_VERIFY({'landmark_id': 'L001', 'target': 'B0.014', 'evidence_type': 'target_door_label', 'evidence_view': 'NONE'}) [high, score=1.00] valid - The full target label 'B0.014' is clearly visible and centered on the white door in the FRONT camera view.
+Action name: STOP_AND_VERIFY
+Params: {'landmark_id': 'L001', 'target': 'B0.014', 'evidence_type': 'target_door_label', 'evidence_view': 'NONE'}
+Evidence view: NONE
+Reason: The full target label 'B0.014' is clearly visible and centered on the white door in the FRONT camera view.
+Confidence: high
+Evidence score: 1.0
+Saved: navigation_outputs/http_api/single_step_latest_result.json
+===================================
+
+[EXECUTE] Dry run only. Robot will not move.
+[LOG] Step result saved: navigation_outputs/live_runs/run_2026_08_09_173158_B0_014/step_023_result.json
+[DONE] Goal 'B0.014' reached at step 23.
+[LOG] Final summary saved: navigation_outputs/live_runs/run_2026_08_09_173158_B0_014/final_run_summary.json
+vlm_project@vlmproject-ThinkPad-X1:~/VLM_Navigation_Project$ 

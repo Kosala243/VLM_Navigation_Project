@@ -1,0 +1,397 @@
+vlm_project@vlmproject-ThinkPad-X1:~$ cd VLM_Navigation_Project
+vlm_project@vlmproject-ThinkPad-X1:~/VLM_Navigation_Project$ python3 thinkpad_robot_capture_to_amd.py \
+>   --mode auto \
+>   --camera-mode separate \
+>   --saved-image-dir robot_live_frames/step_test_C0.004 \
+>   --goal C0.020 \
+>   --memory false \
+>   --execute false \
+>   --max-steps 50
+[INFO] Mode: auto
+[INFO] Camera mode: separate
+[INFO] Memory: false
+[INFO] Goal: C0.020
+[INFO] AMD API: http://ernis-amd395:8001
+[INFO] Robot: unitree@192.168.123.14
+[INFO] Front camera: /dev/video2
+[INFO] Left camera: /dev/video4
+[INFO] Right camera: /dev/video3
+[LOG] Run directory: navigation_outputs/live_runs/run_2026_08_09_144800_C0_020
+[INFO] Memory disabled: using fresh /single_step for every auto step
+
+========== AUTO STEP 1 ==========
+[OK] Loaded saved LEFT: robot_live_frames/step_0001/left.png
+[OK] Loaded saved FRONT: robot_live_frames/step_0001/front.png
+[OK] Loaded saved RIGHT: robot_live_frames/step_0001/right.png
+
+========== ACTION RESULT ==========
+Mode: single_step
+Goal: C0.020
+Done: False
+Action: FOLLOW_DIRECTION({'landmark_id': 'L001', 'direction': 'right', 'target': 'L001', 'target_description': 'Overhead directional sign pointing right to Tower C (Zuid toren)', 'floor': '0', 'stop_condition': 'robot oriented towards the right path indicated by the sign', 'capture_after': True, 'evidence_view': 'FRONT', 'horizontal_offset_fraction': 0.0, 'proximity': 'near', 'doorway_state': 'unknown', 'threshold_state': 'before', 'traversable': True}) [low, score=0.59] valid - The goal C0.020 is likely in Tower C, and the overhead sign in the front view explicitly directs towards Tower C (Zuid toren) to the right.
+Action name: FOLLOW_DIRECTION
+Params: {'landmark_id': 'L001', 'direction': 'right', 'target': 'L001', 'target_description': 'Overhead directional sign pointing right to Tower C (Zuid toren)', 'floor': '0', 'stop_condition': 'robot oriented towards the right path indicated by the sign', 'capture_after': True, 'evidence_view': 'FRONT', 'horizontal_offset_fraction': 0.0, 'proximity': 'near', 'doorway_state': 'unknown', 'threshold_state': 'before', 'traversable': True}
+Evidence view: FRONT
+Reason: The goal C0.020 is likely in Tower C, and the overhead sign in the front view explicitly directs towards Tower C (Zuid toren) to the right.
+Confidence: low
+Evidence score: 0.59
+Saved: navigation_outputs/http_api/single_step_latest_result.json
+===================================
+
+[EXECUTE] Dry run only. Robot will not move.
+[LOG] Step result saved: navigation_outputs/live_runs/run_2026_08_09_144800_C0_020/step_001_result.json
+
+========== AUTO STEP 2 ==========
+[OK] Loaded saved LEFT: robot_live_frames/step_0002/left.png
+[OK] Loaded saved FRONT: robot_live_frames/step_0002/front.png
+[OK] Loaded saved RIGHT: robot_live_frames/step_0002/right.png
+
+========== ACTION RESULT ==========
+Mode: single_step
+Goal: C0.020
+Done: False
+Action: PASS_THROUGH_DOORWAY({'landmark_id': 'L001', 'direction': 'forward', 'target': 'L001', 'target_description': 'Open glass doorway leading into a room with wooden flooring and a digital display.', 'stop_condition': 'capture immediately after crossing the doorway threshold', 'capture_after': True, 'evidence_view': 'FRONT', 'horizontal_position': 'center', 'proximity': 'near', 'doorway_state': 'open', 'threshold_state': 'at', 'traversable': True, 'horizontal_offset_fraction': 0.0}) [low, score=0.58] valid - Current doorway L001 is open, centred in FRONT, and traversable, so the dedicated doorway traversal skill is used.
+Action name: PASS_THROUGH_DOORWAY
+Params: {'landmark_id': 'L001', 'direction': 'forward', 'target': 'L001', 'target_description': 'Open glass doorway leading into a room with wooden flooring and a digital display.', 'stop_condition': 'capture immediately after crossing the doorway threshold', 'capture_after': True, 'evidence_view': 'FRONT', 'horizontal_position': 'center', 'proximity': 'near', 'doorway_state': 'open', 'threshold_state': 'at', 'traversable': True, 'horizontal_offset_fraction': 0.0}
+Evidence view: FRONT
+Reason: Current doorway L001 is open, centred in FRONT, and traversable, so the dedicated doorway traversal skill is used.
+Confidence: low
+Evidence score: 0.5775
+Saved: navigation_outputs/http_api/single_step_latest_result.json
+===================================
+
+[EXECUTE] Dry run only. Robot will not move.
+[LOG] Step result saved: navigation_outputs/live_runs/run_2026_08_09_144800_C0_020/step_002_result.json
+
+========== AUTO STEP 3 ==========
+[OK] Loaded saved LEFT: robot_live_frames/step_0003/left.png
+[OK] Loaded saved FRONT: robot_live_frames/step_0003/front.png
+[OK] Loaded saved RIGHT: robot_live_frames/step_0003/right.png
+
+========== ACTION RESULT ==========
+Mode: single_step
+Goal: C0.020
+Done: False
+Action: FOLLOW_DIRECTION({'landmark_id': 'L001', 'direction': 'left', 'target': 'L001', 'target_description': 'Blue directory sign on the wooden wall in the front view, listing room ranges.', 'floor': 0, 'search_for': None, 'stop_condition': 'capture when near the directory sign', 'capture_after': True, 'evidence_view': 'FRONT', 'horizontal_position': 'center', 'horizontal_offset_fraction': 0.0, 'proximity': 'medium', 'doorway_state': 'unknown', 'threshold_state': 'before', 'traversable': True}) [medium, score=0.65] valid - The front view shows a directory sign (L001) listing room ranges including C0.004-C0.008 with a left arrow, indicating the target C0.020 is likely in that direction.
+Action name: FOLLOW_DIRECTION
+Params: {'landmark_id': 'L001', 'direction': 'left', 'target': 'L001', 'target_description': 'Blue directory sign on the wooden wall in the front view, listing room ranges.', 'floor': 0, 'search_for': None, 'stop_condition': 'capture when near the directory sign', 'capture_after': True, 'evidence_view': 'FRONT', 'horizontal_position': 'center', 'horizontal_offset_fraction': 0.0, 'proximity': 'medium', 'doorway_state': 'unknown', 'threshold_state': 'before', 'traversable': True}
+Evidence view: FRONT
+Reason: The front view shows a directory sign (L001) listing room ranges including C0.004-C0.008 with a left arrow, indicating the target C0.020 is likely in that direction.
+Confidence: medium
+Evidence score: 0.65
+Saved: navigation_outputs/http_api/single_step_latest_result.json
+===================================
+
+[EXECUTE] Dry run only. Robot will not move.
+[LOG] Step result saved: navigation_outputs/live_runs/run_2026_08_09_144800_C0_020/step_003_result.json
+
+========== AUTO STEP 4 ==========
+[OK] Loaded saved LEFT: robot_live_frames/step_0004/left.png
+[OK] Loaded saved FRONT: robot_live_frames/step_0004/front.png
+[OK] Loaded saved RIGHT: robot_live_frames/step_0004/right.png
+
+========== ACTION RESULT ==========
+Mode: single_step
+Goal: C0.020
+Done: False
+Action: FOLLOW_DIRECTION({'landmark_id': 'L001', 'direction': 'left', 'target': 'C0.020', 'target_description': 'Blue directional sign on wood wall showing room ranges and arrows.', 'stop_condition': 'robot aligned with the left route indicated by the current sign', 'capture_after': True, 'evidence_view': 'FRONT'}) [medium, score=0.80] valid - Current sign L001 indicates left toward C0.020: C0.016 - C0.020 (left arrow); C0.004 - C0.008 (right arrow)
+Action name: FOLLOW_DIRECTION
+Params: {'landmark_id': 'L001', 'direction': 'left', 'target': 'C0.020', 'target_description': 'Blue directional sign on wood wall showing room ranges and arrows.', 'stop_condition': 'robot aligned with the left route indicated by the current sign', 'capture_after': True, 'evidence_view': 'FRONT'}
+Evidence view: FRONT
+Reason: Current sign L001 indicates left toward C0.020: C0.016 - C0.020 (left arrow); C0.004 - C0.008 (right arrow)
+Confidence: medium
+Evidence score: 0.8
+Saved: navigation_outputs/http_api/single_step_latest_result.json
+===================================
+
+[EXECUTE] Dry run only. Robot will not move.
+[LOG] Step result saved: navigation_outputs/live_runs/run_2026_08_09_144800_C0_020/step_004_result.json
+
+========== AUTO STEP 5 ==========
+[OK] Loaded saved LEFT: robot_live_frames/step_0005/left.png
+[OK] Loaded saved FRONT: robot_live_frames/step_0005/front.png
+[OK] Loaded saved RIGHT: robot_live_frames/step_0005/right.png
+
+========== ACTION RESULT ==========
+Mode: single_step
+Goal: C0.020
+Done: False
+Action: FOLLOW_DIRECTION({'landmark_id': 'L001', 'direction': 'left', 'target': 'C0.020', 'target_description': 'Blue sign on the left wall showing room range C0.016 - C0.020.', 'stop_condition': 'robot aligned with the left route indicated by the current sign', 'capture_after': True, 'evidence_view': 'LEFT'}) [medium, score=0.80] valid - Current sign L001 indicates left toward C0.020: C0.016 - C0.020
+Action name: FOLLOW_DIRECTION
+Params: {'landmark_id': 'L001', 'direction': 'left', 'target': 'C0.020', 'target_description': 'Blue sign on the left wall showing room range C0.016 - C0.020.', 'stop_condition': 'robot aligned with the left route indicated by the current sign', 'capture_after': True, 'evidence_view': 'LEFT'}
+Evidence view: LEFT
+Reason: Current sign L001 indicates left toward C0.020: C0.016 - C0.020
+Confidence: medium
+Evidence score: 0.8
+Saved: navigation_outputs/http_api/single_step_latest_result.json
+===================================
+
+[EXECUTE] Dry run only. Robot will not move.
+[LOG] Step result saved: navigation_outputs/live_runs/run_2026_08_09_144800_C0_020/step_005_result.json
+
+========== AUTO STEP 6 ==========
+[OK] Loaded saved LEFT: robot_live_frames/step_0006/left.png
+[OK] Loaded saved FRONT: robot_live_frames/step_0006/front.png
+[OK] Loaded saved RIGHT: robot_live_frames/step_0006/right.png
+
+========== ACTION RESULT ==========
+Mode: single_step
+Goal: C0.020
+Done: False
+Action: PASS_THROUGH_DOORWAY({'landmark_id': 'L002', 'direction': 'forward', 'target': 'L002', 'target_description': 'Open glass doorway at the end of the corridor leading to a blue-lit area.', 'stop_condition': 'capture immediately after crossing the doorway threshold', 'capture_after': True, 'evidence_view': 'FRONT', 'horizontal_position': 'center', 'proximity': 'far', 'doorway_state': 'open', 'threshold_state': 'before', 'traversable': True, 'horizontal_offset_fraction': 0.0}) [low, score=0.56] valid - Current doorway L002 is open, centred in FRONT, and traversable, so the dedicated doorway traversal skill is used.
+Action name: PASS_THROUGH_DOORWAY
+Params: {'landmark_id': 'L002', 'direction': 'forward', 'target': 'L002', 'target_description': 'Open glass doorway at the end of the corridor leading to a blue-lit area.', 'stop_condition': 'capture immediately after crossing the doorway threshold', 'capture_after': True, 'evidence_view': 'FRONT', 'horizontal_position': 'center', 'proximity': 'far', 'doorway_state': 'open', 'threshold_state': 'before', 'traversable': True, 'horizontal_offset_fraction': 0.0}
+Evidence view: FRONT
+Reason: Current doorway L002 is open, centred in FRONT, and traversable, so the dedicated doorway traversal skill is used.
+Confidence: low
+Evidence score: 0.5625
+Saved: navigation_outputs/http_api/single_step_latest_result.json
+===================================
+
+[EXECUTE] Dry run only. Robot will not move.
+[LOG] Step result saved: navigation_outputs/live_runs/run_2026_08_09_144800_C0_020/step_006_result.json
+
+========== AUTO STEP 7 ==========
+[OK] Loaded saved LEFT: robot_live_frames/step_0007/left.png
+[OK] Loaded saved FRONT: robot_live_frames/step_0007/front.png
+[OK] Loaded saved RIGHT: robot_live_frames/step_0007/right.png
+
+========== ACTION RESULT ==========
+Mode: single_step
+Goal: C0.020
+Done: False
+Action: FOLLOW_DIRECTION({'landmark_id': 'L001', 'direction': 'left', 'target': 'C0.020', 'target_description': 'Black directional sign on the left wall showing room range C0.016-C0.020 with a left arrow.', 'stop_condition': 'robot aligned with the left route indicated by the current sign', 'capture_after': True, 'evidence_view': 'FRONT'}) [medium, score=0.80] valid - Current sign L001 indicates left toward C0.020: C0.016 - C0.020
+Action name: FOLLOW_DIRECTION
+Params: {'landmark_id': 'L001', 'direction': 'left', 'target': 'C0.020', 'target_description': 'Black directional sign on the left wall showing room range C0.016-C0.020 with a left arrow.', 'stop_condition': 'robot aligned with the left route indicated by the current sign', 'capture_after': True, 'evidence_view': 'FRONT'}
+Evidence view: FRONT
+Reason: Current sign L001 indicates left toward C0.020: C0.016 - C0.020
+Confidence: medium
+Evidence score: 0.8
+Saved: navigation_outputs/http_api/single_step_latest_result.json
+===================================
+
+[EXECUTE] Dry run only. Robot will not move.
+[LOG] Step result saved: navigation_outputs/live_runs/run_2026_08_09_144800_C0_020/step_007_result.json
+
+========== AUTO STEP 8 ==========
+[OK] Loaded saved LEFT: robot_live_frames/step_0008/left.png
+[OK] Loaded saved FRONT: robot_live_frames/step_0008/front.png
+[OK] Loaded saved RIGHT: robot_live_frames/step_0008/right.png
+
+========== ACTION RESULT ==========
+Mode: single_step
+Goal: C0.020
+Done: False
+Action: FOLLOW_DIRECTION({'landmark_id': 'L001', 'direction': 'left', 'target': 'C0.020', 'target_description': 'Directory sign on the wall listing room numbers and directions.', 'stop_condition': 'robot aligned with the left route indicated by the current sign', 'capture_after': True, 'evidence_view': 'FRONT'}) [medium, score=0.80] valid - Current sign L001 indicates left toward C0.020: C0.016 - C0.020
+Action name: FOLLOW_DIRECTION
+Params: {'landmark_id': 'L001', 'direction': 'left', 'target': 'C0.020', 'target_description': 'Directory sign on the wall listing room numbers and directions.', 'stop_condition': 'robot aligned with the left route indicated by the current sign', 'capture_after': True, 'evidence_view': 'FRONT'}
+Evidence view: FRONT
+Reason: Current sign L001 indicates left toward C0.020: C0.016 - C0.020
+Confidence: medium
+Evidence score: 0.8
+Saved: navigation_outputs/http_api/single_step_latest_result.json
+===================================
+
+[EXECUTE] Dry run only. Robot will not move.
+[LOG] Step result saved: navigation_outputs/live_runs/run_2026_08_09_144800_C0_020/step_008_result.json
+
+========== AUTO STEP 9 ==========
+[OK] Loaded saved LEFT: robot_live_frames/step_0009/left.png
+[OK] Loaded saved FRONT: robot_live_frames/step_0009/front.png
+[OK] Loaded saved RIGHT: robot_live_frames/step_0009/right.png
+
+========== ACTION RESULT ==========
+Mode: single_step
+Goal: C0.020
+Done: False
+Action: FOLLOW_DIRECTION({'landmark_id': 'L001', 'direction': 'right', 'target': 'C0.020', 'target_description': 'Blue directory sign on the wall listing room ranges and directions.', 'stop_condition': 'robot aligned with the right route indicated by the current sign', 'capture_after': True, 'evidence_view': 'FRONT'}) [medium, score=0.80] valid - Current sign L001 indicates right toward C0.020: PHS BICYCLE PARKING ... C0.016 - C0.020
+Action name: FOLLOW_DIRECTION
+Params: {'landmark_id': 'L001', 'direction': 'right', 'target': 'C0.020', 'target_description': 'Blue directory sign on the wall listing room ranges and directions.', 'stop_condition': 'robot aligned with the right route indicated by the current sign', 'capture_after': True, 'evidence_view': 'FRONT'}
+Evidence view: FRONT
+Reason: Current sign L001 indicates right toward C0.020: PHS BICYCLE PARKING ... C0.016 - C0.020
+Confidence: medium
+Evidence score: 0.8
+Saved: navigation_outputs/http_api/single_step_latest_result.json
+===================================
+
+[EXECUTE] Dry run only. Robot will not move.
+[LOG] Step result saved: navigation_outputs/live_runs/run_2026_08_09_144800_C0_020/step_009_result.json
+
+========== AUTO STEP 10 ==========
+[OK] Loaded saved LEFT: robot_live_frames/step_0010/left.png
+[OK] Loaded saved FRONT: robot_live_frames/step_0010/front.png
+[OK] Loaded saved RIGHT: robot_live_frames/step_0010/right.png
+
+========== ACTION RESULT ==========
+Mode: single_step
+Goal: C0.020
+Done: False
+Action: FOLLOW_DIRECTION({'landmark_id': 'L001', 'direction': 'left', 'target': 'C0.020', 'target_description': 'Blue directional sign on the wall showing room range C0.016 - C0.020 with a left arrow.', 'stop_condition': 'robot aligned with the left route indicated by the current sign', 'capture_after': True, 'evidence_view': 'FRONT'}) [medium, score=0.80] valid - Current sign L001 indicates left toward C0.020: C0.016 - C0.020
+Action name: FOLLOW_DIRECTION
+Params: {'landmark_id': 'L001', 'direction': 'left', 'target': 'C0.020', 'target_description': 'Blue directional sign on the wall showing room range C0.016 - C0.020 with a left arrow.', 'stop_condition': 'robot aligned with the left route indicated by the current sign', 'capture_after': True, 'evidence_view': 'FRONT'}
+Evidence view: FRONT
+Reason: Current sign L001 indicates left toward C0.020: C0.016 - C0.020
+Confidence: medium
+Evidence score: 0.8
+Saved: navigation_outputs/http_api/single_step_latest_result.json
+===================================
+
+[EXECUTE] Dry run only. Robot will not move.
+[LOG] Step result saved: navigation_outputs/live_runs/run_2026_08_09_144800_C0_020/step_010_result.json
+
+========== AUTO STEP 11 ==========
+[OK] Loaded saved LEFT: robot_live_frames/step_0011/left.png
+[OK] Loaded saved FRONT: robot_live_frames/step_0011/front.png
+[OK] Loaded saved RIGHT: robot_live_frames/step_0011/right.png
+
+========== ACTION RESULT ==========
+Mode: single_step
+Goal: C0.020
+Done: False
+Action: ALIGN_WITH_LANDMARK({'landmark_id': 'L001', 'direction': 'right', 'target': 'L001', 'target_description': 'A long corridor with wooden slat wall on the right and glass doors on the left.', 'stop_condition': 'landmark centred in FRONT camera', 'capture_after': True, 'evidence_view': 'RIGHT', 'horizontal_position': 'center', 'horizontal_offset_fraction': 0.0, 'proximity': 'near'}) [medium, score=0.62] valid - Selected landmark is not centred and must be visually aligned before forward movement.
+Action name: ALIGN_WITH_LANDMARK
+Params: {'landmark_id': 'L001', 'direction': 'right', 'target': 'L001', 'target_description': 'A long corridor with wooden slat wall on the right and glass doors on the left.', 'stop_condition': 'landmark centred in FRONT camera', 'capture_after': True, 'evidence_view': 'RIGHT', 'horizontal_position': 'center', 'horizontal_offset_fraction': 0.0, 'proximity': 'near'}
+Evidence view: RIGHT
+Reason: Selected landmark is not centred and must be visually aligned before forward movement.
+Confidence: medium
+Evidence score: 0.617
+Saved: navigation_outputs/http_api/single_step_latest_result.json
+===================================
+
+[EXECUTE] Dry run only. Robot will not move.
+[LOG] Step result saved: navigation_outputs/live_runs/run_2026_08_09_144800_C0_020/step_011_result.json
+
+========== AUTO STEP 12 ==========
+[OK] Loaded saved LEFT: robot_live_frames/step_0012/left.png
+[OK] Loaded saved FRONT: robot_live_frames/step_0012/front.png
+[OK] Loaded saved RIGHT: robot_live_frames/step_0012/right.png
+
+========== ACTION RESULT ==========
+Mode: single_step
+Goal: C0.020
+Done: False
+Action: NAVIGATE_TO_LANDMARK({'landmark_id': 'L002', 'direction': 'forward', 'target': 'L002', 'target_description': 'Corridor continuing forward with wooden slat wall on the right.', 'floor': None, 'search_for': None, 'stop_condition': 'capture when near the white door at the end of the corridor', 'capture_after': True, 'evidence_view': 'FRONT', 'horizontal_position': 'center', 'horizontal_offset_fraction': 0.0, 'proximity': 'far', 'doorway_state': 'unknown', 'threshold_state': 'before', 'traversable': True}) [low, score=0.36] valid - The current view is a corridor with a clear path forward, and the remembered structural landmark L002 supports continuing along this route toward the white door at the end, which is the most likely location for the target room.
+Action name: NAVIGATE_TO_LANDMARK
+Params: {'landmark_id': 'L002', 'direction': 'forward', 'target': 'L002', 'target_description': 'Corridor continuing forward with wooden slat wall on the right.', 'floor': None, 'search_for': None, 'stop_condition': 'capture when near the white door at the end of the corridor', 'capture_after': True, 'evidence_view': 'FRONT', 'horizontal_position': 'center', 'horizontal_offset_fraction': 0.0, 'proximity': 'far', 'doorway_state': 'unknown', 'threshold_state': 'before', 'traversable': True}
+Evidence view: FRONT
+Reason: The current view is a corridor with a clear path forward, and the remembered structural landmark L002 supports continuing along this route toward the white door at the end, which is the most likely location for the target room.
+Confidence: low
+Evidence score: 0.35950000000000004
+Saved: navigation_outputs/http_api/single_step_latest_result.json
+===================================
+
+[EXECUTE] Dry run only. Robot will not move.
+[LOG] Step result saved: navigation_outputs/live_runs/run_2026_08_09_144800_C0_020/step_012_result.json
+
+========== AUTO STEP 13 ==========
+[OK] Loaded saved LEFT: robot_live_frames/step_0013/left.png
+[OK] Loaded saved FRONT: robot_live_frames/step_0013/front.png
+[OK] Loaded saved RIGHT: robot_live_frames/step_0013/right.png
+
+========== ACTION RESULT ==========
+Mode: single_step
+Goal: C0.020
+Done: False
+Action: NAVIGATE_TO_LANDMARK({'landmark_id': 'L002', 'direction': 'forward', 'target': 'L002', 'target_description': 'Corridor with wooden slat wall on the right and glass windows on the left, continuing forward.', 'floor': '0', 'search_for': None, 'stop_condition': 'capture when near the next door or junction', 'capture_after': True, 'evidence_view': 'FRONT', 'horizontal_position': 'center', 'horizontal_offset_fraction': 0.0, 'proximity': 'near', 'doorway_state': 'unknown', 'threshold_state': 'before', 'traversable': True}) [low, score=0.37] valid - The current view shows a clear corridor (L002) continuing forward, and the target room C0.020 is likely further down this hall past the current door C0.016.
+Action name: NAVIGATE_TO_LANDMARK
+Params: {'landmark_id': 'L002', 'direction': 'forward', 'target': 'L002', 'target_description': 'Corridor with wooden slat wall on the right and glass windows on the left, continuing forward.', 'floor': '0', 'search_for': None, 'stop_condition': 'capture when near the next door or junction', 'capture_after': True, 'evidence_view': 'FRONT', 'horizontal_position': 'center', 'horizontal_offset_fraction': 0.0, 'proximity': 'near', 'doorway_state': 'unknown', 'threshold_state': 'before', 'traversable': True}
+Evidence view: FRONT
+Reason: The current view shows a clear corridor (L002) continuing forward, and the target room C0.020 is likely further down this hall past the current door C0.016.
+Confidence: low
+Evidence score: 0.37449999999999994
+Saved: navigation_outputs/http_api/single_step_latest_result.json
+===================================
+
+[EXECUTE] Dry run only. Robot will not move.
+[LOG] Step result saved: navigation_outputs/live_runs/run_2026_08_09_144800_C0_020/step_013_result.json
+
+========== AUTO STEP 14 ==========
+[OK] Loaded saved LEFT: robot_live_frames/step_0014/left.png
+[OK] Loaded saved FRONT: robot_live_frames/step_0014/front.png
+[OK] Loaded saved RIGHT: robot_live_frames/step_0014/right.png
+
+========== ACTION RESULT ==========
+Mode: single_step
+Goal: C0.020
+Done: False
+Action: ALIGN_WITH_LANDMARK({'landmark_id': 'L002', 'direction': 'right', 'target': 'L002', 'target_description': 'Corridor extending forward with wooden slat walls on the left and glass windows on the right.', 'stop_condition': 'landmark centred in FRONT camera', 'capture_after': True, 'evidence_view': 'RIGHT', 'horizontal_position': 'center', 'horizontal_offset_fraction': 0.0, 'proximity': 'near'}) [medium, score=0.62] valid - Selected landmark is not centred and must be visually aligned before forward movement.
+Action name: ALIGN_WITH_LANDMARK
+Params: {'landmark_id': 'L002', 'direction': 'right', 'target': 'L002', 'target_description': 'Corridor extending forward with wooden slat walls on the left and glass windows on the right.', 'stop_condition': 'landmark centred in FRONT camera', 'capture_after': True, 'evidence_view': 'RIGHT', 'horizontal_position': 'center', 'horizontal_offset_fraction': 0.0, 'proximity': 'near'}
+Evidence view: RIGHT
+Reason: Selected landmark is not centred and must be visually aligned before forward movement.
+Confidence: medium
+Evidence score: 0.6244999999999999
+Saved: navigation_outputs/http_api/single_step_latest_result.json
+===================================
+
+[EXECUTE] Dry run only. Robot will not move.
+[LOG] Step result saved: navigation_outputs/live_runs/run_2026_08_09_144800_C0_020/step_014_result.json
+
+========== AUTO STEP 15 ==========
+[OK] Loaded saved LEFT: robot_live_frames/step_0015/left.png
+[OK] Loaded saved FRONT: robot_live_frames/step_0015/front.png
+[OK] Loaded saved RIGHT: robot_live_frames/step_0015/right.png
+
+========== ACTION RESULT ==========
+Mode: single_step
+Goal: C0.020
+Done: False
+Action: NAVIGATE_TO_LANDMARK({'landmark_id': 'L002', 'direction': 'forward', 'target': 'L002', 'target_description': 'Corridor with wooden slat wall on the right and glass windows on the left.', 'floor': '0', 'search_for': None, 'stop_condition': 'capture when near the corridor bend or next room label', 'capture_after': True, 'evidence_view': 'FRONT', 'horizontal_position': 'center', 'horizontal_offset_fraction': 0.0, 'proximity': 'near', 'doorway_state': 'unknown', 'threshold_state': 'before', 'traversable': True}) [low, score=0.37] valid - The current view shows a clear corridor (L002) leading forward, and the target room C0.020 is likely further down this path past the current door C0.016.
+Action name: NAVIGATE_TO_LANDMARK
+Params: {'landmark_id': 'L002', 'direction': 'forward', 'target': 'L002', 'target_description': 'Corridor with wooden slat wall on the right and glass windows on the left.', 'floor': '0', 'search_for': None, 'stop_condition': 'capture when near the corridor bend or next room label', 'capture_after': True, 'evidence_view': 'FRONT', 'horizontal_position': 'center', 'horizontal_offset_fraction': 0.0, 'proximity': 'near', 'doorway_state': 'unknown', 'threshold_state': 'before', 'traversable': True}
+Evidence view: FRONT
+Reason: The current view shows a clear corridor (L002) leading forward, and the target room C0.020 is likely further down this path past the current door C0.016.
+Confidence: low
+Evidence score: 0.367
+Saved: navigation_outputs/http_api/single_step_latest_result.json
+===================================
+
+[EXECUTE] Dry run only. Robot will not move.
+[LOG] Step result saved: navigation_outputs/live_runs/run_2026_08_09_144800_C0_020/step_015_result.json
+
+========== AUTO STEP 16 ==========
+[OK] Loaded saved LEFT: robot_live_frames/step_0016/left.png
+[OK] Loaded saved FRONT: robot_live_frames/step_0016/front.png
+[OK] Loaded saved RIGHT: robot_live_frames/step_0016/right.png
+
+========== ACTION RESULT ==========
+Mode: single_step
+Goal: C0.020
+Done: False
+Action: NAVIGATE_TO_LANDMARK({'landmark_id': 'L002', 'direction': 'forward', 'target': 'L002', 'target_description': 'Wooden slat corridor continuing straight ahead towards the white door.', 'floor': None, 'search_for': None, 'stop_condition': 'capture when near the white door at the end of the corridor', 'capture_after': True, 'evidence_view': 'FRONT', 'horizontal_position': 'center', 'horizontal_offset_fraction': 0.0, 'proximity': 'near', 'doorway_state': 'unknown', 'threshold_state': 'before', 'traversable': True}) [low, score=0.37] valid - The current view is sparse, but the remembered route landmark L002 (wooden slat corridor) provides a clear, traversable path forward towards the white door, which is the most likely location for the target room C0.020.
+Action name: NAVIGATE_TO_LANDMARK
+Params: {'landmark_id': 'L002', 'direction': 'forward', 'target': 'L002', 'target_description': 'Wooden slat corridor continuing straight ahead towards the white door.', 'floor': None, 'search_for': None, 'stop_condition': 'capture when near the white door at the end of the corridor', 'capture_after': True, 'evidence_view': 'FRONT', 'horizontal_position': 'center', 'horizontal_offset_fraction': 0.0, 'proximity': 'near', 'doorway_state': 'unknown', 'threshold_state': 'before', 'traversable': True}
+Evidence view: FRONT
+Reason: The current view is sparse, but the remembered route landmark L002 (wooden slat corridor) provides a clear, traversable path forward towards the white door, which is the most likely location for the target room C0.020.
+Confidence: low
+Evidence score: 0.37449999999999994
+Saved: navigation_outputs/http_api/single_step_latest_result.json
+===================================
+
+[EXECUTE] Dry run only. Robot will not move.
+[LOG] Step result saved: navigation_outputs/live_runs/run_2026_08_09_144800_C0_020/step_016_result.json
+
+========== AUTO STEP 17 ==========
+[OK] Loaded saved LEFT: robot_live_frames/step_0017/left.png
+[OK] Loaded saved FRONT: robot_live_frames/step_0017/front.png
+[OK] Loaded saved RIGHT: robot_live_frames/step_0017/right.png
+
+========== ACTION RESULT ==========
+Mode: single_step
+Goal: C0.020
+Done: True
+Action: STOP_AND_VERIFY({'landmark_id': 'L001', 'target': 'C0.020', 'evidence_type': 'target_door_label', 'evidence_view': 'NONE'}) [high, score=1.00] valid - The target room label 'C0.020' is clearly visible on the white door in the front camera view, matching the goal exactly.
+Action name: STOP_AND_VERIFY
+Params: {'landmark_id': 'L001', 'target': 'C0.020', 'evidence_type': 'target_door_label', 'evidence_view': 'NONE'}
+Evidence view: NONE
+Reason: The target room label 'C0.020' is clearly visible on the white door in the front camera view, matching the goal exactly.
+Confidence: high
+Evidence score: 1.0
+Saved: navigation_outputs/http_api/single_step_latest_result.json
+===================================
+
+[EXECUTE] Dry run only. Robot will not move.
+[LOG] Step result saved: navigation_outputs/live_runs/run_2026_08_09_144800_C0_020/step_017_result.json
+[DONE] Goal 'C0.020' reached at step 17.
+[LOG] Final summary saved: navigation_outputs/live_runs/run_2026_08_09_144800_C0_020/final_run_summary.json
+vlm_project@vlmproject-ThinkPad-X1:~/VLM_Navigation_Project$ 
